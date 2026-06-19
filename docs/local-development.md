@@ -2,11 +2,18 @@
 
 ## Prerequisites
 
-- .NET SDK 8.0.x for this scaffold
+- .NET 10 SDK (the repository pins SDK `10.0.301` and permits newer .NET 10 feature bands)
 - Node.js 22 or newer recommended for frontend development
 - SQL Server LocalDB, SQL Server Developer Edition, or a containerized SQL Server instance
 
 ## Backend
+
+Confirm the SDK before restoring packages:
+
+```powershell
+dotnet --version
+dotnet --list-sdks
+```
 
 ```powershell
 dotnet restore apps/api/El1teSpr1ntTrack.sln --configfile NuGet.Config
@@ -44,6 +51,7 @@ Equivalent JSON shape:
 ## Database
 
 The initial auth migration is `AddAuthenticationFoundation`.
+The .NET 10 upgrade does not change the database model, so the existing migration remains valid and no additional migration is required.
 
 ```powershell
 dotnet ef database update --project apps/api/src/El1teSpr1ntTrack.Infrastructure/El1teSpr1ntTrack.Infrastructure.csproj --startup-project apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj
@@ -52,7 +60,7 @@ dotnet ef database update --project apps/api/src/El1teSpr1ntTrack.Infrastructure
 If `dotnet ef` is not installed, install EF tooling locally or globally:
 
 ```powershell
-dotnet tool install dotnet-ef --tool-path .dotnet-tools --version 8.0.19
+dotnet tool install dotnet-ef --tool-path .dotnet-tools --version 10.0.9
 .\.dotnet-tools\dotnet-ef.exe database update --project apps/api/src/El1teSpr1ntTrack.Infrastructure/El1teSpr1ntTrack.Infrastructure.csproj --startup-project apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj
 ```
 

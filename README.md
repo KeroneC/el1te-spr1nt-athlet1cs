@@ -14,7 +14,7 @@ This first scaffold establishes the repository shape, backend architecture, fron
 
 ## Runtime Note
 
-The prompt preferred .NET 10 when installed, otherwise .NET 8. This machine does not have the .NET 10 SDK installed, so the scaffold targets `.NET 8` (`net8.0`) as the LTS fallback.
+The backend targets `.NET 10` (`net10.0`). Install the .NET 10 SDK and confirm the active version with `dotnet --version`; the repository-level `global.json` keeps local and CI builds on a compatible .NET 10 SDK.
 
 ## Monorepo Structure
 
