@@ -1,0 +1,6 @@
+@El1teSpr1ntTrack.Api_HostAddress = http://localhost:5126
+
+GET {{El1teSpr1ntTrack.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
