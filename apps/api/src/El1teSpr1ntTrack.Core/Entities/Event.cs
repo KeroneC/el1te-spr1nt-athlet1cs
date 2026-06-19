@@ -1,16 +1,30 @@
+using El1teSpr1ntTrack.Core.Enums;
+
 namespace El1teSpr1ntTrack.Core.Entities;
 
-public sealed class Event : EntityBase
+public sealed class Event : CmsEntityBase
 {
-    public string Name { get; set; } = string.Empty;
+    public string Title { get; set; } = string.Empty;
 
-    public string? Description { get; set; }
+    public string Slug { get; set; } = string.Empty;
 
-    public string? Location { get; set; }
+    public EventType EventType { get; set; } = EventType.Other;
 
-    public DateTimeOffset StartsAt { get; set; }
+    public DateTimeOffset StartDateTimeUtc { get; set; }
 
-    public DateTimeOffset? EndsAt { get; set; }
+    public DateTimeOffset? EndDateTimeUtc { get; set; }
 
-    public decimal RegistrationFee { get; set; }
+    public string LocationName { get; set; } = string.Empty;
+
+    public string? Address { get; set; }
+
+    public string Description { get; set; } = string.Empty;
+
+    public string? RegistrationUrl { get; set; }
+
+    public string? ImageUrl { get; set; }
+
+    public bool IsFeatured { get; set; }
+
+    public bool IsPublished { get; set; }
 }

@@ -62,7 +62,10 @@ builder.Services.AddApiCors(builder.Configuration);
 builder.Services.AddScoped<IClock, SystemClock>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
+builder.Services.AddScoped<ISlugGenerator, SlugGenerator>();
+builder.Services.AddScoped<ICmsValidationService, CmsValidationService>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 builder.Services.AddDbContext<El1teDbContext>(options =>

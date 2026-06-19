@@ -50,8 +50,12 @@ Equivalent JSON shape:
 
 ## Database
 
-The initial auth migration is `AddAuthenticationFoundation`.
-The .NET 10 upgrade does not change the database model, so the existing migration remains valid and no additional migration is required.
+Database migrations currently include:
+
+- `AddAuthenticationFoundation`
+- `AddCmsFoundation`
+
+`AddCmsFoundation` creates the CMS tables and indexes and inserts the generic development content described in [cms-foundation.md](cms-foundation.md).
 
 ```powershell
 dotnet ef database update --project apps/api/src/El1teSpr1ntTrack.Infrastructure/El1teSpr1ntTrack.Infrastructure.csproj --startup-project apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj
