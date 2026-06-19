@@ -53,6 +53,8 @@ dotnet run --project apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.cspr
 
 The API exposes health endpoints at `/health` and `/api/v1/health`. Swagger is enabled in development.
 
+The backend also includes the Phase 2 CMS domain and database foundation. See [docs/cms-foundation.md](docs/cms-foundation.md) for its entities, sample data, migration, and scope boundaries.
+
 ### Authentication
 
 Implemented backend auth endpoints:

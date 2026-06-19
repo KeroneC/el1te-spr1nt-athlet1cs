@@ -4,6 +4,7 @@ using El1teSpr1ntTrack.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(El1teDbContext))]
-    partial class El1teDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260619050248_AddCmsFoundation")]
+    partial class AddCmsFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -156,7 +159,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ParentUserId");
 
-                    b.ToTable("Athletes", (string)null);
+                    b.ToTable("Athletes");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AthleteDocument", b =>
@@ -192,7 +195,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("AthleteId");
 
-                    b.ToTable("AthleteDocuments", (string)null);
+                    b.ToTable("AthleteDocuments");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Coach", b =>
@@ -326,7 +329,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ConsentedByUserId");
 
-                    b.ToTable("ConsentRecords", (string)null);
+                    b.ToTable("ConsentRecords");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.ContactSubmission", b =>
@@ -549,7 +552,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Donations", (string)null);
+                    b.ToTable("Donations");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Event", b =>
@@ -827,7 +830,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FeedbackSubmissions", (string)null);
+                    b.ToTable("FeedbackSubmissions");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
@@ -859,7 +862,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderItem", b =>
@@ -893,7 +896,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Product", b =>
@@ -924,7 +927,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.SiteSetting", b =>
@@ -1168,7 +1171,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Testimonials", (string)null);
+                    b.ToTable("Testimonials");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.User", b =>
@@ -1214,7 +1217,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Athlete", b =>

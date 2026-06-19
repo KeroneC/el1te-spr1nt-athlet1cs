@@ -9,7 +9,19 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<Athlete> Athletes => Set<Athlete>();
 
+    public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();
+
+    public DbSet<ContentBlock> ContentBlocks => Set<ContentBlock>();
+
+    public DbSet<Announcement> Announcements => Set<Announcement>();
+
     public DbSet<Event> Events => Set<Event>();
+
+    public DbSet<Coach> Coaches => Set<Coach>();
+
+    public DbSet<Sponsor> Sponsors => Set<Sponsor>();
+
+    public DbSet<Faq> Faqs => Set<Faq>();
 
     public DbSet<Product> Products => Set<Product>();
 
@@ -32,6 +44,8 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(El1teDbContext).Assembly);
 
         modelBuilder.Entity<User>()
             .HasIndex(user => user.Email)
@@ -88,10 +102,6 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
             .WithOne(document => document.Athlete)
             .HasForeignKey(document => document.AthleteId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Event>()
-            .Property(e => e.RegistrationFee)
-            .HasPrecision(18, 2);
 
         modelBuilder.Entity<Product>()
             .Property(product => product.Price)
