@@ -55,6 +55,8 @@ The API exposes health endpoints at `/health` and `/api/v1/health`. Swagger is e
 
 The backend also includes the Phase 2 CMS domain and database foundation. See [docs/cms-foundation.md](docs/cms-foundation.md) for its entities, sample data, migration, and scope boundaries.
 
+Published CMS content and contact submissions are available through the Phase 3 public API. See [docs/public-cms-api.md](docs/public-cms-api.md) for endpoints, filters, visibility rules, and examples.
+
 ### Authentication
 
 Implemented backend auth endpoints:

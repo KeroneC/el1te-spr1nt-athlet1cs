@@ -37,4 +37,4 @@ Configure `Jwt:Key` through user secrets or an environment variable before runni
 
 ## Not Included
 
-Phase 2 does not add public CMS endpoints, admin CMS endpoints, CMS screens, a full admin dashboard, parent or athlete portal features, media upload, or iOS code. Those remain future phases.
+Phase 2 does not add admin CMS endpoints, CMS screens, a full admin dashboard, parent or athlete portal features, media upload, or iOS code. Public read-only CMS endpoints and contact submission creation were added in Phase 3 and are documented in [public-cms-api.md](public-cms-api.md).
