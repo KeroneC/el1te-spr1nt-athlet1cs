@@ -122,6 +122,8 @@ Published CMS content and contact submissions are available through the Phase 3 
 
 Protected CMS management is available to active `Admin` and `SuperAdmin` users through the Phase 4 admin API. See [docs/admin-cms-api.md](docs/admin-cms-api.md) for endpoints, authorization, and local SuperAdmin setup.
 
+The Phase 5 web admin foundation provides secure server-managed login and complete Announcements management. See [docs/admin-frontend.md](docs/admin-frontend.md) for routes, session architecture, setup, and limitations.
+
 ### Authentication
 
 Implemented backend auth endpoints:

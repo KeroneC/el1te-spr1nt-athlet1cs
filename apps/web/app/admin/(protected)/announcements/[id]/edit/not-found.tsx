@@ -1,0 +1,2 @@
+import Link from "next/link";
+export default function AnnouncementNotFound() { return <div className="border-l-4 border-track-red bg-white p-8"><h1 className="text-2xl font-black text-track-ink">Announcement not found</h1><p className="mt-2 text-sm text-slate-600">It may have been deleted by another administrator.</p><Link href="/admin/announcements" className="mt-5 inline-flex min-h-10 items-center bg-track-ink px-4 text-sm font-bold text-white">Back to announcements</Link></div>; }
