@@ -5,5 +5,6 @@ public enum UserRole
     Parent = 0,
     Athlete = 1,
     Coach = 2,
-    Admin = 3
+    Admin = 3,
+    SuperAdmin = 4
 }

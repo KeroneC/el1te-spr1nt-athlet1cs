@@ -120,6 +120,8 @@ The backend also includes the Phase 2 CMS domain and database foundation. See [d
 
 Published CMS content and contact submissions are available through the Phase 3 public API. See [docs/public-cms-api.md](docs/public-cms-api.md) for endpoints, filters, visibility rules, and examples.
 
+Protected CMS management is available to active `Admin` and `SuperAdmin` users through the Phase 4 admin API. See [docs/admin-cms-api.md](docs/admin-cms-api.md) for endpoints, authorization, and local SuperAdmin setup.
+
 ### Authentication
 
 Implemented backend auth endpoints:

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using El1teSpr1ntTrack.Api.Authorization;
 using El1teSpr1ntTrack.Api.Extensions;
 using El1teSpr1ntTrack.Api.Middleware;
 using El1teSpr1ntTrack.Application.Interfaces;
@@ -8,6 +9,7 @@ using El1teSpr1ntTrack.Infrastructure.Data;
 using El1teSpr1ntTrack.Infrastructure.Repositories;
 using El1teSpr1ntTrack.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
@@ -66,9 +68,13 @@ builder.Services.AddScoped<ISlugGenerator, SlugGenerator>();
 builder.Services.AddScoped<ICmsValidationService, CmsValidationService>();
 builder.Services.AddScoped<IPublicCmsService, PublicCmsService>();
 builder.Services.AddScoped<IPublicCmsRepository, PublicCmsRepository>();
+builder.Services.AddScoped<IAdminCmsService, AdminCmsService>();
+builder.Services.AddScoped<IAdminCmsRepository, AdminCmsRepository>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IAuthorizationHandler, ActiveCmsAdminHandler>();
+builder.Services.AddScoped<DevelopmentAdminSeeder>();
 
 builder.Services.AddDbContext<El1teDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -92,9 +98,15 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(CmsAdminAuthorization.Configure);
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    await scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>().SeedAsync();
+}
 
 app.UseSerilogRequestLogging();
 app.UseMiddleware<GlobalExceptionMiddleware>();
