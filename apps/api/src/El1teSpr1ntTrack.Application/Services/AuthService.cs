@@ -67,6 +67,23 @@ public sealed class AuthService(
         return CreateAuthResponse(user);
     }
 
+    public async Task<CurrentUserDto?> GetCurrentUserAsync(
+        Guid userId,
+        CancellationToken cancellationToken = default)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken);
+        return user is null
+            ? null
+            : new CurrentUserDto(
+                user.Id,
+                user.Email,
+                user.FirstName,
+                user.LastName,
+                $"{user.FirstName} {user.LastName}".Trim(),
+                user.Role,
+                user.IsActive);
+    }
+
     private static string NormalizeEmail(string? email)
     {
         return email?.Trim().ToLowerInvariant() ?? string.Empty;

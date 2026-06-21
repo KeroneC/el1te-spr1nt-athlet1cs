@@ -1,6 +1,8 @@
+using System.Security.Claims;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.DTOs.Auth;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
@@ -51,13 +53,20 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         }
     }
 
+    [Authorize]
     [HttpGet("me")]
-    public IActionResult Me()
+    [ProducesResponseType(typeof(CurrentUserDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Me(CancellationToken cancellationToken)
     {
-        return StatusCode(StatusCodes.Status501NotImplemented, new
+        if (!Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var userId))
         {
-            message = "Current-user profile lookup will require authenticated requests."
-        });
+            return Unauthorized();
+        }
+
+        var currentUser = await authService.GetCurrentUserAsync(userId, cancellationToken);
+        return currentUser is null ? NotFound() : Ok(currentUser);
     }
 
     private static ModelStateDictionary ToModelState(IReadOnlyDictionary<string, string[]> errors)

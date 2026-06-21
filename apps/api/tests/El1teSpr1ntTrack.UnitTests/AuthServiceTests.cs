@@ -138,6 +138,25 @@ public class AuthServiceTests
             }));
     }
 
+    [Fact]
+    public async Task GetCurrentUserAsync_ReturnsSafeIdentityIncludingActiveStatus()
+    {
+        var repository = new FakeUserRepository();
+        var user = new User
+        {
+            FirstName = "Avery", LastName = "Admin", Email = "admin@example.com",
+            PasswordHash = "not-returned", Role = UserRole.Admin, IsActive = false
+        };
+        repository.Users.Add(user);
+
+        var result = await CreateAuthService(repository).GetCurrentUserAsync(user.Id);
+
+        Assert.NotNull(result);
+        Assert.Equal("Avery Admin", result.DisplayName);
+        Assert.Equal(UserRole.Admin, result.Role);
+        Assert.False(result.IsActive);
+    }
+
     private static AuthService CreateAuthService(FakeUserRepository repository)
     {
         return new AuthService(repository, new FakeJwtTokenService());

@@ -96,6 +96,8 @@ A `404` at `/` is expected because the API does not define a root endpoint.
 
 Auth endpoints are available at `POST /api/auth/register` and `POST /api/auth/login`. Public CMS endpoints are documented in [public-cms-api.md](public-cms-api.md).
 
+To test protected CMS management, configure the development-only SuperAdmin described in [admin-cms-api.md](admin-cms-api.md), restart the API, log in, and authorize Swagger with the returned access token.
+
 ### Visual Studio
 
 1. Open `apps/api/El1teSpr1ntTrack.sln`.
