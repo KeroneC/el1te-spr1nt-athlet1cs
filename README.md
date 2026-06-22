@@ -13,9 +13,10 @@ Implemented:
 - Development-only SuperAdmin seeding through User Secrets
 - Secure admin web login with an HttpOnly session cookie
 - Admin dashboard and complete management for announcements, events, coaches, sponsors, FAQs, content blocks, site settings, and contact submissions
+- Responsive public CMS website for home, about, programs, news, events, coaches, sponsors, FAQs, registration information, and contact submissions
 - Backend unit/integration tests and focused frontend validation, mutation-boundary, and error tests
 
-Intentionally not implemented yet: public website CMS pages, media uploads, password reset/refresh/revocation, parent or athlete portals, registration, payments, private documents, live production infrastructure, and iOS code.
+Intentionally not implemented yet: media uploads, password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, live production infrastructure, and iOS code.
 
 ## Documentation
 
@@ -24,6 +25,7 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - [System architecture](docs/architecture/system-overview.md)
 - [Announcements end to end](docs/learning-notes/announcements-end-to-end.md)
 - [Core CMS admin frontend](docs/learning-notes/core-cms-admin-frontend.md)
+- [Public website CMS integration](docs/learning-notes/public-website-cms-integration.md)
 - [Local development](docs/guides/local-development.md)
 - [Troubleshooting](docs/guides/troubleshooting.md)
 - [Glossary](docs/guides/glossary.md)
@@ -60,6 +62,7 @@ Open:
 - API health: `https://localhost:7171/health`
 - API readiness: `https://localhost:7171/health/ready`
 - Admin: `http://localhost:3000/admin`
+- Public website: `http://localhost:3000`
 
 ## Validation
 

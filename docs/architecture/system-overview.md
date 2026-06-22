@@ -1,6 +1,6 @@
 # System Overview
 
-El1te Spr1nt Athlet1cs is being built as the operational and public web platform for a nonprofit youth track club. Today it supplies authentication, editable CMS data, anonymous public CMS endpoints, protected CMS endpoints, and an admin web experience for announcements. The longer-term product may add athlete and parent workflows, registration, payments, documents, communication, more CMS screens, and an iOS client.
+El1te Spr1nt Athlet1cs is the operational and public web platform for a nonprofit youth track club. Today it supplies authentication, editable CMS data, anonymous public CMS endpoints, a complete public website, protected CMS endpoints, and administration for every core CMS resource. The longer-term product may add athlete and parent workflows, registration, payments, documents, communication, and an iOS client.
 
 ## Current System
 
@@ -8,7 +8,8 @@ The repository is a monorepo. `apps/api` is an ASP.NET Core Web API using .NET 1
 
 ```mermaid
 flowchart LR
-    Public["Public consumer"] --> API["ASP.NET Core API"]
+    Public["Public visitor"] --> Next["Next.js web server"]
+    Next -->|"Anonymous public CMS reads"| API["ASP.NET Core API"]
     Admin["Admin browser"] --> Next["Next.js web server"]
     Next -->|"Bearer JWT from HttpOnly cookie"| API
     Mobile["Future mobile client"] -.->|"Direct API client"| API
@@ -29,7 +30,8 @@ The admin browser has an extra security boundary. It submits credentials to a Ne
 - Current-user lookup through `/api/auth/me`
 - Public CMS reads and contact-submission creation
 - Protected administration endpoints for all current CMS areas
-- Admin web login, dashboard shell, logout, and announcement management
+- Responsive public CMS website and real contact form
+- Admin web login, dashboard, logout, and all core CMS management
 - EF Core migrations and development sample CMS content
 - Development-only SuperAdmin seeding through User Secrets
 - Unit, integration, and frontend tests
@@ -38,6 +40,6 @@ The admin browser has an extra security boundary. It submits credentials to a Ne
 
 The API uses DTOs and JWT bearer authentication rather than Next.js-specific contracts. A future iOS client can call the same public and authenticated API routes while storing its token with platform-appropriate secure storage. It would not use the web-only HttpOnly cookie boundary.
 
-Not built yet: public CMS pages backed by every endpoint, additional CMS admin screens, password reset and token refresh, revocation, media upload, parent or athlete portals, registration, commerce, donations, private document workflows, production deployment infrastructure, and mobile code.
+Not built yet: password reset and token refresh, revocation, media upload, parent or athlete portals, online registration, commerce, donations, private document workflows, production deployment infrastructure, and mobile code.
 
 Related: [backend architecture](backend-architecture.md), [frontend architecture](frontend-architecture.md), and [authentication and authorization](authentication-and-authorization.md).

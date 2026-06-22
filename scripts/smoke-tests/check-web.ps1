@@ -20,4 +20,7 @@ function Test-Endpoint([string]$Path, [string]$Marker) {
 }
 
 Test-Endpoint "/" "El1te Spr1nt Athlet1cs"
+Test-Endpoint "/news" "Club announcements"
+Test-Endpoint "/events" "Events and important dates"
+Test-Endpoint "/registration" "Registration information"
 Test-Endpoint "/admin/login" "Admin sign in"
