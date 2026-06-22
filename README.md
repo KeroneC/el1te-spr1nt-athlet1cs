@@ -26,6 +26,8 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - [Local development](docs/guides/local-development.md)
 - [Troubleshooting](docs/guides/troubleshooting.md)
 - [Glossary](docs/guides/glossary.md)
+- [CI/CD and future Azure preparation](docs/architecture/cicd-overview.md)
+- [AI project handoff](docs/guides/ai-project-handoff.md)
 
 ## Prerequisites
 
@@ -55,6 +57,7 @@ Open:
 
 - Swagger: `https://localhost:7171/swagger`
 - API health: `https://localhost:7171/health`
+- API readiness: `https://localhost:7171/health/ready`
 - Admin: `http://localhost:3000/admin`
 
 ## Validation

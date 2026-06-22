@@ -11,6 +11,7 @@ TestResults/
 coverage/
 coverage.*
 *.trx
+artifacts/
 
 # Local databases
 *.mdf
@@ -21,6 +22,7 @@ coverage.*
 
 # Node / Next.js
 node_modules/
+.npm-cache/
 .next/
 *.tsbuildinfo
 out/

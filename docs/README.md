@@ -24,6 +24,8 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Database and EF Core](architecture/database-and-ef-core.md)
 - [Authentication and authorization](architecture/authentication-and-authorization.md)
 - [Testing strategy](architecture/testing-strategy.md)
+- [CI/CD overview](architecture/cicd-overview.md)
+- [Future Azure deployment](architecture/future-azure-deployment.md)
 
 ## Learning Notes
 
@@ -33,6 +35,9 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Admin CMS API](learning-notes/admin-cms-api.md)
 - [Admin frontend authentication](learning-notes/admin-frontend-authentication.md)
 - [Announcements end to end](learning-notes/announcements-end-to-end.md)
+- [GitHub Actions CI](learning-notes/github-actions-ci.md)
+- [EF Core deployment artifacts](learning-notes/ef-core-deployment-artifacts.md)
+- [Bicep infrastructure](learning-notes/bicep-infrastructure.md)
 
 ## Architecture Decisions
 
@@ -43,6 +48,9 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [ADR 005: Store the web session in an HttpOnly cookie](decisions/005-use-http-only-web-session-cookie.md)
 - [ADR 006: Separate public and admin APIs](decisions/006-separate-public-and-admin-apis.md)
 - [ADR 007: Use Next.js with ASP.NET Core](decisions/007-use-nextjs-and-aspnet-core.md)
+- [ADR 008: Use GitHub Actions](decisions/008-use-github-actions.md)
+- [ADR 009: Use Bicep for Azure infrastructure](decisions/009-use-bicep-for-azure-infrastructure.md)
+- [ADR 010: Separate preparation from live provisioning](decisions/010-separate-phase-6a-and-6b.md)
 
 ## Guides
 
@@ -52,5 +60,8 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [EF Core migrations](guides/ef-core-migrations.md)
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)
+- [CI troubleshooting and branch protection](guides/ci-troubleshooting.md)
+- [Future Azure setup](guides/future-azure-setup.md)
+- [AI project handoff](guides/ai-project-handoff.md)
 
 The older phase-level files at the root of `docs` are retained as short compatibility links. The documents above are the maintained references.

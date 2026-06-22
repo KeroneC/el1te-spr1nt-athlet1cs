@@ -93,6 +93,7 @@ Useful URLs:
 
 - API Swagger: `https://localhost:7171/swagger`
 - API health: `https://localhost:7171/health`
+- API database readiness: `https://localhost:7171/health/ready`
 - Public API example: `https://localhost:7171/api/public/announcements`
 - Admin login: `http://localhost:3000/admin`
 
@@ -100,7 +101,7 @@ A `404` at the API root is expected.
 
 ## Safe Verification
 
-1. Confirm `/health` returns healthy and Swagger loads.
+1. Confirm `/health` and `/health/ready` return healthy and Swagger loads.
 2. Sign in with the disposable Development SuperAdmin.
 3. Create an announcement clearly named as local test data.
 4. Verify draft/public visibility and editing using [announcements testing](announcements-testing.md).
