@@ -1,0 +1,2 @@
+import { PageHeader } from "@/components/admin/page-header"; import { SiteSettingsForm } from "@/components/admin/site-settings-form"; import { getAdminItem } from "@/lib/admin/page-data"; import type { AdminSiteSettings } from "@/lib/admin/types";
+export default async function Page() { const item=await getAdminItem<AdminSiteSettings>("/api/admin/site-settings"); return <><PageHeader title="Site settings" description="Maintain the single shared club identity, contact, social, and call-to-action record." /><SiteSettingsForm item={item} /></>; }

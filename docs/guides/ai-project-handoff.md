@@ -1,55 +1,48 @@
 # AI Project Handoff
 
-This document is the reconciliation point between the repository and any separate ChatGPT conversation used to draft future phase prompts. The repository and its tests are the source of truth. Update this file at the end of each phase before asking another conversation to design the next one.
+This is the reconciliation point between the repository and any separate ChatGPT conversation used to draft future phase prompts. The repository, ADRs, and passing tests are the source of truth.
 
 ## Verified Project State
 
-- Monorepo: ASP.NET Core/.NET 10 API in `apps/api`, Next.js 15/npm web app in `apps/web`, learning reference in `docs`.
-- Completed through Phase 5.5 on `main`: .NET 10 upgrade, CMS foundation, public CMS API, admin CMS API, secure admin frontend with Announcement management, and architecture/learning documentation.
-- Phase 6A working branch: `feature/cicd-deployment-readiness`.
-- Phase 6A scope: CI and future Azure deployment preparation only. No Azure account, subscription, credentials, resource provisioning, application deployment, database deployment, DNS change, or Phase 6B action has occurred.
-- CI now validates backend, frontend, documentation, and secret safety for pull requests/main and creates short-lived API, standalone web, and EF migration artifacts.
-- API has safe liveness `/health` and database readiness `/health/ready` endpoints plus fail-fast Production configuration checks.
-- `infra` defines an inert, parameterized Bicep target for two Linux Web Apps, one App Service plan, Azure SQL, and API managed identity.
-- `.github/workflows/deploy-azure.yml` is manual-only, Phase 6B-gated, and designed for future GitHub OIDC.
-- Smoke tests and artifact scripts live under `scripts`.
-- Local verification completed for Phase 6A: NuGet restore and npm clean install, Release API build with zero warnings, 59 backend tests, frontend lint/typecheck, 10 frontend tests, production Next.js build, EF model-drift check, API publish, standalone web artifact, migration SQL fallback artifact, documentation validation, workflow YAML parsing, and end-to-end local API/web smoke tests.
-- A Linux EF migration bundle is built by CI. The equivalent local Windows bundle could not be generated inside the managed sandbox, so the checked script provides an idempotent migration SQL fallback. Bicep compilation also remains unverified locally because Azure CLI/Bicep is not installed; Phase 6B must compile and validate it before provisioning.
-- Remaining product features are still deferred: other CMS admin screens, parent/athlete portals, registrations, payments, documents, media, iOS, and production deployment.
+- Monorepo: ASP.NET Core/.NET 10 API in `apps/api`, Next.js 15/npm web app in `apps/web`, documentation in `docs`, inert Azure preparation in `infra`, and validation/artifact scripts in `scripts`.
+- `main` is complete through Phase 6A. Phase 7 is implemented on `feature/core-cms-admin-frontend` and is not yet merged at the time of this handoff.
+- Authentication remains JWT at the API and an HttpOnly same-origin web session. Active Admin/SuperAdmin authorization is unchanged; JWTs are never exposed to Client Components or browser storage.
+- Core CMS administration is complete for Announcements, Events, Coaches, Sponsors, FAQs, Content Blocks, Site Settings, and Contact Submissions.
+- Lists use real backend search/filter/pagination contracts. Forms use actual DTOs, safe field errors, accessible controls, and explicit lifecycle language.
+- Coach email privacy, public active/published visibility, Content Block key conflicts, Site Settings singleton behavior, Contact Submission status changes, and permanent-deletion confirmations were manually verified locally.
+- Phase 7 added no backend code, EF migration, or ADR. No API defect required a fix.
+- Validation: frontend lint and strict typecheck pass; 28 frontend tests pass; production Next.js build passes. The unchanged backend suite has 32 unit plus 27 integration tests, and EF model drift remains clean.
+- Phase 6A CI/CD, smoke scripts, Bicep preparation, and manual-only deployment template remain intact.
+- No Azure account, credentials, resources, application deployment, database deployment, DNS change, or Phase 6B action exists.
 
-## Paste This Into the Prompt-Writing Conversation
+## Deferred Work
+
+- Public website pages still need to consume the existing public CMS API for home, about, programs, events, coaches, sponsors, FAQs, and contact experiences.
+- Media/logo/image upload, rich text, contact replies/notifications, gallery, Parent/Athlete portals, registration, payments, waivers, volunteers, documents, iOS, and live Azure deployment remain deferred.
+- Board UX/UI review should happen against the usable Phase 7 workflows before a major visual redesign.
+- Recommended next phase: public website CMS integration and responsive public content pages, without expanding into portals, payments, media upload, or Azure provisioning.
+
+## Paste Into the Prompt-Writing Conversation
 
 ```text
 Repository reconciliation update for El1te Spr1nt Athlet1cs:
 
-Treat the repository, its docs, and passing tests as the source of truth. Do not rely on assumptions from earlier chat messages when they conflict with this handoff.
+Treat the repository, docs, ADRs, and passing tests as source of truth. Main is complete through Phase 6A. Phase 7 is implemented on feature/core-cms-admin-frontend and completes the core CMS admin frontend.
 
-The project is a monorepo with a .NET 10 ASP.NET Core API, EF Core/SQL Server, and a Next.js 15 npm frontend. Main is complete through Phase 5.5: CMS domain, public/admin APIs, JWT authentication and CmsAdmin authorization, secure HttpOnly admin web session, Announcement management, tests, and learning documentation.
+The protected Next.js admin now manages Announcements, Events, Coaches, Sponsors, FAQs, Content Blocks, singleton Site Settings, and private Contact Submissions using the existing ASP.NET Core Admin CMS API. It preserves the HttpOnly session/JWT server boundary, active Admin/SuperAdmin policy, no-store protected reads, URL filters/pagination, backend-authoritative validation, safe 400/401/403/404/409 handling, UTC event dates, coach email privacy, correct deactivate-vs-delete semantics, content-key conflict handling, and contact status transitions.
 
-Phase 6A is Cloud-Ready CI/CD and Azure Deployment Preparation. It adds CI for PR/main, documentation and secret validation, Release/deployment artifacts, EF migration bundles, safe /health and database-aware /health/ready endpoints, Production configuration validation, standalone Next.js output, smoke scripts, Dependabot, parameterized Azure Bicep, a manual-only OIDC deployment template, branch-protection guidance, and CI/Azure learning docs.
+Phase 7 introduced no backend changes, migrations, API fixes, or ADRs. Frontend lint/typecheck/build pass and 28 frontend tests pass. The unchanged backend suite is 59 tests. Manual local verification covered authentication, non-admin denial, all module lifecycle types, public visibility/privacy, singleton persistence, duplicate keys, contact statuses, deletion, logout, and disposable-data cleanup.
 
-Verified Phase 6A results: the Release API build has zero warnings; 32 unit and 27 integration tests pass; frontend lint, typecheck, 10 tests, and production build pass; EF model drift is clean; local API/web smoke tests pass. Azure CLI/Bicep is not installed locally, so Bicep compilation and all real Azure validation remain explicit Phase 6B prerequisites.
+No Azure resource or credential exists and Phase 6B has not run. Public website CMS pages, media uploads, portals, registration, payments, documents, iOS, and production deployment remain unimplemented.
 
-No Azure account/subscription/credentials exist. No Azure resources, application, database, DNS, GitHub deployment secrets, or Phase 6B deployment have been created or run. Bicep and deployment workflows are preparation only. Managed identity SQL authorization and real Azure validation remain Phase 6B.
-
-Before generating another phase prompt:
-1. Preserve all completed behavior and security boundaries.
-2. Explicitly distinguish implemented behavior from planned work.
-3. Do not repeat Phase 6A or assume Azure is live.
-4. Require repository inspection before implementation.
-5. Keep future scope limited to the phase requested by the user.
-6. Use actual paths and commands from docs/README.md and docs/architecture/cicd-overview.md.
-7. Flag any proposed requirement that conflicts with an existing ADR or deferred-work boundary.
-
-Ask for a fresh copy of docs/guides/ai-project-handoff.md if this context may be stale.
+For the next prompt, inspect current repository paths and preserve all security and lifecycle boundaries. The recommended next phase is public website CMS integration. Do not repeat admin CRUD, invent backend contracts, begin Phase 6B, or combine public pages with portals/payments/media upload unless the user explicitly changes scope.
 ```
 
-## How to Reconcile Future Disconnects
+## Reconciliation Procedure
 
-1. Compare the proposed prompt with `git log`, `git status`, `docs/README.md`, and this file.
-2. Verify named routes, scripts, workflows, and projects exist before treating them as completed.
-3. Prefer current ADRs over remembered design discussion.
-4. Run the documented validation commands after implementation.
-5. Update this handoff with the completed phase, validation outcome, deferred work, and any new ADRs.
+1. Compare a proposed prompt with `git log`, `git status`, `docs/README.md`, this file, and current ADRs.
+2. Verify every named route, DTO, script, and workflow exists before calling it complete.
+3. Distinguish implemented behavior from deferred work.
+4. Run documented validation after implementation and update this file with exact results.
 
 Never paste secrets, JWTs, connection strings, local absolute paths, or private account identifiers into an AI conversation.

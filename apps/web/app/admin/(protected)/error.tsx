@@ -1,0 +1,3 @@
+"use client";
+import { RotateCw } from "lucide-react";
+export default function ErrorPage({reset}:{error:Error&{digest?:string};reset:()=>void}){return <div className="border-l-4 border-track-red bg-white p-6"><h1 className="text-xl font-black text-track-ink">This admin section could not be loaded</h1><p className="mt-2 text-sm text-slate-600">The service may be temporarily unavailable. No private error details are shown.</p><button type="button" onClick={reset} className="mt-5 inline-flex min-h-10 items-center gap-2 bg-track-ink px-4 text-sm font-bold text-white"><RotateCw size={17}/>Try again</button></div>}

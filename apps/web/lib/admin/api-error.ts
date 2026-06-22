@@ -16,7 +16,7 @@ export function safeProblem(status: number, value: unknown): AdminApiError {
     400: "Please correct the highlighted fields.",
     401: "Your session has expired. Please sign in again.",
     403: "You do not have permission to perform this action.",
-    404: "The requested announcement was not found.",
+    404: "The requested record was not found.",
     409: "This change conflicts with existing content."
   };
   return new AdminApiError(status, messages[status] ?? "The service could not complete the request.", problem.errors ?? {});

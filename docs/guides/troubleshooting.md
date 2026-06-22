@@ -20,6 +20,9 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Frontend production build fails | Type, lint, environment-independent rendering, or dependency problem | Run lint, typecheck, test, then build separately | Fix the first failing check; reinstall from lockfile if dependency tree is damaged |
 | EF reports pending model changes | Entity/configuration differs from snapshot | Run pending-model command and inspect Git diff | Create/review a migration; do not hand-edit snapshot to hide it |
 | Duplicate slug conflict | Unique index race or direct conflicting data | Search admin data and inspect generated slug | Keep unique generation through service; resolve duplicate local data safely |
+| Admin form saves but list looks unchanged | Active filters exclude the updated record or navigation refresh is pending | Clear URL filters; reload the list; inspect the safe response status | Use the module's clear-filter control; correct backend validation rather than bypassing it |
+| Duplicate content-block key | Another block already owns the exact page-section key | Search Content by key; do not rename seeded records casually | Choose a unique key or deliberately update the existing block |
+| Coach email unexpectedly public/private | `IsEmailPublic` and Email do not match the intended state | Inspect both fields and the public coaches response | Provide a valid email and enable public visibility explicitly, or keep the toggle off |
 | Draft unexpectedly public | Publication/date data or public predicate changed | Compare record flags/dates and `PublicCmsVisibility` | Restore published/date rules and add a regression test |
 | Published item missing publicly | Future publish date, expired date, inactive state, or wrong slug | Compare UTC dates and public collection filters | Correct lifecycle values; admin visibility alone does not imply public visibility |
 

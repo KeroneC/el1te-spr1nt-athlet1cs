@@ -3,17 +3,19 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Bell, CalendarDays, ChevronRight, CircleHelp, FileText, Handshake, LayoutDashboard, LogOut, Menu, Settings, Users, X } from "lucide-react";
+import { Bell, CalendarDays, ChevronRight, CircleHelp, FileText, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, Users, X } from "lucide-react";
 import type { CurrentUser } from "@/lib/admin/types";
 
 const active = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/admin/announcements", label: "Announcements", icon: Bell, exact: false }
-];
-const future = [
-  { label: "Events", icon: CalendarDays }, { label: "Coaches", icon: Users },
-  { label: "Sponsors", icon: Handshake }, { label: "FAQs", icon: CircleHelp },
-  { label: "Content", icon: FileText }, { label: "Site Settings", icon: Settings }
+  { href: "/admin/announcements", label: "Announcements", icon: Bell, exact: false },
+  { href: "/admin/events", label: "Events", icon: CalendarDays, exact: false },
+  { href: "/admin/coaches", label: "Coaches", icon: Users, exact: false },
+  { href: "/admin/sponsors", label: "Sponsors", icon: Handshake, exact: false },
+  { href: "/admin/faqs", label: "FAQs", icon: CircleHelp, exact: false },
+  { href: "/admin/content", label: "Content", icon: FileText, exact: false },
+  { href: "/admin/site-settings", label: "Site Settings", icon: Settings, exact: false },
+  { href: "/admin/contact-submissions", label: "Contact Submissions", icon: Inbox, exact: false }
 ];
 
 export function AdminShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
@@ -27,8 +29,6 @@ export function AdminShell({ user, children }: { user: CurrentUser; children: Re
       <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Admin navigation">
         <p className="px-3 text-xs font-bold uppercase text-slate-400">Workspace</p>
         <ul className="mt-2 space-y-1">{active.map((item) => { const selected = item.exact ? pathname === item.href : pathname.startsWith(item.href); const Icon = item.icon; return <li key={item.href}><Link href={item.href} onClick={() => setOpen(false)} aria-current={selected ? "page" : undefined} className={`flex min-h-11 items-center gap-3 border-l-4 px-3 text-sm font-bold ${selected ? "border-track-red bg-white/10 text-white" : "border-transparent text-slate-300 hover:bg-white/5 hover:text-white"}`}><Icon size={19} />{item.label}{selected && <ChevronRight size={16} className="ml-auto" />}</Link></li>; })}</ul>
-        <p className="mt-7 px-3 text-xs font-bold uppercase text-slate-400">Coming later</p>
-        <ul className="mt-2 space-y-1">{future.map(({ label, icon: Icon }) => <li key={label}><button type="button" disabled className="flex min-h-10 w-full cursor-not-allowed items-center gap-3 px-4 text-left text-sm text-slate-500"><Icon size={18} />{label}</button></li>)}</ul>
       </nav>
     </aside>
     <div className="min-w-0">
