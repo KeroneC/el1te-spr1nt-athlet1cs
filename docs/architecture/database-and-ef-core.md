@@ -1,5 +1,7 @@
 # Database and EF Core
 
+Migration `AddMediaLibraryAndGallery` adds `MediaAssets`, `GalleryAlbums`, and `GalleryAlbumMedia`. The explicit join stores album-specific order and metadata overrides. Album deletion cascades only to join rows; shared media is retained, and referenced media deletion is rejected by the application.
+
 The Infrastructure project uses EF Core 10 with SQL Server. `El1teDbContext` exposes both current CMS/authentication tables and several earlier domain scaffolds. This document focuses on the implemented CMS and user workflows.
 
 ## Implemented Data Areas

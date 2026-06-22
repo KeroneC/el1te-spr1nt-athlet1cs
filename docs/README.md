@@ -1,6 +1,6 @@
 # El1te Spr1nt Athlet1cs Documentation
 
-This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 public CMS website, and a protected administration workspace for all core CMS resources. Online registration workflows, payments, documents, parent and athlete portals, media uploads, and mobile clients are not implemented.
+This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 public CMS website, a protected administration workspace, and local media/gallery support. Online registration workflows, payments, documents, parent and athlete portals, Azure media storage, and mobile clients are not implemented.
 
 ## Suggested Reading Order
 
@@ -41,6 +41,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [GitHub Actions CI](learning-notes/github-actions-ci.md)
 - [EF Core deployment artifacts](learning-notes/ef-core-deployment-artifacts.md)
 - [Bicep infrastructure](learning-notes/bicep-infrastructure.md)
+- [Media library and gallery](learning-notes/media-library-and-gallery.md)
 
 ## Architecture Decisions
 
@@ -54,6 +55,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [ADR 008: Use GitHub Actions](decisions/008-use-github-actions.md)
 - [ADR 009: Use Bicep for Azure infrastructure](decisions/009-use-bicep-for-azure-infrastructure.md)
 - [ADR 010: Separate preparation from live provisioning](decisions/010-separate-phase-6a-and-6b.md)
+- [ADR 011: Use a storage abstraction for media](decisions/011-use-storage-abstraction-for-media.md)
 
 ## Guides
 
@@ -62,6 +64,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Announcements testing](guides/announcements-testing.md)
 - [Core CMS admin testing](guides/core-cms-admin-testing.md)
 - [Public website testing](guides/public-website-testing.md)
+- [Media and gallery testing](guides/media-and-gallery-testing.md)
 - [EF Core migrations](guides/ef-core-migrations.md)
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)

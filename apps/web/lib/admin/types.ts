@@ -143,3 +143,22 @@ export interface SponsorFilters extends ActiveFilters { tier?: string; }
 export interface FaqFilters extends ActiveFilters { category?: string; }
 export interface ContentFilters extends ListFilters { isPublished?: string; }
 export interface ContactFilters extends ListFilters { status?: string; inquiryType?: string; fromDate?: string; toDate?: string; }
+
+export interface AdminMediaAsset {
+  id: string; originalFileName: string; contentType: string; fileExtension: string; fileSizeBytes: number;
+  width: number; height: number; title: string; altText: string; caption: string | null;
+  publicUrl: string; isActive: boolean; createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminGalleryAlbumListItem {
+  id: string; title: string; slug: string; description: string; coverMediaAssetId: string | null;
+  coverImageUrl: string | null; isPublished: boolean; eventDateUtc: string | null;
+  displayOrder: number; imageCount: number; createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminGalleryAlbumMedia {
+  id: string; mediaAssetId: string; publicUrl: string; title: string; altText: string; caption: string | null;
+  altTextOverride: string | null; captionOverride: string | null; displayOrder: number;
+  isActive: boolean; width: number; height: number;
+}
+export interface AdminGalleryAlbum extends Omit<AdminGalleryAlbumListItem, "coverImageUrl" | "imageCount"> {
+  media: AdminGalleryAlbumMedia[];
+}

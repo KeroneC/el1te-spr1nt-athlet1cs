@@ -41,7 +41,11 @@ public sealed class DeploymentReadinessTests
             ["Jwt:Issuer"] = "https://api.example.invalid",
             ["Jwt:Audience"] = "https://web.example.invalid",
             ["Jwt:ExpiresMinutes"] = "60",
-            ["Cors:AllowedOrigins:0"] = "https://web.example.invalid"
+            ["Cors:AllowedOrigins:0"] = "https://web.example.invalid",
+            ["MediaStorage:Provider"] = "Local",
+            ["MediaStorage:LocalRoot"] = "/var/lib/el1te/media",
+            ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
+            ["MediaStorage:MaxFileSizeBytes"] = "10485760"
         }).Build();
 
         ProductionConfigurationValidator.Validate(configuration, new TestEnvironment("Production"));

@@ -3,13 +3,15 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Bell, CalendarDays, ChevronRight, CircleHelp, FileText, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, Users, X } from "lucide-react";
+import { Bell, CalendarDays, ChevronRight, CircleHelp, FileImage, FileText, GalleryHorizontal, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, Users, X } from "lucide-react";
 import type { CurrentUser } from "@/lib/admin/types";
 
 const active = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/announcements", label: "Announcements", icon: Bell, exact: false },
   { href: "/admin/events", label: "Events", icon: CalendarDays, exact: false },
+  { href: "/admin/media", label: "Media", icon: FileImage, exact: false },
+  { href: "/admin/gallery", label: "Gallery", icon: GalleryHorizontal, exact: false },
   { href: "/admin/coaches", label: "Coaches", icon: Users, exact: false },
   { href: "/admin/sponsors", label: "Sponsors", icon: Handshake, exact: false },
   { href: "/admin/faqs", label: "FAQs", icon: CircleHelp, exact: false },

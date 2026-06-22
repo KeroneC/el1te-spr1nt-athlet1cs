@@ -6,10 +6,12 @@ using El1teSpr1ntTrack.Api.Health;
 using El1teSpr1ntTrack.Api.Middleware;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Application.Services;
+using El1teSpr1ntTrack.Application.Common;
 using El1teSpr1ntTrack.Core.Interfaces.Repositories;
 using El1teSpr1ntTrack.Infrastructure.Data;
 using El1teSpr1ntTrack.Infrastructure.Repositories;
 using El1teSpr1ntTrack.Infrastructure.Security;
+using El1teSpr1ntTrack.Infrastructure.Media;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -77,11 +79,26 @@ builder.Services.AddScoped<IPublicCmsService, PublicCmsService>();
 builder.Services.AddScoped<IPublicCmsRepository, PublicCmsRepository>();
 builder.Services.AddScoped<IAdminCmsService, AdminCmsService>();
 builder.Services.AddScoped<IAdminCmsRepository, AdminCmsRepository>();
+builder.Services.AddScoped<IMediaService, MediaService>();
+builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+builder.Services.AddScoped<IGalleryService, GalleryService>();
+builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
+builder.Services.AddSingleton<IMediaStorage, LocalMediaStorage>();
+builder.Services.AddSingleton<IImageInspector, SkiaImageInspector>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthorizationHandler, ActiveCmsAdminHandler>();
 builder.Services.AddScoped<DevelopmentAdminSeeder>();
+
+var mediaStorageOptions = builder.Configuration
+    .GetSection(MediaStorageOptions.SectionName)
+    .Get<MediaStorageOptions>() ?? new MediaStorageOptions();
+if (!Path.IsPathRooted(mediaStorageOptions.LocalRoot))
+{
+    mediaStorageOptions.LocalRoot = Path.Combine(builder.Environment.ContentRootPath, mediaStorageOptions.LocalRoot);
+}
+builder.Services.AddSingleton(mediaStorageOptions);
 
 builder.Services.AddDbContext<El1teDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));

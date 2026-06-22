@@ -135,3 +135,13 @@ export interface ValidationProblem {
   title?: string;
   errors?: Record<string, string[]>;
 }
+export interface GalleryAlbumListItem {
+  title: string; slug: string; description: string; coverImageUrl: string | null;
+  coverAltText: string | null; eventDateUtc: string | null; imageCount: number;
+}
+export interface GalleryImage {
+  publicUrl: string; altText: string; caption: string | null; width: number; height: number; displayOrder: number;
+}
+export interface GalleryAlbum {
+  title: string; slug: string; description: string; eventDateUtc: string | null; images: GalleryImage[];
+}

@@ -51,6 +51,21 @@ public static class ProductionConfigurationValidator
             errors.Add("Cors:AllowedOrigins must contain only absolute HTTPS non-loopback origins in Production.");
         }
 
+        if (!string.Equals(configuration["MediaStorage:Provider"], "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add("MediaStorage:Provider must be Local until another provider is configured.");
+        }
+        Required(configuration, "MediaStorage:LocalRoot", errors);
+        if (!long.TryParse(configuration["MediaStorage:MaxFileSizeBytes"], out var maxFileSize) || maxFileSize <= 0)
+        {
+            errors.Add("MediaStorage:MaxFileSizeBytes must be a positive integer.");
+        }
+        if (!Uri.TryCreate(configuration["MediaStorage:PublicBaseUrl"], UriKind.Absolute, out var mediaBaseUrl) ||
+            mediaBaseUrl.Scheme != Uri.UriSchemeHttps || mediaBaseUrl.IsLoopback)
+        {
+            errors.Add("MediaStorage:PublicBaseUrl must be an absolute HTTPS non-loopback URL in Production.");
+        }
+
         if (errors.Count > 0)
         {
             throw new InvalidOperationException(

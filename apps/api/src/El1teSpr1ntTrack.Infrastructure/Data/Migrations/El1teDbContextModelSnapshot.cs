@@ -156,7 +156,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ParentUserId");
 
-                    b.ToTable("Athletes", (string)null);
+                    b.ToTable("Athletes");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AthleteDocument", b =>
@@ -192,7 +192,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("AthleteId");
 
-                    b.ToTable("AthleteDocuments", (string)null);
+                    b.ToTable("AthleteDocuments");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Coach", b =>
@@ -326,7 +326,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ConsentedByUserId");
 
-                    b.ToTable("ConsentRecords", (string)null);
+                    b.ToTable("ConsentRecords");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.ContactSubmission", b =>
@@ -549,7 +549,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Donations", (string)null);
+                    b.ToTable("Donations");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Event", b =>
@@ -827,7 +827,194 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FeedbackSubmissions", (string)null);
+                    b.ToTable("FeedbackSubmissions");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.GalleryAlbum", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid?>("CoverMediaAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("EventDateUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CoverMediaAssetId");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.HasIndex("IsPublished");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("GalleryAlbums", (string)null);
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.GalleryAlbumMedia", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AltTextOverride")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("CaptionOverride")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("GalleryAlbumId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("MediaAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MediaAssetId");
+
+                    b.HasIndex("GalleryAlbumId", "DisplayOrder");
+
+                    b.HasIndex("GalleryAlbumId", "MediaAssetId")
+                        .IsUnique();
+
+                    b.ToTable("GalleryAlbumMedia", (string)null);
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("AltText")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Caption")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetimeoffset")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<string>("FileExtension")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(true);
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("PublicUrl")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UploadedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedAtUtc");
+
+                    b.HasIndex("IsActive");
+
+                    b.HasIndex("PublicUrl")
+                        .IsUnique();
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.HasIndex("UploadedByUserId");
+
+                    b.ToTable("MediaAssets", (string)null);
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
@@ -859,7 +1046,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Orders", (string)null);
+                    b.ToTable("Orders");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderItem", b =>
@@ -893,7 +1080,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems", (string)null);
+                    b.ToTable("OrderItems");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Product", b =>
@@ -924,7 +1111,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Products", (string)null);
+                    b.ToTable("Products");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.SiteSetting", b =>
@@ -1168,7 +1355,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Testimonials", (string)null);
+                    b.ToTable("Testimonials");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.User", b =>
@@ -1214,7 +1401,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.HasIndex("Email")
                         .IsUnique();
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Athlete", b =>
@@ -1256,6 +1443,46 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("ConsentedByUser");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.GalleryAlbum", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.MediaAsset", "CoverMediaAsset")
+                        .WithMany("CoverForAlbums")
+                        .HasForeignKey("CoverMediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("CoverMediaAsset");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.GalleryAlbumMedia", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.GalleryAlbum", "GalleryAlbum")
+                        .WithMany("Media")
+                        .HasForeignKey("GalleryAlbumId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.MediaAsset", "MediaAsset")
+                        .WithMany("AlbumMedia")
+                        .HasForeignKey("MediaAssetId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("GalleryAlbum");
+
+                    b.Navigation("MediaAsset");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "UploadedByUser")
+                        .WithMany("UploadedMedia")
+                        .HasForeignKey("UploadedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("UploadedByUser");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
                 {
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "User")
@@ -1292,6 +1519,18 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("ConsentRecords");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.GalleryAlbum", b =>
+                {
+                    b.Navigation("Media");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>
+                {
+                    b.Navigation("AlbumMedia");
+
+                    b.Navigation("CoverForAlbums");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
                 {
                     b.Navigation("OrderItems");
@@ -1307,6 +1546,8 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("Athletes");
 
                     b.Navigation("Orders");
+
+                    b.Navigation("UploadedMedia");
                 });
 #pragma warning restore 612, 618
         }

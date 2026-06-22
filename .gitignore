@@ -12,6 +12,7 @@ coverage/
 coverage.*
 *.trx
 artifacts/
+apps/api/src/El1teSpr1ntTrack.Api/uploads/
 
 # Local databases
 *.mdf

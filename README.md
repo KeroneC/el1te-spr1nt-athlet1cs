@@ -14,9 +14,10 @@ Implemented:
 - Secure admin web login with an HttpOnly session cookie
 - Admin dashboard and complete management for announcements, events, coaches, sponsors, FAQs, content blocks, site settings, and contact submissions
 - Responsive public CMS website for home, about, programs, news, events, coaches, sponsors, FAQs, registration information, and contact submissions
-- Backend unit/integration tests and focused frontend validation, mutation-boundary, and error tests
+- Protected JPEG/PNG/WebP media library, reusable CMS image picker, gallery administration, and public gallery
+- Backend unit/integration tests, focused frontend tests, and a Playwright cross-stack media/gallery workflow
 
-Intentionally not implemented yet: media uploads, password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, live production infrastructure, and iOS code.
+Intentionally not implemented yet: Azure Blob storage, password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, live production infrastructure, and iOS code.
 
 ## Documentation
 
@@ -63,6 +64,7 @@ Open:
 - API readiness: `https://localhost:7171/health/ready`
 - Admin: `http://localhost:3000/admin`
 - Public website: `http://localhost:3000`
+- Public gallery: `http://localhost:3000/gallery`
 
 ## Validation
 
@@ -80,6 +82,7 @@ cd apps/web
 npm.cmd run lint
 npm.cmd run typecheck
 npm.cmd run test
+npm.cmd run test:e2e
 npm.cmd run build
 ```
 

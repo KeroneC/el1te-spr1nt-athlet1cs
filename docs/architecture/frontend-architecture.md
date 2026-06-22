@@ -1,5 +1,7 @@
 # Frontend Architecture
 
+The Phase 9 Admin media upload travels through a same-origin Next.js route, which reads the HttpOnly Admin session server-side and forwards multipart data to ASP.NET Core. Client JavaScript never receives the JWT. The reusable Media Picker keeps existing CMS URL contracts migration-safe while selecting library URLs. Public gallery pages remain Server Components.
+
 `apps/web` uses Next.js 15 App Router, React 19, strict TypeScript, Tailwind CSS, and npm. Pages and layouts are Server Components by default. Components use `"use client"` only for forms, dialogs, navigation state, and other browser interaction.
 
 ## Public Website Boundary

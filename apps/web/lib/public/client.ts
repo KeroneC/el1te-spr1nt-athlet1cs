@@ -10,9 +10,13 @@ import type {
   SiteSettings,
   Sponsor
 } from "./types";
+import type { GalleryAlbum, GalleryAlbumListItem } from "./types";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:5000";
-export const PUBLIC_REVALIDATE_SECONDS = 60;
+const configuredRevalidateSeconds = Number(process.env.PUBLIC_REVALIDATE_SECONDS ?? 60);
+export const PUBLIC_REVALIDATE_SECONDS = Number.isFinite(configuredRevalidateSeconds) && configuredRevalidateSeconds >= 0
+  ? configuredRevalidateSeconds
+  : 60;
 
 export class PublicApiError extends Error {
   constructor(public readonly status: number) {
@@ -54,6 +58,10 @@ export const getEvent = (slug: string) =>
 export const getCoaches = () => publicApiFetch<Coach[]>("/coaches");
 export const getSponsors = () => publicApiFetch<Sponsor[]>("/sponsors");
 export const getFaqs = () => publicApiFetch<Faq[]>("/faqs");
+export const getGalleryAlbums = (query = "") =>
+  publicApiFetch<PagedResult<GalleryAlbumListItem>>(`/gallery-albums${query ? `?${query}` : ""}`);
+export const getGalleryAlbum = (slug: string) =>
+  publicApiFetch<GalleryAlbum>(`/gallery-albums/${encodeURIComponent(slug)}`);
 
 export const fallbackSettings: SiteSettings = {
   clubName: "El1te Spr1nt Athlet1cs",
