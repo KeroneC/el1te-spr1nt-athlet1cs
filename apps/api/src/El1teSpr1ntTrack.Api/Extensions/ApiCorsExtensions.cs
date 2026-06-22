@@ -2,7 +2,7 @@ namespace El1teSpr1ntTrack.Api.Extensions;
 
 public static class ApiCorsExtensions
 {
-    public const string DevelopmentCorsPolicy = "DevelopmentCorsPolicy";
+    public const string ConfiguredCorsPolicy = "ConfiguredCorsPolicy";
 
     public static IServiceCollection AddApiCors(this IServiceCollection services, IConfiguration configuration)
     {
@@ -11,9 +11,8 @@ public static class ApiCorsExtensions
 
         services.AddCors(options =>
         {
-            options.AddPolicy(DevelopmentCorsPolicy, policy =>
+            options.AddPolicy(ConfiguredCorsPolicy, policy =>
             {
-                // TODO: Replace development origins with explicit production domains before launch.
                 policy
                     .WithOrigins(allowedOrigins)
                     .AllowAnyHeader()

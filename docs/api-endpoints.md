@@ -1,6 +1,6 @@
 # API Endpoints
 
-Health routes exist at `/health` and `/api/v1/health`. Authentication routes are implemented under `/api/auth`. Other feature routes remain planned under `/api/v1`.
+Liveness is available at `/health`; database readiness is available at `/health/ready`. The legacy descriptive route remains at `/api/v1/health`. Authentication routes are implemented under `/api/auth`. Public CMS routes live under `/api/public`, and protected CMS routes live under `/api/admin`.
 
 ## Auth
 
@@ -9,11 +9,9 @@ Implemented:
 - `POST /api/auth/register`
 - `POST /api/auth/login`
 
-Planned:
+- `GET /api/auth/me` (authenticated)
 
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `POST /api/auth/refresh`
+Token revocation, API logout, and refresh endpoints are not implemented. The web-only logout Route Handler clears the Next.js HttpOnly cookie.
 
 ### Register
 

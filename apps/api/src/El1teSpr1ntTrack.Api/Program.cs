@@ -1,6 +1,8 @@
 using System.Text.Json.Serialization;
 using El1teSpr1ntTrack.Api.Authorization;
+using El1teSpr1ntTrack.Api.Configuration;
 using El1teSpr1ntTrack.Api.Extensions;
+using El1teSpr1ntTrack.Api.Health;
 using El1teSpr1ntTrack.Api.Middleware;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Application.Services;
@@ -11,11 +13,14 @@ using El1teSpr1ntTrack.Infrastructure.Security;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+ProductionConfigurationValidator.Validate(builder.Configuration, builder.Environment);
 
 builder.Host.UseSerilog((context, _, configuration) =>
 {
@@ -58,7 +63,9 @@ builder.Services.AddSwaggerGen(options =>
         }
     });
 });
-builder.Services.AddHealthChecks();
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
 builder.Services.AddApiCors(builder.Configuration);
 
 builder.Services.AddScoped<IClock, SystemClock>();
@@ -118,11 +125,20 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseCors(ApiCorsExtensions.DevelopmentCorsPolicy);
+app.UseCors(ApiCorsExtensions.ConfiguredCorsPolicy);
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapHealthChecks("/health");
+app.MapHealthChecks("/health", new()
+{
+    Predicate = registration => !registration.Tags.Contains("ready"),
+    ResponseWriter = SafeHealthResponseWriter.WriteAsync
+});
+app.MapHealthChecks("/health/ready", new()
+{
+    Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = SafeHealthResponseWriter.WriteAsync
+});
 app.MapControllers();
 
 app.Run();
