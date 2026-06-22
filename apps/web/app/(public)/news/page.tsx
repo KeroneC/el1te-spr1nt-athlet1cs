@@ -1,0 +1,6 @@
+import type { Metadata } from "next";
+import { AnnouncementCard, EmptyState, PageHero, Pagination, PublicErrorState } from "@/components/public/ui";
+import { getAnnouncements } from "@/lib/public/client";
+import { buildAnnouncementQuery } from "@/lib/public/validation";
+export const metadata: Metadata = { title: "News", description: "Read the latest club announcements and updates." };
+export default async function NewsPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) { const params=await searchParams; const page=Math.max(1,Number(params.page)||1); try { const result=await getAnnouncements(buildAnnouncementQuery(page)); return <><PageHero eyebrow="News" title="Club announcements" summary="Important updates for athletes, families, and supporters." /><section className="content-section"><div className="site-container">{result.items.length ? <div className="card-grid">{result.items.map((item)=><AnnouncementCard key={item.slug} item={item} />)}</div> : <EmptyState title="No announcements" message="Published club updates will appear here." />}<Pagination page={result.page} totalPages={result.totalPages} pathname="/news" /></div></section></>; } catch { return <><PageHero title="Club announcements" /><div className="site-container content-section"><PublicErrorState /></div></>; } }

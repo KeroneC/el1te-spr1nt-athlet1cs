@@ -24,6 +24,8 @@ The dependency direction is Core <- Application <- Infrastructure/API. API is al
 | `app` | App Router pages, layouts, loading/error states, and Route Handlers | `app/admin/(protected)/layout.tsx`, `app/api/admin-session/login/route.ts` | Reusable domain-independent UI |
 | `components/admin` | Client and shared UI for the admin workspace | `admin-shell.tsx`, `announcement-form.tsx` | Secrets or direct database access |
 | `lib/admin` | Server API boundary, auth guard, safe errors, types, and validation | `server-api.ts`, `auth.ts`, `validation.ts` | Visual components |
+| `components/public` | Public navigation, footer, cards, states, and contact interaction | `site-header.tsx`, `ui.tsx`, `contact-form.tsx` | Admin tokens or database access |
+| `lib/public` | Anonymous public API boundary, DTO types, CMS keys, formatting, and validation | `client.ts`, `types.ts`, `content.ts` | Authenticated Admin behavior |
 | `tests` | Vitest coverage for frontend validation and safe error mapping | `admin-validation.test.ts`, `api-error.test.ts` | Backend authorization tests |
 | `public` | Static browser assets | `images/track-hero.png` | Private uploads or secrets |
 

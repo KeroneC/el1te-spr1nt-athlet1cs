@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "El1te Spr1nt Athlet1cs",
-  description: "A secure platform foundation for a nonprofit youth track club."
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  title: {
+    default: "El1te Spr1nt Athlet1cs",
+    template: "%s | El1te Spr1nt Athlet1cs"
+  },
+  description: "Youth track and field training, competition, and community."
 };
 
 export default function RootLayout({

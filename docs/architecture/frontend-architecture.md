@@ -2,6 +2,16 @@
 
 `apps/web` uses Next.js 15 App Router, React 19, strict TypeScript, Tailwind CSS, and npm. Pages and layouts are Server Components by default. Components use `"use client"` only for forms, dialogs, navigation state, and other browser interaction.
 
+## Public Website Boundary
+
+The `(public)` route group owns the shared public header, footer, loading, error, and not-found experiences without affecting public URLs. Public pages read anonymous DTOs through `lib/public/client.ts`; they never reuse authenticated Admin DTOs or JWT helpers. Server Components perform CMS reads with a 60-second `revalidate` window. This means a published Admin change may take up to about one minute to appear publicly.
+
+Browser interaction is limited to the mobile menu and contact form. The contact form posts to the same-origin `app/api/public/contact/route.ts` handler, which forwards the exact public request contract with `cache: "no-store"`, preserves safe field errors, and suppresses internal API failures. Arbitrary optional CMS image URLs use normal image elements until a managed media host and upload workflow exist; local hero media continues through Next Image.
+
+Content Block keys are centralized in `lib/public/content.ts`. Pages omit missing unpublished blocks and do not expose raw keys. Public list/detail DTOs preserve API publication, expiration, active-state, ordering, and coach-email privacy rules.
+
+Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, and `/contact`.
+
 ## Protected Data Boundary
 
 `app/admin/(protected)/layout.tsx` calls `requireAdminUser`. Server-rendered admin pages load data through `adminApiFetch` with `cache: "no-store"`. That helper reads the HttpOnly `el1te_admin_session` cookie on the server and forwards its JWT to the ASP.NET Core API. Client Components never receive or inspect the token.

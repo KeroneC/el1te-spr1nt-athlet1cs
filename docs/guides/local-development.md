@@ -66,7 +66,7 @@ npm.cmd install
 cd ../..
 ```
 
-`API_BASE_URL` is server-only and defaults to `https://localhost:7171`. `NEXT_PUBLIC_API_BASE_URL` is reserved for public browser API use. Trust the ASP.NET development certificate:
+`API_BASE_URL` is server-only and defaults to `https://localhost:7171`. Both public Server Components and protected Admin requests use this server boundary; browser JavaScript does not need a public API URL. Trust the ASP.NET development certificate:
 
 ```powershell
 dotnet dev-certs https --trust
@@ -95,9 +95,12 @@ Useful URLs:
 - API health: `https://localhost:7171/health`
 - API database readiness: `https://localhost:7171/health/ready`
 - Public API example: `https://localhost:7171/api/public/announcements`
+- Public website: `http://localhost:3000`
 - Admin login: `http://localhost:3000/admin`
 
 A `404` at the API root is expected.
+
+Public CMS reads revalidate every 60 seconds. After publishing an Admin change, allow up to about one minute for an already cached public page to refresh. Contact form submissions are never cached.
 
 ## Safe Verification
 

@@ -24,4 +24,7 @@ request() {
 }
 
 request "/" "El1te Spr1nt Athlet1cs"
+request "/news" "Club announcements"
+request "/events" "Events and important dates"
+request "/registration" "Registration information"
 request "/admin/login" "Admin sign in"

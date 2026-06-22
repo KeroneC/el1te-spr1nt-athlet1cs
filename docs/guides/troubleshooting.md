@@ -25,6 +25,9 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Coach email unexpectedly public/private | `IsEmailPublic` and Email do not match the intended state | Inspect both fields and the public coaches response | Provide a valid email and enable public visibility explicitly, or keep the toggle off |
 | Draft unexpectedly public | Publication/date data or public predicate changed | Compare record flags/dates and `PublicCmsVisibility` | Restore published/date rules and add a regression test |
 | Published item missing publicly | Future publish date, expired date, inactive state, or wrong slug | Compare UTC dates and public collection filters | Correct lifecycle values; admin visibility alone does not imply public visibility |
+| Admin change is not visible immediately | Public page still has a valid 60-second cache entry | Wait one minute and refresh; compare the public API response | Allow the cache window; do not disable public caching or Admin `no-store` behavior |
+| Public site shows a safe unavailable state | API stopped, wrong `API_BASE_URL`, or a malformed response | Check API health and the Next.js server log | Start the API, correct the server-only URL, and restart Next.js after environment changes |
+| Contact form cannot submit | API unavailable or backend validation rejected a field | Check the safe form status and API health; do not expose exception details | Correct highlighted fields or restore API connectivity; contact POSTs are intentionally uncached |
 
 Additional clues:
 
