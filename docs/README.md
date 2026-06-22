@@ -1,6 +1,6 @@
 # El1te Spr1nt Athlet1cs Documentation
 
-This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 web application, a protected administration workspace, and complete announcement management. It is intentionally still a foundation: registration workflows, payments, documents, additional admin screens, parent and athlete portals, media uploads, and mobile clients are not implemented.
+This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 web application, and a protected administration workspace for all core CMS resources. Public website pages, registration workflows, payments, documents, parent and athlete portals, media uploads, and mobile clients are not implemented.
 
 ## Suggested Reading Order
 
@@ -35,6 +35,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Admin CMS API](learning-notes/admin-cms-api.md)
 - [Admin frontend authentication](learning-notes/admin-frontend-authentication.md)
 - [Announcements end to end](learning-notes/announcements-end-to-end.md)
+- [Core CMS admin frontend](learning-notes/core-cms-admin-frontend.md)
 - [GitHub Actions CI](learning-notes/github-actions-ci.md)
 - [EF Core deployment artifacts](learning-notes/ef-core-deployment-artifacts.md)
 - [Bicep infrastructure](learning-notes/bicep-infrastructure.md)
@@ -57,6 +58,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Local development](guides/local-development.md)
 - [Authentication testing](guides/authentication-testing.md)
 - [Announcements testing](guides/announcements-testing.md)
+- [Core CMS admin testing](guides/core-cms-admin-testing.md)
 - [EF Core migrations](guides/ef-core-migrations.md)
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)
