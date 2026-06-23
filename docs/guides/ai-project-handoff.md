@@ -4,7 +4,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 
 ## Current Baseline
 
-- Phase 8 is merged into `main`. Phase 9 is implemented on `feature/media-library-gallery` and has not yet been represented accurately in the older prompt-writing conversation.
+- Phase 9 is merged into `main`. It may not yet be represented accurately in the older prompt-writing conversation.
 - The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, inert Azure/Bicep preparation in `infra`, and validation tooling in `scripts`.
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.
 - The Admin manages announcements, events, coaches, sponsors, FAQs, content blocks, site settings, contact submissions, reusable media, and gallery albums.
@@ -37,6 +37,7 @@ Manual end-to-end testing after implementation found and fixed three integration
 - Frontend: 40 Vitest tests, lint, strict typecheck, and standalone production build pass.
 - Playwright now exercises the real critical loop across both applications: Admin sign-in, media upload, published album creation, image assignment, and public gallery verification. It uses dedicated ports, `El1teSpr1ntTrack_E2E`, test-only credentials, isolated ignored media storage, and cleanup.
 - GitHub Actions includes the same browser workflow on Windows with LocalDB and uploads failure artifacts.
+- CI artifact helper scripts are tracked under `scripts/artifacts`; runtime build outputs remain ignored under root-level `artifacts`.
 - Documentation validation and secret scanning remain CI requirements.
 
 ## Deferred Work
@@ -51,13 +52,13 @@ Manual end-to-end testing after implementation found and fixed three integration
 ```text
 Repository reconciliation update for El1te Spr1nt Athlet1cs, post-Phase 9:
 
-Treat the repository, migrations, ADRs, docs, and passing tests as the source of truth. Phase 8 is merged into main. Phase 9 is implemented on feature/media-library-gallery.
+Treat the repository, migrations, ADRs, docs, and passing tests as the source of truth. Phase 9 is merged into main.
 
 The platform now has a protected reusable media library and gallery administration plus public gallery list/detail pages. Phase 9 added MediaAsset, GalleryAlbum, GalleryAlbumMedia, EF configurations, migration AddMediaLibraryAndGallery, an IMediaStorage abstraction with ignored local Development storage, validated JPEG/PNG/WebP uploads up to 10 MB, reusable CMS Media Pickers, protected Admin APIs/routes, public gallery APIs/routes, reference-safe deletion, publication filtering, and album-specific image metadata. Azure Blob Storage is not implemented or provisioned.
 
 Manual end-to-end testing found and fixed: (1) local API_BASE_URL/profile alignment, (2) missing upload confirmation and an async React form-reset crash, and (3) an EF Core concurrency failure when adding media to an album, fixed by explicitly inserting GalleryAlbumMedia and covered by a database-backed regression test.
 
-Current automated validation is 38 backend unit tests, 28 backend integration tests, and 40 frontend Vitest tests, plus a Playwright cross-stack workflow for Admin sign-in -> upload -> album creation/publish -> image assignment -> public gallery verification. Release build, EF model check, API publish, migration bundle, frontend lint/typecheck/build, docs validation, and secret scanning pass.
+Current automated validation is 38 backend unit tests, 28 backend integration tests, and 40 frontend Vitest tests, plus a Playwright cross-stack workflow for Admin sign-in -> upload -> album creation/publish -> image assignment -> public gallery verification. Release build, EF model check, API publish, migration bundle, frontend lint/typecheck/build, docs validation, and secret scanning pass. CI artifact helper scripts are tracked under scripts/artifacts while runtime build outputs remain ignored.
 
 The Admin is functionally mature for the present scope. Future Admin work should be incremental UX/UI fine-tuning informed by use and board feedback, not a rebuild. Public UX/UI refinement can be scoped separately.
 
