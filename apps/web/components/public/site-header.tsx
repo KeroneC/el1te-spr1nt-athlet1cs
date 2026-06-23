@@ -10,6 +10,7 @@ const links = [
   ["/programs", "Programs"],
   ["/news", "News"],
   ["/events", "Events"],
+  ["/gallery", "Gallery"],
   ["/coaches", "Coaches"],
   ["/sponsors", "Sponsors"],
   ["/faqs", "FAQs"],

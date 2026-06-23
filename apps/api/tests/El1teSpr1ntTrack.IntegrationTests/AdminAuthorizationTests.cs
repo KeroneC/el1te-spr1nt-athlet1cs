@@ -60,7 +60,8 @@ public sealed class AdminAuthorizationTests
             typeof(AdminSiteSettingsController), typeof(AdminContentBlocksController),
             typeof(AdminAnnouncementsController), typeof(AdminEventsController),
             typeof(AdminCoachesController), typeof(AdminSponsorsController),
-            typeof(AdminFaqsController), typeof(AdminContactSubmissionsController)
+            typeof(AdminFaqsController), typeof(AdminContactSubmissionsController),
+            typeof(AdminMediaController), typeof(AdminGalleryAlbumsController)
         ];
 
         foreach (var type in controllerTypes)

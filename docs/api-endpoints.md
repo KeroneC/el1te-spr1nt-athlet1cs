@@ -1,5 +1,15 @@
 # API Endpoints
 
+## Phase 9 Media and Gallery
+
+- Admin media: `GET/POST /api/admin/media`, `GET/PUT/DELETE /api/admin/media/{id}`
+- Admin albums: `GET/POST /api/admin/gallery-albums`, `GET/PUT/DELETE /api/admin/gallery-albums/{id}`
+- Album images: `POST /api/admin/gallery-albums/{id}/media`, `PUT/DELETE /api/admin/gallery-albums/{id}/media/{albumMediaId}`, `PUT /api/admin/gallery-albums/{id}/media/order`
+- Public albums: `GET /api/public/gallery-albums`, `GET /api/public/gallery-albums/{slug}`
+- Active image bytes: `GET /media/{id}`
+
+All Admin routes use the existing `CmsAdmin` policy. Upload is multipart form data; physical paths and storage keys are never returned.
+
 Liveness is available at `/health`; database readiness is available at `/health/ready`. The legacy descriptive route remains at `/api/v1/health`. Authentication routes are implemented under `/api/auth`. Public CMS routes live under `/api/public`, and protected CMS routes live under `/api/admin`.
 
 ## Auth

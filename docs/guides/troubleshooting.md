@@ -1,5 +1,13 @@
 # Troubleshooting
 
+## Uploaded Image Does Not Load
+
+Confirm `MediaStorage__PublicBaseUrl` matches the API profile currently running and restart the API after changing it. Apply `AddMediaLibraryAndGallery` if media requests fail because tables are missing. A `404` from `/media/{id}` also means the asset is inactive, missing, or its local file was removed.
+
+## Upload Is Rejected
+
+The file must be a decodable JPEG, PNG, or WebP no larger than 10 MB by default. Renaming an extension does not change the encoded format. Check the safe validation response in Admin; parser details and physical paths are intentionally suppressed.
+
 Work from the symptom to the boundary that failed. Do not disable security checks to make local setup pass.
 
 | Symptom | Likely cause | Verify | Fix |

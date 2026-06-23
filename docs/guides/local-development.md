@@ -102,6 +102,12 @@ A `404` at the API root is expected.
 
 Public CMS reads revalidate every 60 seconds. After publishing an Admin change, allow up to about one minute for an already cached public page to refresh. Contact form submissions are never cached.
 
+## Local Media Storage
+
+Phase 9 stores development/demo image bytes beneath the API content root in `uploads`; Git ignores this directory. Apply the latest migration before testing Media or Gallery. The defaults allow JPEG, PNG, and WebP files up to 10 MB and expose active bytes at `/media/{id}`.
+
+Override defaults with `MediaStorage__LocalRoot`, `MediaStorage__PublicBaseUrl`, and `MediaStorage__MaxFileSizeBytes`. Use `http://localhost:5126` when launching the HTTP profile or `https://localhost:7171` for the HTTPS profile. Restart the API after changing configuration. Local storage is not durable production storage; a future Azure Blob provider will replace it through `IMediaStorage`.
+
 ## Safe Verification
 
 1. Confirm `/health` and `/health/ready` return healthy and Swagger loads.
@@ -112,3 +118,15 @@ Public CMS reads revalidate every 60 seconds. After publishing an Admin change, 
 6. Log out and stop both terminals with `Ctrl+C`.
 
 Run all checks with the commands in [testing strategy](../architecture/testing-strategy.md).
+
+## Run the End-to-End Workflow
+
+Stop any applications using ports `3100` or `5127`, then run from the web project:
+
+```powershell
+cd apps/web
+npx.cmd playwright install chromium
+npm.cmd run test:e2e
+```
+
+Playwright starts and stops both applications. It migrates only `El1teSpr1ntTrack_E2E`, seeds a test-only SuperAdmin, and stores temporary images under ignored `artifacts/e2e`. Your User Secrets, `El1teSpr1ntTrack_Dev` database, and normal ports are not used.

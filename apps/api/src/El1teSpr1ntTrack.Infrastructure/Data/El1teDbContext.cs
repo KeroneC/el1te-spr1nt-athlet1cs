@@ -35,6 +35,12 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<ContactSubmission> ContactSubmissions => Set<ContactSubmission>();
 
+    public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
+
+    public DbSet<GalleryAlbum> GalleryAlbums => Set<GalleryAlbum>();
+
+    public DbSet<GalleryAlbumMedia> GalleryAlbumMedia => Set<GalleryAlbumMedia>();
+
     public DbSet<FeedbackSubmission> FeedbackSubmissions => Set<FeedbackSubmission>();
 
     public DbSet<ConsentRecord> ConsentRecords => Set<ConsentRecord>();

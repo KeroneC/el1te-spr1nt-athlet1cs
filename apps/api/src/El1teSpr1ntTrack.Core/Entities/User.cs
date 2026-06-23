@@ -19,4 +19,6 @@ public sealed class User : EntityBase
     public ICollection<Athlete> Athletes { get; set; } = new List<Athlete>();
 
     public ICollection<Order> Orders { get; set; } = new List<Order>();
+
+    public ICollection<MediaAsset> UploadedMedia { get; set; } = new List<MediaAsset>();
 }

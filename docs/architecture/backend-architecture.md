@@ -1,5 +1,7 @@
 # Backend Architecture
 
+Phase 9 keeps media metadata in SQL while image bytes live behind application-level `IMediaStorage`. `MediaService` validates lifecycle rules, `SkiaImageInspector` checks declared type, extension, encoded format, dimensions, and full decodability, and `LocalMediaStorage` owns generated path-safe keys. Controllers never write files directly.
+
 The backend is a layered modular monolith. Its project references enforce useful separation, although some contracts and DTOs live in Core, so the documentation deliberately avoids claiming a textbook form of Clean Architecture.
 
 ```mermaid
