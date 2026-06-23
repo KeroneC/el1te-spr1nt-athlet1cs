@@ -12,6 +12,8 @@ coverage/
 coverage.*
 *.trx
 artifacts/
+!scripts/artifacts/
+!scripts/artifacts/**
 apps/api/src/El1teSpr1ntTrack.Api/uploads/
 
 # Local databases
