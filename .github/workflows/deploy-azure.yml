@@ -71,7 +71,7 @@ jobs:
           fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Authenticate to Azure with OIDC
         uses: azure/login@v2
