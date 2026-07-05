@@ -4,12 +4,62 @@ This is the reconciliation point between the repository and any separate ChatGPT
 
 ## Current Baseline
 
-- Phase 9 is merged into `main`. It may not yet be represented accurately in the older prompt-writing conversation.
+- Phase 9 is merged into `main`. Phase 10 is in progress on `feature/public-site-visual-polish` until this feature branch is merged.
 - The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, inert Azure/Bicep preparation in `infra`, and validation tooling in `scripts`.
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.
 - The Admin manages announcements, events, coaches, sponsors, FAQs, content blocks, site settings, contact submissions, reusable media, and gallery albums.
-- The public website includes home, about, programs, news, events, coaches, sponsors, FAQs, registration information, contact, gallery list, and gallery detail routes.
+- The public website includes home, about, programs, news, events, coaches, sponsors, FAQs, registration information, forms, scholarship, Hall of Fame, team, contact, gallery list, and gallery detail routes.
 - The Admin is functionally mature for the current scope. Future Admin work should be targeted UX/UI fine-tuning based on use and board feedback, not a ground-up redesign.
+
+## Phase 10 Branch
+
+- Branch: `feature/public-site-visual-polish`
+- Source branch: updated `main`
+- Scope: public website visual polish, current-site parity, logo/favicon incorporation, Registration Hub, downloadable forms, and docs.
+- Backend scope: no backend changes expected. Online registration, payments, Azure provisioning, Azure Blob Storage, portals, waiver workflows, private documents, and iOS remain deferred.
+
+## Phase 10 Public Website Work
+
+- Added shared public-site constants in `apps/web/lib/public/site.ts` for brand assets, slogan, shop/social/contact links, footer links, forms, team values, registration steps, and Hall of Fame static content.
+- Added or polished parity routes:
+  - `/forms`
+  - `/scholarship`
+  - `/hall-of-fame`
+  - `/rgnhof` redirecting to `/hall-of-fame`
+  - `/team`
+- Polished public navigation, footer, homepage, Registration Hub, events, gallery detail, sponsors, and contact.
+- Correction pass: inspected the local Figma-generated project at `C:\Users\Kerone Creary\source\repos\Youth Sports Website Concept` after the first Phase 10 pass did not sufficiently reflect the design reference.
+- Figma project findings: Vite 6 + React SPA, Tailwind 4-style CSS, shadcn-style UI files, custom `Navbar`, `Footer`, and page components. It used red `#dc2626`, black `#171717`, muted gray `#f4f4f5`, Oswald display type, Inter body type, a black sticky nav with a thick red rule, skewed red/black buttons, black page heroes with red highlighted words, red skew section marks, event date slabs, document download rows, grayscale-to-color gallery/coach image hovers, and a black footer with red section markers. It did not include local logo/favicon image assets; it used a generated Zap icon mark and remote sports images.
+- Adopted Figma design elements in the real app: black/red public header shell, skewed brand/CTA treatment, Oswald/Inter typography via CSS, angular hero badge/buttons, Figma-style public page heroes, red section rules, muted program cards with red bottom borders, dark featured announcement card styling, event date-slab list cards, registration/forms download rows, gallery hover overlays, grayscale coach image hover treatment, sponsor tier panels, contact form panel styling, and footer red skew heading marks.
+- Refinement pass after visual review: tightened the homepage closer to the Figma reference by splitting `Greatness` and `Begins Here` into white/red display lines, shortening the first viewport so the Programs section peeks in, moving Programs directly after the hero, adding active red navigation state, removing the extra hero logo, and adding CSS motion patterns for hero reveal, badge snap-in, slow hero-image drift, button shine, card lift, download-row slide, event-row slide, gallery zoom overlays, and coach grayscale-to-color hover.
+- Kept the real El1te logo and favicon assets already placed in the app because the generated project did not contain real logo/favicon files.
+- Preserved CMS/public API behavior for existing CMS-driven sections. Static parity pages are intentionally simple and easy to move into CMS later.
+
+## Phase 10 Assets
+
+- Logo assets:
+  - `apps/web/public/brand/el1te-logo-white.png`
+  - `apps/web/public/brand/el1te-mark-black.png`
+- Favicon:
+  - `apps/web/public/favicon.png`
+- Downloadable forms:
+  - `apps/web/public/forms/athlete-registration-form.pdf`
+  - `apps/web/public/forms/liability-waiver.pdf`
+  - `apps/web/public/forms/photo-consent-form.pdf`
+  - `apps/web/public/forms/scholarship-form.pdf`
+
+## Phase 10 Validation
+
+Run from `apps/web` using `npm.cmd` on Windows PowerShell if `npm.ps1` is blocked by execution policy.
+
+- `npm.cmd install`: passed; dependencies were already up to date. npm reported existing moderate audit warnings and pending allow-scripts review for install-script packages.
+- `npm.cmd run lint`: passed after the correction pass.
+- `npm.cmd run typecheck`: passed after the correction pass.
+- `npm.cmd test`: passed after the correction pass, 5 files and 40 tests.
+- `npm.cmd run build`: passed after the correction pass. The API was not running, so build output logged expected `ECONNREFUSED` fetch messages while public fallbacks rendered successfully.
+- `powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts/validation/validate-docs.ps1`: passed for 56 Markdown files.
+- Browser smoke check on a clean `next dev -p 3001`: passed after the correction pass for `/`, `/registration`, `/forms`, `/scholarship`, `/hall-of-fame`, `/team`, `/coaches`, `/gallery`, `/events`, `/sponsors`, and `/contact` at 390px and 1440px widths. Each route returned 200, rendered one `h1`, and had no horizontal overflow.
+- Backend validation: not required because Phase 10 did not change backend code.
 
 ## Phase 9 Delivered
 
@@ -43,7 +93,7 @@ Manual end-to-end testing after implementation found and fixed three integration
 ## Deferred Work
 
 - Azure Blob media storage, production resource provisioning, deployment, and DNS changes.
-- Parent and athlete portals, online athlete registration, payments, waivers, volunteer workflows, attendance, meet entry, messaging, private documents, and iOS.
+- Parent and athlete portals, online athlete registration, payments, digital waivers, volunteer workflows, attendance, meet entry, messaging, private documents, and iOS.
 - Rich text, advanced image transformations, broad browser coverage, accessibility automation, visual regression, and load testing.
 - UX/UI polish is expected later, especially on the public experience. Keep Admin changes focused on observed usability issues and consistency.
 

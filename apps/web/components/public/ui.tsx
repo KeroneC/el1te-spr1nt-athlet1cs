@@ -3,8 +3,8 @@ import Link from "next/link";
 import { formatDate, formatEventDate, labelEnum } from "@/lib/public/format";
 import type { AnnouncementListItem, ContentBlock, EventListItem } from "@/lib/public/types";
 
-export function PageHero({ eyebrow, title, summary }: { eyebrow?: string; title: string; summary?: string | null }) {
-  return <section className="page-hero"><div className="site-container narrow">{eyebrow && <p className="eyebrow">{eyebrow}</p>}<h1>{title}</h1>{summary && <p>{summary}</p>}</div></section>;
+export function PageHero({ eyebrow, title, accent, summary }: { eyebrow?: string; title: string; accent?: string; summary?: string | null }) {
+  return <section className="page-hero"><div className="site-container narrow">{eyebrow && <p className="eyebrow light">{eyebrow}</p>}<h1>{title}{accent && <> <span>{accent}</span></>}</h1><div className="hero-rule" aria-hidden="true" />{summary && <p>{summary}</p>}</div></section>;
 }
 
 export function ContentSection({ block, tone = "light" }: { block: ContentBlock; tone?: "light" | "muted" | "dark" }) {
@@ -20,11 +20,14 @@ export function PublicErrorState() {
 }
 
 export function AnnouncementCard({ item }: { item: AnnouncementListItem }) {
-  return <article className="content-card"><div className="card-accent" />{item.isFeatured && <span className="tag">Featured</span>}<p className="card-meta">{formatDate(item.publishDateUtc)}</p><h3><Link href={`/news/${item.slug}`}>{item.title}</Link></h3><p>{item.summary}</p><Link className="text-link" href={`/news/${item.slug}`}>Read update<ArrowRight size={16} aria-hidden="true" /></Link></article>;
+  return <article className={item.isFeatured ? "content-card announcement-card featured" : "content-card announcement-card"}><div className="card-accent" />{item.isFeatured && <span className="tag">Featured</span>}<p className="card-meta">{formatDate(item.publishDateUtc)}</p><h3><Link href={`/news/${item.slug}`}>{item.title}</Link></h3><p>{item.summary}</p><Link className="text-link" href={`/news/${item.slug}`}>Read update<ArrowRight size={16} aria-hidden="true" /></Link></article>;
 }
 
 export function EventCard({ item }: { item: EventListItem }) {
-  return <article className="content-card event-card"><div className="event-icon"><CalendarDays aria-hidden="true" /></div><span className="tag">{labelEnum(item.eventType)}</span><h3><Link href={`/events/${item.slug}`}>{item.title}</Link></h3><p className="card-meta">{formatEventDate(item.startDateTimeUtc, item.endDateTimeUtc)}</p><p className="location"><MapPin size={16} aria-hidden="true" />{item.locationName}</p><Link className="text-link" href={`/events/${item.slug}`}>Event details<ArrowRight size={16} aria-hidden="true" /></Link></article>;
+  const startDate = new Date(item.startDateTimeUtc);
+  const month = Number.isNaN(startDate.valueOf()) ? "TBD" : startDate.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
+  const day = Number.isNaN(startDate.valueOf()) ? "" : startDate.toLocaleString("en-US", { day: "2-digit", timeZone: "UTC" });
+  return <article className="event-list-card"><div className="event-date-block"><span>{month}</span><strong>{day}</strong></div><div className="event-list-body"><span className="tag">{labelEnum(item.eventType)}</span><h3><Link href={`/events/${item.slug}`}>{item.title}</Link></h3><p className="card-meta"><CalendarDays size={16} aria-hidden="true" />{formatEventDate(item.startDateTimeUtc, item.endDateTimeUtc)}</p><p className="location"><MapPin size={16} aria-hidden="true" />{item.locationName}</p></div><div className="event-list-action"><Link className="text-link" href={`/events/${item.slug}`}>Details<ArrowRight size={16} aria-hidden="true" /></Link></div></article>;
 }
 
 export function Pagination({ page, totalPages, pathname, params = {} }: { page: number; totalPages: number; pathname: string; params?: Record<string, string | undefined> }) {

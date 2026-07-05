@@ -11,6 +11,7 @@ import type {
   Sponsor
 } from "./types";
 import type { GalleryAlbum, GalleryAlbumListItem } from "./types";
+import { BRAND } from "./site";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:5000";
 const configuredRevalidateSeconds = Number(process.env.PUBLIC_REVALIDATE_SECONDS ?? 60);
@@ -64,19 +65,19 @@ export const getGalleryAlbum = (slug: string) =>
   publicApiFetch<GalleryAlbum>(`/gallery-albums/${encodeURIComponent(slug)}`);
 
 export const fallbackSettings: SiteSettings = {
-  clubName: "El1te Spr1nt Athlet1cs",
-  slogan: "Youth track and field",
-  contactEmail: "",
-  phoneNumber: null,
+  clubName: BRAND.name,
+  slogan: BRAND.slogan,
+  contactEmail: BRAND.contactEmail,
+  phoneNumber: BRAND.contactPhone,
   addressLine1: null,
   addressLine2: null,
   city: null,
   state: null,
   zipCode: null,
-  facebookUrl: null,
-  instagramUrl: null,
+  facebookUrl: BRAND.facebookUrl,
+  instagramUrl: BRAND.instagramUrl,
   youTubeUrl: null,
-  primaryCtaText: "Registration",
+  primaryCtaText: "Registration Info",
   primaryCtaUrl: "/registration",
   secondaryCtaText: "Contact Us",
   secondaryCtaUrl: "/contact",

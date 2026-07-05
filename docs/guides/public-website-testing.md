@@ -31,6 +31,24 @@ Start the API and web app using [Local development](local-development.md). Open 
 4. Stop the API, retry, and confirm a safe retryable error with no internal details.
 5. Edit `registration.intro`, confirm `/registration` updates within the cache window, and confirm there is no athlete registration form, payment, waiver, or account flow.
 
+## Phase 10 Public Parity Routes
+
+1. Confirm the header logo, mobile navigation, Registration CTA, Shop external link, footer links, and social links render on desktop and mobile.
+2. Open `/forms` and confirm all available PDFs download from `apps/web/public/forms`.
+3. Open `/scholarship` and confirm the BVN scholarship copy is respectful, links the scholarship form, and does not invent detailed criteria beyond the form.
+4. Open `/hall-of-fame` and confirm the RGN Hall of Fame content renders; open `/rgnhof` and confirm it redirects.
+5. Open `/team` and confirm it describes team identity without publishing a private athlete roster.
+6. Confirm `/registration` remains a Registration Hub with downloads/contact guidance only, not an online submission workflow.
+
+## Phase 10 Figma Correction Pass
+
+1. Compare the running public site against `C:\Users\Kerone Creary\source\repos\Youth Sports Website Concept`.
+2. Confirm the public header uses the Figma-inspired black shell, thick red rule, skewed brand block, uppercase nav, Shop link, and red Registration CTA while keeping the real El1te logo.
+3. Confirm the homepage uses the Figma-style dark track hero, red skew badge, huge uppercase display headline, and skewed CTA buttons.
+4. Confirm public page headers use the black hero, red highlighted title word, and skewed red underline.
+5. Confirm events, forms, gallery, coaches, sponsors, and contact use the adapted Figma patterns: date slabs, document rows, hover overlays, grayscale image cards, tier panels, and muted contact form panel.
+6. Confirm these visual changes do not alter CMS/API contracts, Admin routes, online registration scope, or deferred payment/Azure/portal work.
+
 ## Responsive and Accessibility Pass
 
-Check all primary routes around 375, 430, 768, 1280, and 1536 CSS pixels. Verify navigation, hero text, cards, filters, long copy, contact fields, sponsor logos, coach fallbacks, and footer do not overlap or scroll horizontally. Keyboard through the skip link, mobile menu, navigation, FAQ disclosures, filters, form fields, and CTAs. Confirm visible focus and one `h1` per page.
+Check all primary routes around 375, 430, 768, 1280, and 1536 CSS pixels. Verify navigation, hero text, cards, filters, long copy, contact fields, sponsor logos, coach fallbacks, form cards, Hall of Fame cards, and footer do not overlap or scroll horizontally. Keyboard through the skip link, mobile menu, navigation, FAQ disclosures, filters, form fields, download links, and CTAs. Confirm visible focus and one `h1` per page.
