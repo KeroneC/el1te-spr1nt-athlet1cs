@@ -12,7 +12,9 @@ Browser interaction is limited to the mobile menu and contact form. The contact 
 
 Content Block keys are centralized in `lib/public/content.ts`. Pages omit missing unpublished blocks and do not expose raw keys. Public list/detail DTOs preserve API publication, expiration, active-state, ordering, and coach-email privacy rules.
 
-Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, and `/contact`.
+Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, `/forms`, `/scholarship`, `/hall-of-fame`, `/rgnhof` redirect, `/team`, `/contact`, `/gallery`, and `/gallery/[slug]`.
+
+Phase 10 keeps the Registration Hub frontend-only. The public site links downloadable PDFs under `apps/web/public/forms` and asks families to contact the club instead of collecting athlete details, proof of age, medical information, waivers, payments, or private documents online. Current-site parity pages that do not yet have CMS modules use structured static content in Server Components so they can be converted later without changing the public route shape.
 
 ## Protected Data Boundary
 
