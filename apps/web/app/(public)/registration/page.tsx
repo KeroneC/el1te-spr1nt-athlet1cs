@@ -39,6 +39,7 @@ export default async function RegistrationPage() {
               <li>Do not email sensitive medical details unless club staff has asked for them through the appropriate process.</li>
             </ul>
             <Link className="button button-primary" href="/contact">Ask a registration question<Mail size={17} aria-hidden="true" /></Link>
+            <Link className="text-link registration-faq-link" href="/faqs">Read frequently asked questions<ArrowRight size={17} aria-hidden="true" /></Link>
           </aside>
         </div>
       </section>
