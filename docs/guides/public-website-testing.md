@@ -20,8 +20,9 @@ Start the API and web app using [Local development](local-development.md). Open 
 
 1. Create an active coach with a private email and confirm the email is omitted on `/coaches`.
 2. Enable public email and confirm it appears, then deactivate and confirm the coach disappears.
-3. Verify active sponsors are tier-ordered, missing logos use text, and external links open safely.
-4. Verify FAQ category groups and keyboard-operable disclosure controls; deactivate a test FAQ and confirm it disappears.
+3. Verify active sponsors are policy-tiered, missing logos use text, and external links open safely. Confirm Gold/Silver/Bronze use medal treatments, Platinum uses black/red, Community uses neutral/red, and Other remains neutral.
+4. Confirm the homepage preview prioritizes Gold sponsors, renders configured logos, and falls back to sponsor names without broken images.
+5. Verify FAQs are linked from primary navigation and the Registration Hub. Check category groups and keyboard-operable disclosure controls; deactivate a test FAQ and confirm it disappears.
 
 ## Contact and Registration
 
@@ -33,10 +34,10 @@ Start the API and web app using [Local development](local-development.md). Open 
 
 ## Phase 10 Public Parity Routes
 
-1. Confirm the header logo, mobile navigation, Registration CTA, Shop external link, footer links, and social links render on desktop and mobile.
+1. Confirm the full white header logo, simplified navigation, direct FAQ link, Registration CTA, Shop external link, footer links, and social links render on desktop and mobile.
 2. Open `/forms` and confirm all available PDFs download from `apps/web/public/forms`.
 3. Open `/scholarship` and confirm the BVN scholarship copy is respectful, links the scholarship form, and does not invent detailed criteria beyond the form.
-4. Open `/hall-of-fame` and confirm the RGN Hall of Fame content renders; open `/rgnhof` and confirm it redirects.
+4. Open `/hall-of-fame` and confirm the local RGN crest, Roland George Newton dedication, Dani Prunzik and Kaitlyn Eger photographs, meaningful alt text, and non-clickable inductee profiles render; open `/rgnhof` and confirm it redirects.
 5. Open `/team` and confirm it describes team identity without publishing a private athlete roster.
 6. Confirm `/registration` remains a Registration Hub with downloads/contact guidance only, not an online submission workflow.
 
@@ -52,3 +53,5 @@ Start the API and web app using [Local development](local-development.md). Open 
 ## Responsive and Accessibility Pass
 
 Check all primary routes around 375, 430, 768, 1280, and 1536 CSS pixels. Verify navigation, hero text, cards, filters, long copy, contact fields, sponsor logos, coach fallbacks, form cards, Hall of Fame cards, and footer do not overlap or scroll horizontally. Keyboard through the skip link, mobile menu, navigation, FAQ disclosures, filters, form fields, download links, and CTAs. Confirm visible focus and one `h1` per page.
+
+On the homepage, confirm the black-on-red hero mark, white club name, and three red numeral `1`s remain legible at every breakpoint. Confirm the mission is a left-aligned vertical stack, shared text links use brand red, decorative green is absent, and semantic form-success green remains available.

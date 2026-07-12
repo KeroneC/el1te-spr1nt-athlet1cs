@@ -23,11 +23,11 @@ export function AnnouncementCard({ item }: { item: AnnouncementListItem }) {
   return <article className={item.isFeatured ? "content-card announcement-card featured" : "content-card announcement-card"}><div className="card-accent" />{item.isFeatured && <span className="tag">Featured</span>}<p className="card-meta">{formatDate(item.publishDateUtc)}</p><h3><Link href={`/news/${item.slug}`}>{item.title}</Link></h3><p>{item.summary}</p><Link className="text-link" href={`/news/${item.slug}`}>Read update<ArrowRight size={16} aria-hidden="true" /></Link></article>;
 }
 
-export function EventCard({ item }: { item: EventListItem }) {
+export function EventCard({ item, variant = "list" }: { item: EventListItem; variant?: "list" | "compact" }) {
   const startDate = new Date(item.startDateTimeUtc);
   const month = Number.isNaN(startDate.valueOf()) ? "TBD" : startDate.toLocaleString("en-US", { month: "short", timeZone: "UTC" });
   const day = Number.isNaN(startDate.valueOf()) ? "" : startDate.toLocaleString("en-US", { day: "2-digit", timeZone: "UTC" });
-  return <article className="event-list-card"><div className="event-date-block"><span>{month}</span><strong>{day}</strong></div><div className="event-list-body"><span className="tag">{labelEnum(item.eventType)}</span><h3><Link href={`/events/${item.slug}`}>{item.title}</Link></h3><p className="card-meta"><CalendarDays size={16} aria-hidden="true" />{formatEventDate(item.startDateTimeUtc, item.endDateTimeUtc)}</p><p className="location"><MapPin size={16} aria-hidden="true" />{item.locationName}</p></div><div className="event-list-action"><Link className="text-link" href={`/events/${item.slug}`}>Details<ArrowRight size={16} aria-hidden="true" /></Link></div></article>;
+  return <article className={`event-list-card event-list-card-${variant}`}><div className="event-date-block"><span>{month}</span><strong>{day}</strong></div><div className="event-list-body"><span className="tag">{labelEnum(item.eventType)}</span><h3><Link href={`/events/${item.slug}`}>{item.title}</Link></h3><p className="card-meta"><CalendarDays size={16} aria-hidden="true" />{formatEventDate(item.startDateTimeUtc, item.endDateTimeUtc)}</p><p className="location"><MapPin size={16} aria-hidden="true" />{item.locationName}</p></div><div className="event-list-action"><Link className="text-link" href={`/events/${item.slug}`}>Details<ArrowRight size={16} aria-hidden="true" /></Link></div></article>;
 }
 
 export function Pagination({ page, totalPages, pathname, params = {} }: { page: number; totalPages: number; pathname: string; params?: Record<string, string | undefined> }) {

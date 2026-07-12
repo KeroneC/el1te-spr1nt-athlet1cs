@@ -2,6 +2,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST as submitContact } from "../app/api/public/contact/route";
 import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
+import { HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
+import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
 
 afterEach(() => vi.restoreAllMocks());
@@ -11,6 +13,28 @@ function json(value: unknown, status = 200) {
 }
 
 describe("Phase 8 public CMS helpers", () => {
+  it("keeps FAQs visible in the simplified primary navigation", () => {
+    expect(PRIMARY_NAV_LINKS.map((link) => link.label)).toEqual(["About", "Events", "Gallery", "Sponsors", "FAQs", "Contact"]);
+  });
+
+  it("prioritizes Gold sponsor logos without changing tier policy", () => {
+    const sponsor = (name: string, tier: Sponsor["tier"], logoUrl: string | null, displayOrder: number): Sponsor => ({ name, slug: name.toLowerCase(), tier, logoUrl, websiteUrl: null, description: null, displayOrder });
+    const result = prioritizeSponsorPreviews([
+      sponsor("Community", "Community", "/community.png", 1),
+      sponsor("Gold text", "Gold", null, 1),
+      sponsor("Silver", "Silver", "/silver.png", 1),
+      sponsor("Gold logo", "Gold", "/gold.png", 2)
+    ]);
+
+    expect(result.map((item) => item.name)).toEqual(["Gold logo", "Gold text", "Community", "Silver"]);
+    expect(sponsorTierClass("Other")).toBe("sponsor-tier-other");
+  });
+
+  it("keeps Hall of Fame records ready for future profile routes", () => {
+    expect(HALL_OF_FAME_INDUCTEES).toHaveLength(2);
+    expect(HALL_OF_FAME_INDUCTEES.every((inductee) => inductee.slug && inductee.imageSrc.startsWith("/images/hall-of-fame/"))).toBe(true);
+  });
+
   it("looks up content by exact key", () => {
     const blocks = contentByKey([{ key: CONTENT_KEYS.homeHero, title: "Run", summary: null, body: "Fast", imageUrl: null, ctaText: null, ctaUrl: null, displayOrder: 1 }]);
     expect(blocks.get("home.hero")?.title).toBe("Run");

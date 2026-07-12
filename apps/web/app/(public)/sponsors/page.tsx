@@ -1,9 +1,49 @@
 /* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Medal } from "lucide-react";
 import Link from "next/link";
 import { EmptyState, PageHero, PublicErrorState } from "@/components/public/ui";
 import { getContentBlocks, getSponsors } from "@/lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
-export const metadata:Metadata={title:"Sponsors",description:"Meet the community partners who support youth athletics."};
-export default async function SponsorsPage(){try{const [sponsors,blocks]=await Promise.all([getSponsors(),getContentBlocks()]);const intro=contentByKey(blocks).get(CONTENT_KEYS.sponsorsIntro);const tiers=["Platinum","Gold","Silver","Bronze","Community","Other"];const grouped=tiers.map(tier=>({tier,items:sponsors.filter(sponsor=>sponsor.tier===tier)})).filter(group=>group.items.length);return <><PageHero eyebrow="Community partners" title="Our" accent="Sponsors" summary={intro?.body??intro?.title}/><section className="content-section"><div className="site-container">{sponsors.length?<div className="sponsor-tier-list">{grouped.map(group=><section key={group.tier} aria-labelledby={`sponsor-${group.tier}`}><div className="section-heading compact centered"><div><p className="eyebrow">{group.tier}</p><h2 id={`sponsor-${group.tier}`}>{group.tier} Level Partners</h2></div></div><div className="sponsor-grid">{group.items.map(sponsor=><article className="sponsor-card" key={sponsor.slug}><div className="sponsor-logo">{sponsor.logoUrl?/* eslint-disable-next-line @next/next/no-img-element */<img src={sponsor.logoUrl} alt={`${sponsor.name} logo`}/>:<span>{sponsor.name}</span>}</div><span className="tag">{sponsor.tier}</span><h2>{sponsor.name}</h2>{sponsor.description&&<p>{sponsor.description}</p>}{sponsor.websiteUrl&&<a className="text-link" href={sponsor.websiteUrl} target="_blank" rel="noreferrer noopener">Visit website<ExternalLink size={15} aria-hidden="true"/></a>}</article>)}</div></section>)}</div>:<EmptyState title="Sponsor profiles are coming soon" message="Active community partners will be recognized here."/>}</div></section><section className="cta-band"><div className="site-container"><div><h2>Interested in supporting the team?</h2><p>Start a sponsorship conversation with the club. No sponsor payments are collected through this site.</p></div><Link className="button button-light" href="/contact">Contact us</Link></div></section></>;}catch{return <><PageHero title="Our" accent="Sponsors"/><div className="site-container content-section"><PublicErrorState/></div></>;}}
+import { sponsorTierClass } from "@/lib/public/site";
+
+export const metadata: Metadata = {
+  title: "Sponsors",
+  description: "Meet the community partners who support youth athletics."
+};
+
+export default async function SponsorsPage() {
+  try {
+    const [sponsors, blocks] = await Promise.all([getSponsors(), getContentBlocks()]);
+    const intro = contentByKey(blocks).get(CONTENT_KEYS.sponsorsIntro);
+    const tiers = ["Platinum", "Gold", "Silver", "Bronze", "Community", "Other"];
+    const grouped = tiers
+      .map((tier) => ({ tier, items: sponsors.filter((sponsor) => sponsor.tier === tier) }))
+      .filter((group) => group.items.length);
+
+    return <>
+      <PageHero eyebrow="Community partners" title="Our" accent="Sponsors" summary={intro?.body ?? intro?.title} />
+      <section className="content-section">
+        <div className="site-container">
+          {sponsors.length ? <div className="sponsor-tier-list">
+            {grouped.map((group) => <section className={`sponsor-tier ${sponsorTierClass(group.tier)}`} key={group.tier} aria-labelledby={`sponsor-${group.tier}`}>
+              <div className="section-heading compact centered"><div>{["Gold", "Silver", "Bronze"].includes(group.tier) && <Medal className="sponsor-tier-medal" aria-hidden="true" />}<p className="eyebrow">{group.tier}</p><h2 id={`sponsor-${group.tier}`}>{group.tier} Level Partners</h2></div></div>
+              <div className="sponsor-grid">
+                {group.items.map((sponsor) => <article className="sponsor-card" key={sponsor.slug}>
+                  <div className="sponsor-logo">{sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} /> : <span>{sponsor.name}</span>}</div>
+                  <span className="tag">{sponsor.tier}</span>
+                  <h2>{sponsor.name}</h2>
+                  {sponsor.description && <p>{sponsor.description}</p>}
+                  {sponsor.websiteUrl && <a className="text-link" href={sponsor.websiteUrl} target="_blank" rel="noreferrer noopener">Visit website<ExternalLink size={15} aria-hidden="true" /></a>}
+                </article>)}
+              </div>
+            </section>)}
+          </div> : <EmptyState title="Sponsor profiles are coming soon" message="Active community partners will be recognized here." />}
+        </div>
+      </section>
+      <section className="cta-band"><div className="site-container"><div><h2>Interested in supporting the team?</h2><p>Start a sponsorship conversation with the club. No sponsor payments are collected through this site.</p></div><Link className="button button-light" href="/contact">Contact us</Link></div></section>
+    </>;
+  } catch {
+    return <><PageHero title="Our" accent="Sponsors" /><div className="site-container content-section"><PublicErrorState /></div></>;
+  }
+}

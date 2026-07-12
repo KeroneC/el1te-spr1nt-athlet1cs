@@ -5,7 +5,7 @@ import Link from "next/link";
 import { AnnouncementCard, EmptyState, EventCard } from "@/components/public/ui";
 import { getAnnouncements, getCoaches, getContentBlocks, getEvents, getGalleryAlbums, getSponsors } from "@/lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
-import { BRAND } from "@/lib/public/site";
+import { BRAND, prioritizeSponsorPreviews, sponsorTierClass } from "@/lib/public/site";
 
 export default async function HomePage() {
   const [blocksResult, newsResult, eventsResult, coachesResult, sponsorsResult, galleryResult] = await Promise.allSettled([
@@ -22,7 +22,7 @@ export default async function HomePage() {
   const announcements = newsResult.status === "fulfilled" ? newsResult.value.items : [];
   const events = eventsResult.status === "fulfilled" ? eventsResult.value.items : [];
   const coaches = coachesResult.status === "fulfilled" ? coachesResult.value.slice(0, 3) : [];
-  const sponsors = sponsorsResult.status === "fulfilled" ? sponsorsResult.value.slice(0, 5) : [];
+  const sponsors = sponsorsResult.status === "fulfilled" ? prioritizeSponsorPreviews(sponsorsResult.value) : [];
   const albums = galleryResult.status === "fulfilled" ? galleryResult.value.items : [];
 
   return <>
@@ -30,7 +30,14 @@ export default async function HomePage() {
       <Image src="/images/track-hero.png" alt="Youth sprinters training together on an outdoor track" fill priority sizes="100vw" className="hero-image" />
       <div className="hero-overlay" />
       <div className="site-container hero-content">
-        <p className="hero-badge"><span>Youth Track & Field Club</span></p>
+        <div className="hero-brand-lockup">
+          <div className="hero-brand-mark"><img src={BRAND.logoMark} alt="" aria-hidden="true" /></div>
+          <div className="hero-brand-name" aria-label={BRAND.name}>
+            <span aria-hidden="true">El<span>1</span>te</span>
+            <span aria-hidden="true">Spr<span>1</span>nt</span>
+            <span aria-hidden="true">Athlet<span>1</span>cs</span>
+          </div>
+        </div>
         <h1>{heroHasBeginsHere ? <>{heroLead || "Greatness"}<br /><span>Begins Here</span></> : heroTitle}</h1>
         <p>{hero?.body ?? BRAND.slogan}</p>
         <div className="button-row">
@@ -46,13 +53,13 @@ export default async function HomePage() {
 
     <section className="content-section tone-muted"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">Club updates</p><h2>Featured news</h2></div><Link className="text-link" href="/news">All news<ArrowRight size={17} aria-hidden="true" /></Link></div>{announcements.length ? <div className="card-grid">{announcements.map((item) => <AnnouncementCard key={item.slug} item={item} />)}</div> : <EmptyState title="No featured updates yet" message="Check back soon for the latest club news." />}</div></section>
 
-    <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">On the calendar</p><h2>Upcoming events</h2></div><Link className="text-link" href="/events">Full schedule<ArrowRight size={17} aria-hidden="true" /></Link></div>{events.length ? <div className="card-grid">{events.map((item) => <EventCard key={item.slug} item={item} />)}</div> : <EmptyState title="No upcoming events" message="New practices, meets, and team events will appear here." />}</div></section>
+    <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">On the calendar</p><h2>Upcoming events</h2></div><Link className="text-link" href="/events">Full schedule<ArrowRight size={17} aria-hidden="true" /></Link></div>{events.length ? <div className="card-grid event-preview-grid">{events.map((item) => <EventCard key={item.slug} item={item} variant="compact" />)}</div> : <EmptyState title="No upcoming events" message="New practices, meets, and team events will appear here." />}</div></section>
 
     <section className="content-section tone-dark"><div className="site-container"><div className="section-heading"><div><p className="eyebrow light">People behind the progress</p><h2>Meet the coaching team</h2></div><Link className="text-link light-link" href="/coaches">All coaches<ArrowRight size={17} aria-hidden="true" /></Link></div>{coaches.length ? <div className="coach-preview-grid">{coaches.map((coach) => <article key={`${coach.firstName}-${coach.lastName}`}><div className="avatar" aria-hidden="true">{coach.firstName[0]}{coach.lastName[0]}</div><h3>{coach.firstName} {coach.lastName}</h3><p>{coach.role}</p></article>)}</div> : <p>Coach profiles are coming soon.</p>}</div></section>
 
     <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">Season snapshots</p><h2>Moments from the team</h2></div><Link className="text-link" href="/gallery">Open gallery<ArrowRight size={17} aria-hidden="true" /></Link></div>{albums.length ? <div className="gallery-album-grid compact">{albums.map((album) => <Link href={`/gallery/${album.slug}`} key={album.slug} className="gallery-album-card">{album.coverImageUrl ? <img src={album.coverImageUrl} alt={album.coverAltText ?? ""} /> : <div className="gallery-placeholder">Gallery album</div>}<div><p className="eyebrow">{album.imageCount} {album.imageCount === 1 ? "photo" : "photos"}</p><h2>{album.title}</h2><p>{album.description}</p></div></Link>)}</div> : <EmptyState title="Gallery albums are coming soon" message="Published team photo collections will appear here." />}</div></section>
 
-    {sponsors.length > 0 && <section className="sponsor-strip"><div className="site-container"><p className="eyebrow">Community partners</p><div>{sponsors.map((sponsor) => <span key={sponsor.slug}>{sponsor.name}</span>)}</div><Link className="text-link" href="/sponsors">Meet our sponsors<ArrowRight size={17} aria-hidden="true" /></Link></div></section>}
+    {sponsors.length > 0 && <section className="sponsor-strip"><div className="site-container"><div className="sponsor-strip-heading"><div><p className="eyebrow">Community partners</p><h2>Backing the next generation</h2></div><Link className="text-link" href="/sponsors">Meet our sponsors<ArrowRight size={17} aria-hidden="true" /></Link></div><div className="sponsor-name-list">{sponsors.map((sponsor) => <article className={sponsorTierClass(sponsor.tier)} key={sponsor.slug}><small>{sponsor.tier}</small><div className="sponsor-preview-logo">{sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} /> : <span>{sponsor.name}</span>}</div></article>)}</div></div></section>}
 
     <section className="cta-band"><div className="site-container"><div><p className="eyebrow light">Ready for the next step?</p><h2>{BRAND.slogan}</h2><p>Review the registration packet and contact the club before submitting paperwork for staff review.</p></div><div className="button-row"><Link className="button button-light" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link><Link className="button button-ghost" href="/contact">Ask a question</Link></div></div></section>
   </>;

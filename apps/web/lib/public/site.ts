@@ -6,6 +6,7 @@ import {
   FileText,
   ShieldCheck
 } from "lucide-react";
+import type { Sponsor } from "./types";
 
 export const BRAND = {
   name: "El1te Spr1nt Athlet1cs",
@@ -21,15 +22,30 @@ export const BRAND = {
 } as const;
 
 export const PRIMARY_NAV_LINKS = [
-  { href: "/", label: "Home" },
   { href: "/about", label: "About" },
-  { href: "/programs", label: "Programs" },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
-  { href: "/registration", label: "Registration" },
   { href: "/sponsors", label: "Sponsors" },
+  { href: "/faqs", label: "FAQs" },
   { href: "/contact", label: "Contact" }
 ] as const;
+
+export function sponsorTierClass(tier: string) {
+  const normalizedTier = tier.toLowerCase();
+  return ["platinum", "gold", "silver", "bronze", "community", "other"].includes(normalizedTier)
+    ? `sponsor-tier-${normalizedTier}`
+    : "sponsor-tier-other";
+}
+
+export function prioritizeSponsorPreviews(sponsors: Sponsor[], limit = 5) {
+  const bucket = (sponsor: Sponsor) => sponsor.tier === "Gold"
+    ? (sponsor.logoUrl ? 0 : 1)
+    : (sponsor.logoUrl ? 2 : 3);
+
+  return [...sponsors]
+    .sort((a, b) => bucket(a) - bucket(b) || a.displayOrder - b.displayOrder)
+    .slice(0, limit);
+}
 
 export const FOOTER_LINK_GROUPS = [
   {
@@ -98,14 +114,22 @@ export const TEAM_VALUES = [
 
 export const HALL_OF_FAME_INDUCTEES = [
   {
+    slug: "dani-prunzik",
     name: "Dani Prunzik",
+    affiliation: "Penn State University",
+    imageSrc: "/images/hall-of-fame/dani-prunzik.jpeg",
+    imageAlt: "Dani Prunzik holding an American flag in her Penn State track uniform",
     summary:
       "Upper St. Clair High School class of 2023 graduate, Penn State student, and talented sprinter with a 60m indoor PR of 7.57."
   },
   {
+    slug: "kaitlyn-eger",
     name: "Kaitlyn Eger",
+    affiliation: "Youngstown State University",
+    imageSrc: "/images/hall-of-fame/kaitlyn-eger.jpg",
+    imageAlt: "Kaitlyn Eger posing with a pole vault pole in her Youngstown State uniform",
     summary:
-      "Youngstown State University student-athlete studying Exercise Science. A multi-time top-5 Horizon League finisher and Meet MVP who helped lead back-to-back conference championships."
+      "Youngstown State University student-athlete studying Exercise Science (Pre-PT). A multi-time top-5 Horizon League finisher and Meet MVP who helped lead back-to-back conference championships in 2024 and 2025."
   }
 ] as const;
 
