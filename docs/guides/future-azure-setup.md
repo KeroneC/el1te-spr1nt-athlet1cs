@@ -2,7 +2,7 @@
 
 ## One-time organization setup
 
-1. Confirm the nonprofit sponsorship owner, renewal date, East US 2 availability, and billing contacts.
+1. Confirm the nonprofit sponsorship owner, renewal date, preferred Azure region availability, and billing contacts. East US 2 is preferred, but the initial July 13, 2026 provisioning attempt found the selected Azure SQL SKU unavailable in East US 2 and East US; Central US accepted it as the nearest validated fallback.
 2. Create the demo resource group and GitHub OIDC Entra application. Grant resource-group Contributor plus User Access Administrator so Bicep can create scoped role assignments.
 3. Add a federated credential restricted to this repository and the GitHub `demo` Environment.
 4. Protect that Environment with required reviewers and `main` deployment rules.
