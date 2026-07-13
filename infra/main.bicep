@@ -37,6 +37,7 @@ param tags object = {}
 param mediaContainerName string = 'media'
 
 var normalizedPrefix = toLower(replace(namePrefix, '-', ''))
+var normalizedEnvironment = toLower(replace(environmentName, '-', ''))
 var suffix = substring(uniqueString(resourceGroup().id, environmentName), 0, 6)
 var baseName = '${normalizedPrefix}-${environmentName}-${suffix}'
 var planName = '${baseName}-plan'
@@ -45,7 +46,8 @@ var apiAppName = take('${baseName}-api', 60)
 var sqlServerName = take('${baseName}-sql', 63)
 var sqlDatabaseName = '${normalizedPrefix}-${environmentName}-db'
 var storageName = take('${normalizedPrefix}${environmentName}${suffix}media', 24)
-var vaultName = take('${normalizedPrefix}-${environmentName}-${suffix}-kv', 24)
+// Key Vault names must be alphanumeric, end in a letter or digit, and fit within 24 characters.
+var vaultName = take('kv${normalizedPrefix}${normalizedEnvironment}${suffix}', 24)
 var defaultWebOrigin = 'https://${webAppName}.azurewebsites.net'
 var allowedOrigins = empty(frontendAllowedOrigin)
   ? [defaultWebOrigin]
