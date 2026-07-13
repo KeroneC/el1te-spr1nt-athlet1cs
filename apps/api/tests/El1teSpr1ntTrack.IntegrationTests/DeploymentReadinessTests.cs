@@ -27,6 +27,7 @@ public sealed class DeploymentReadinessTests
             ProductionConfigurationValidator.Validate(configuration, new TestEnvironment("Production")));
 
         Assert.Contains("LocalDB", exception.Message);
+        Assert.Contains("Database:UseManagedIdentity", exception.Message);
         Assert.Contains("Jwt:Key", exception.Message);
         Assert.Contains("HTTPS non-loopback", exception.Message);
     }
@@ -37,6 +38,7 @@ public sealed class DeploymentReadinessTests
         var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
         {
             ["ConnectionStrings:DefaultConnection"] = "Server=tcp:sql.example.invalid,1433;Initial Catalog=app;Encrypt=True;",
+            ["Database:UseManagedIdentity"] = "true",
             ["Jwt:Key"] = "test-only-signing-key-with-32-characters-minimum",
             ["Jwt:Issuer"] = "https://api.example.invalid",
             ["Jwt:Audience"] = "https://web.example.invalid",

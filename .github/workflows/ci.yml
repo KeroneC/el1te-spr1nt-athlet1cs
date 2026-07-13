@@ -84,7 +84,7 @@ jobs:
       - name: Publish API artifact
         run: >-
           dotnet publish apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj
-          --configuration Release --no-build --no-restore --output artifacts/api
+          --configuration Release --runtime linux-x64 --self-contained false --output artifacts/api
 
       - name: Build EF Core migration bundle
         run: bash scripts/artifacts/build-migration-bundle.sh artifacts/database/efbundle
