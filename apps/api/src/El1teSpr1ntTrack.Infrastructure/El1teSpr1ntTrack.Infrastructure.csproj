@@ -3,6 +3,7 @@
   <ItemGroup>
     <PackageReference Include="Azure.Identity" Version="1.21.0" />
     <PackageReference Include="Azure.Storage.Blobs" Version="12.29.1" />
+    <PackageReference Include="Microsoft.Data.SqlClient.Extensions.Azure" Version="1.0.0" />
     <ProjectReference Include="..\El1teSpr1ntTrack.Application\El1teSpr1ntTrack.Application.csproj" />
     <ProjectReference Include="..\El1teSpr1ntTrack.Core\El1teSpr1ntTrack.Core.csproj" />
   </ItemGroup>

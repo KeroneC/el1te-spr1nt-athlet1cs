@@ -13,7 +13,7 @@ param publicBaseUrl string
 param allowedOrigins array
 param tags object = {}
 
-var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Authentication=Active Directory Default;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Authentication=Active Directory Managed Identity;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 var corsAppSettings = map(allowedOrigins, (origin, index) => {
   name: 'Cors__AllowedOrigins__${index}'
   value: origin
