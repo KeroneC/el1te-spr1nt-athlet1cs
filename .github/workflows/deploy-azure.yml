@@ -108,6 +108,7 @@ jobs:
         run: |
           [[ "$(jq -r .commitSha release/manifest.json)" == "${{ steps.release.outputs.sha }}" ]] || { echo "Artifact SHA mismatch."; exit 1; }
           (cd release && sha256sum --check SHA256SUMS)
+          chmod +x release/efbundle
 
       - name: Authenticate to Azure with OIDC
         uses: azure/login@v3
