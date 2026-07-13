@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { robotsForEnvironment } from "@/lib/public/deployment";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     template: "%s | El1te Spr1nt Athlet1cs"
   },
   description: "Youth track and field training, competition, and community.",
+  robots: robotsForEnvironment(process.env.DEPLOYMENT_ENVIRONMENT),
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png"

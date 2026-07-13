@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { POST as submitContact } from "../app/api/public/contact/route";
 import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
+import { robotsForEnvironment } from "../lib/public/deployment";
 import { HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
@@ -13,6 +14,11 @@ function json(value: unknown, status = 200) {
 }
 
 describe("Phase 8 public CMS helpers", () => {
+  it("keeps the public demo out of search indexes", () => {
+    expect(robotsForEnvironment("demo")).toEqual({ index: false, follow: false, nocache: true });
+    expect(robotsForEnvironment("production")).toBeUndefined();
+  });
+
   it("keeps FAQs visible in the simplified primary navigation", () => {
     expect(PRIMARY_NAV_LINKS.map((link) => link.label)).toEqual(["About", "Events", "Gallery", "Sponsors", "FAQs", "Contact"]);
   });

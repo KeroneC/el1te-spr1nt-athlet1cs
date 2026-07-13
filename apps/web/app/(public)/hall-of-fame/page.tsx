@@ -12,20 +12,20 @@ export const metadata: Metadata = {
 export default function HallOfFamePage() {
   return <>
     <section className="hall-hero">
-      <Image src="/images/hall-of-fame/rgn-hall-of-fame-banner.png" alt="" fill priority sizes="100vw" className="hall-hero-image" />
-      <div className="hall-hero-overlay" />
       <div className="site-container hall-hero-content">
         <p className="eyebrow light">A family legacy</p>
-        <h1>RGN El1te<br /><span>Hall of Fame</span></h1>
+        <h1 className="sr-only">RGN El1te Hall of Fame</h1>
+        <Image src="/images/hall-of-fame/rgn-hall-of-fame-crest.png" alt="" width={1024} height={1024} priority sizes="(max-width: 48rem) 90vw, 36rem" className="hall-crest" />
       </div>
     </section>
 
     <section className="hall-dedication">
-      <div className="site-container narrow">
-        <p className="eyebrow light">In honor of our dad</p>
-        <h2>Roland George Newton</h2>
-        <p>Roland George Newton passed away on March 13, 2024. Daddy enjoyed having youngsters and all our friends around. He was sometimes a man of too many words, and he was our quiet cheerleader.</p>
-        <p>The RGN El1te Hall of Fame highlights athletes who participated in our program and continued their journey to <strong>greatness</strong>, either on or off the track.</p>
+      <div className="site-container hall-dedication-layout">
+        <div>
+          <p className="eyebrow light">In honor of our dad</p>
+          <h2>Roland George Newton</h2>
+        </div>
+        <p>Roland George Newton, our dad and quiet cheerleader, passed away on March 13, 2024. He loved having young people and friends around, and his legacy lives on through the RGN El1te Hall of Fame, honoring athletes who continue their journey to greatness on or off the track.</p>
       </div>
     </section>
 

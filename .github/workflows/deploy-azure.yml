@@ -1,20 +1,29 @@
-name: Deploy to Azure (Phase 6B Template)
+name: Deploy Azure Demo
 
 on:
   workflow_dispatch:
     inputs:
+      ci_run_id:
+        description: Successful main CI run ID containing immutable release artifacts
+        required: true
+        type: string
       phase6b_acknowledged:
-        description: "Phase 6B is approved and Azure configuration is complete"
+        description: Phase 6B and nonprofit grant usage are approved
         required: true
         type: boolean
         default: false
       infrastructure_only:
-        description: "Provision/update infrastructure only; use this first so SQL managed identity access can be granted"
+        description: Provision infrastructure only for the first SQL identity bootstrap pass
         required: true
         type: boolean
         default: true
       managed_identity_sql_ready:
-        description: "API managed identity has been created as an Azure SQL contained user"
+        description: API managed identity exists as a contained Azure SQL user
+        required: true
+        type: boolean
+        default: false
+      bootstrap_admin:
+        description: Run the idempotent first-SuperAdmin bootstrap command
         required: true
         type: boolean
         default: false
@@ -25,11 +34,12 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
   id-token: write
 
 jobs:
   deploy:
-    name: Deploy demo environment
+    name: Promote verified release to demo
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: demo
@@ -37,41 +47,67 @@ jobs:
       AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
       AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
       AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID: ${{ vars.AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID }}
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
       RESOURCE_NAME_PREFIX: ${{ vars.RESOURCE_NAME_PREFIX }}
       SQL_ADMIN_LOGIN: ${{ vars.SQL_ADMIN_LOGIN }}
       SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
-      JWT_SIGNING_KEY: ${{ secrets.JWT_SIGNING_KEY }}
       DATABASE_MIGRATION_CONNECTION_STRING: ${{ secrets.DATABASE_MIGRATION_CONNECTION_STRING }}
-      API_BASE_URL: https://api.example.invalid
+      BOOTSTRAP_ADMIN_EMAIL: ${{ secrets.BOOTSTRAP_ADMIN_EMAIL }}
+      BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+      BOOTSTRAP_ADMIN_FIRST_NAME: ${{ vars.BOOTSTRAP_ADMIN_FIRST_NAME }}
+      BOOTSTRAP_ADMIN_LAST_NAME: ${{ vars.BOOTSTRAP_ADMIN_LAST_NAME }}
+      BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
 
     steps:
-      - name: Refuse deployment until Phase 6B is explicitly enabled
+      - name: Validate release request and configuration
         shell: bash
         run: |
-          if [[ "${{ inputs.phase6b_acknowledged }}" != "true" ]]; then
-            echo "Deployment is disabled during Phase 6A. Enable only after Phase 6B approval."
-            exit 1
+          [[ "${{ inputs.phase6b_acknowledged }}" == "true" ]] || { echo "Phase 6B approval is required."; exit 1; }
+          [[ "${{ inputs.infrastructure_only }}" == "true" || "${{ inputs.managed_identity_sql_ready }}" == "true" ]] || { echo "Full deployment requires SQL managed identity readiness."; exit 1; }
+          required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID AZURE_RESOURCE_GROUP AZURE_LOCATION RESOURCE_NAME_PREFIX SQL_ADMIN_LOGIN SQL_ADMIN_PASSWORD BUDGET_CONTACT_EMAIL)
+          for name in "${required[@]}"; do [[ -n "${!name}" ]] || { echo "Missing configuration: $name"; exit 1; }; done
+          if [[ "${{ inputs.infrastructure_only }}" != "true" ]]; then
+            [[ -n "$DATABASE_MIGRATION_CONNECTION_STRING" ]] || { echo "Missing migration connection string."; exit 1; }
           fi
-          if [[ "${{ inputs.infrastructure_only }}" != "true" && "${{ inputs.managed_identity_sql_ready }}" != "true" ]]; then
-            echo "Full deployment requires confirmed managed identity access to Azure SQL."
-            exit 1
-          fi
-          required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_RESOURCE_GROUP AZURE_LOCATION RESOURCE_NAME_PREFIX SQL_ADMIN_LOGIN SQL_ADMIN_PASSWORD JWT_SIGNING_KEY)
-          for name in "${required[@]}"; do
-            if [[ -z "${!name}" ]]; then
-              echo "Required Phase 6B configuration is missing: $name"
-              exit 1
-            fi
-          done
-          if [[ "${{ inputs.infrastructure_only }}" != "true" && -z "$DATABASE_MIGRATION_CONNECTION_STRING" ]]; then
-            echo "Required full-deployment configuration is missing: DATABASE_MIGRATION_CONNECTION_STRING"
-            exit 1
+          if [[ "${{ inputs.bootstrap_admin }}" == "true" ]]; then
+            required_admin=(BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD BOOTSTRAP_ADMIN_FIRST_NAME BOOTSTRAP_ADMIN_LAST_NAME)
+            for name in "${required_admin[@]}"; do [[ -n "${!name}" ]] || { echo "Missing admin bootstrap configuration: $name"; exit 1; }; done
           fi
 
-      - name: Checkout
+      - name: Verify selected CI run
+        id: release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        shell: bash
+        run: |
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.ci_run_id }}")
+          [[ "$(jq -r .conclusion <<< "$run")" == "success" ]] || { echo "CI run did not succeed."; exit 1; }
+          [[ "$(jq -r .head_branch <<< "$run")" == "main" ]] || { echo "CI run is not from main."; exit 1; }
+          [[ "$(jq -r .event <<< "$run")" == "push" ]] || { echo "CI run is not a main push."; exit 1; }
+          sha=$(jq -r .head_sha <<< "$run")
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact release commit
         uses: actions/checkout@v7
+        with: { ref: "${{ steps.release.outputs.sha }}" }
+
+      - name: Download immutable release bundle
+        if: ${{ ! inputs.infrastructure_only }}
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+          pattern: release-*
+          path: release
+          merge-multiple: true
+
+      - name: Verify artifact manifest and checksums
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          [[ "$(jq -r .commitSha release/manifest.json)" == "${{ steps.release.outputs.sha }}" ]] || { echo "Artifact SHA mismatch."; exit 1; }
+          (cd release && sha256sum --check SHA256SUMS)
 
       - name: Authenticate to Azure with OIDC
         uses: azure/login@v3
@@ -80,124 +116,108 @@ jobs:
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Setup .NET 10
-        uses: actions/setup-dotnet@v5
-        with:
-          global-json-file: global.json
+      - name: Validate and preview infrastructure
+        shell: bash
+        run: |
+          az bicep build --file infra/main.bicep
+          az deployment group what-if --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
+            --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
+              deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD"
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v6
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: apps/web/package-lock.json
-
-      - name: Validate Bicep
-        run: az bicep build --file infra/main.bicep
-
-      - name: Provision Azure resources
+      - name: Apply infrastructure
         id: infrastructure
         shell: bash
         run: |
-          outputs=$(az deployment group create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --template-file infra/main.bicep \
+          outputs=$(az deployment group create --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
             --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
-              sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" jwtSigningKey="$JWT_SIGNING_KEY" \
+              deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
+              tags="{\"project\":\"el1te-platform\",\"environment\":\"demo\",\"funding\":\"nonprofit-grant\"}" \
             --query properties.outputs --output json)
-          api_url=$(jq -r '.apiUrl.value' <<< "$outputs")
-          web_url=$(jq -r '.webUrl.value' <<< "$outputs")
-          api_name=$(jq -r '.apiAppName.value' <<< "$outputs")
-          web_name=$(jq -r '.webAppName.value' <<< "$outputs")
-          sql_server_name=$(jq -r '.sqlServerName.value' <<< "$outputs")
-          echo "api_url=$api_url" >> "$GITHUB_OUTPUT"
-          echo "web_url=$web_url" >> "$GITHUB_OUTPUT"
-          echo "api_name=$api_name" >> "$GITHUB_OUTPUT"
-          echo "web_name=$web_name" >> "$GITHUB_OUTPUT"
-          echo "sql_server_name=$sql_server_name" >> "$GITHUB_OUTPUT"
+          for key in apiUrl webUrl apiAppName webAppName sqlServerName sqlDatabaseName apiPrincipalId keyVaultName; do
+            echo "$(tr '[:upper:]' '[:lower:]' <<< "$key")=$(jq -r ".${key}.value" <<< "$outputs")" >> "$GITHUB_OUTPUT"
+          done
 
-      - name: Infrastructure-only summary
+      - name: Initialize JWT secret when absent
+        shell: bash
+        run: |
+          vault="${{ steps.infrastructure.outputs.keyvaultname }}"
+          for attempt in {1..12}; do
+            if az keyvault secret show --vault-name "$vault" --name jwt-signing-key --query value -o tsv > /tmp/jwt 2>/dev/null; then break; fi
+            if [[ "$attempt" == "12" ]]; then
+              key=$(openssl rand -base64 48)
+              az keyvault secret set --vault-name "$vault" --name jwt-signing-key --value "$key" --output none
+              printf '%s' "$key" > /tmp/jwt
+              echo "::add-mask::$key"
+            else sleep 10; fi
+          done
+
+      - name: Configure conservative monthly budget
+        shell: bash
+        run: |
+          start=$(date -u +%Y-%m-01T00:00:00Z)
+          end=$(date -u -d '+10 years' +%Y-%m-01T00:00:00Z)
+          scope="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP"
+          body=$(jq -n --arg start "$start" --arg end "$end" --arg email "$BUDGET_CONTACT_EMAIL" '{properties:{category:"Cost",amount:125,timeGrain:"Monthly",timePeriod:{startDate:$start,endDate:$end},notifications:{Actual50:{enabled:true,operator:"GreaterThan",threshold:50,thresholdType:"Actual",contactEmails:[$email]},Actual75:{enabled:true,operator:"GreaterThan",threshold:75,thresholdType:"Actual",contactEmails:[$email]},Actual90:{enabled:true,operator:"GreaterThan",threshold:90,thresholdType:"Actual",contactEmails:[$email]},Actual100:{enabled:true,operator:"GreaterThan",threshold:100,thresholdType:"Actual",contactEmails:[$email]}}}}')
+          az rest --method put --url "https://management.azure.com${scope}/providers/Microsoft.Consumption/budgets/el1te-demo-monthly?api-version=2024-08-01" --body "$body" --output none
+
+      - name: Infrastructure bootstrap summary
         if: ${{ inputs.infrastructure_only }}
         run: |
           echo "## Demo infrastructure prepared" >> "$GITHUB_STEP_SUMMARY"
-          echo "Application deployment was intentionally skipped." >> "$GITHUB_STEP_SUMMARY"
-          echo "Grant the API managed identity least-privilege Azure SQL access, then rerun with infrastructure_only disabled." >> "$GITHUB_STEP_SUMMARY"
+          echo "API principal: ${{ steps.infrastructure.outputs.apiprincipalid }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Database: ${{ steps.infrastructure.outputs.sqldatabasename }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Grant this identity least-privilege contained-user access, then run a full deployment." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Build API and migration artifact
-        if: ${{ ! inputs.infrastructure_only }}
-        shell: bash
-        run: |
-          dotnet restore apps/api/El1teSpr1ntTrack.sln --configfile NuGet.Config
-          dotnet tool install --global dotnet-ef --version 10.0.9
-          dotnet publish apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj --configuration Release --output artifacts/api
-          bash scripts/artifacts/build-migration-bundle.sh artifacts/database/efbundle
-          (cd artifacts/api && zip -qr ../api.zip .)
-
-      - name: Allow this runner to reach Azure SQL temporarily
+      - name: Allow migration runner SQL access
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
         run: |
           runner_ip=$(curl --fail --silent --show-error --max-time 10 https://api.ipify.org)
-          az sql server firewall-rule create \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --server "${{ steps.infrastructure.outputs.sql_server_name }}" \
-            --name "github-actions-${GITHUB_RUN_ID}" \
-            --start-ip-address "$runner_ip" \
-            --end-ip-address "$runner_ip" \
-            --output none
+          az sql server firewall-rule create --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
+            --name "github-actions-${GITHUB_RUN_ID}" --start-ip-address "$runner_ip" --end-ip-address "$runner_ip" --output none
 
       - name: Apply reviewed migrations
         if: ${{ ! inputs.infrastructure_only }}
-        run: artifacts/database/efbundle --connection "$DATABASE_MIGRATION_CONNECTION_STRING"
+        run: release/efbundle --connection "$DATABASE_MIGRATION_CONNECTION_STRING"
 
-      - name: Deploy API
-        if: ${{ ! inputs.infrastructure_only }}
-        run: az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.api_name }}" --src-path artifacts/api.zip --type zip
-
-      - name: Verify API readiness
-        if: ${{ ! inputs.infrastructure_only }}
-        run: bash scripts/smoke-tests/check-api.sh "${{ steps.infrastructure.outputs.api_url }}"
-
-      - name: Build frontend artifact
+      - name: Deploy and verify API
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
         run: |
-          cd apps/web
-          npm ci
-          API_BASE_URL="${{ steps.infrastructure.outputs.api_url }}" npm run build
-          cd ../..
-          bash scripts/artifacts/build-web-artifact.sh apps/web artifacts/web
-          (cd artifacts/web && zip -qr ../web.zip .)
+          az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.apiappname }}" --src-path release/api.zip --type zip
+          bash scripts/smoke-tests/check-api.sh "${{ steps.infrastructure.outputs.apiurl }}"
 
-      - name: Deploy frontend
-        if: ${{ ! inputs.infrastructure_only }}
-        run: az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.web_name }}" --src-path artifacts/web.zip --type zip
+      - name: Bootstrap first SuperAdmin
+        if: ${{ ! inputs.infrastructure_only && inputs.bootstrap_admin }}
+        shell: bash
+        run: |
+          mkdir -p /tmp/el1te-api && unzip -q release/api.zip -d /tmp/el1te-api
+          ASPNETCORE_ENVIRONMENT=Production ConnectionStrings__DefaultConnection="$DATABASE_MIGRATION_CONNECTION_STRING" \
+            Jwt__Issuer="${{ steps.infrastructure.outputs.apiurl }}" Jwt__Audience="${{ steps.infrastructure.outputs.weburl }}" Jwt__ExpiresMinutes=60 Jwt__Key="$(cat /tmp/jwt)" \
+            Cors__AllowedOrigins__0="${{ steps.infrastructure.outputs.weburl }}" MediaStorage__Provider=AzureBlob \
+            MediaStorage__BlobServiceUri="https://invalid.blob.core.windows.net" MediaStorage__ContainerName=media MediaStorage__PublicBaseUrl="${{ steps.infrastructure.outputs.apiurl }}" MediaStorage__MaxFileSizeBytes=10485760 \
+            BootstrapAdmin__Email="$BOOTSTRAP_ADMIN_EMAIL" BootstrapAdmin__Password="$BOOTSTRAP_ADMIN_PASSWORD" \
+            BootstrapAdmin__FirstName="$BOOTSTRAP_ADMIN_FIRST_NAME" BootstrapAdmin__LastName="$BOOTSTRAP_ADMIN_LAST_NAME" \
+            dotnet /tmp/el1te-api/El1teSpr1ntTrack.Api.dll --bootstrap-admin
 
-      - name: Verify frontend
+      - name: Deploy and verify web
         if: ${{ ! inputs.infrastructure_only }}
-        run: bash scripts/smoke-tests/check-web.sh "${{ steps.infrastructure.outputs.web_url }}"
+        shell: bash
+        run: |
+          az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.webappname }}" --src-path release/web.zip --type zip
+          bash scripts/smoke-tests/check-web.sh "${{ steps.infrastructure.outputs.weburl }}"
 
       - name: Deployment summary
         if: ${{ ! inputs.infrastructure_only }}
         run: |
-          echo "## Demo deployment" >> "$GITHUB_STEP_SUMMARY"
-          echo "API and web smoke tests completed successfully." >> "$GITHUB_STEP_SUMMARY"
-          echo "API: ${{ steps.infrastructure.outputs.api_url }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Web: ${{ steps.infrastructure.outputs.web_url }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "## Azure demo deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ steps.release.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "API: ${{ steps.infrastructure.outputs.apiurl }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Web: ${{ steps.infrastructure.outputs.weburl }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove temporary SQL firewall access
         if: ${{ always() && ! inputs.infrastructure_only && steps.infrastructure.outcome == 'success' }}
         shell: bash
         run: |
-          if az sql server firewall-rule show \
-            --resource-group "$AZURE_RESOURCE_GROUP" \
-            --server "${{ steps.infrastructure.outputs.sql_server_name }}" \
-            --name "github-actions-${GITHUB_RUN_ID}" \
-            --output none 2>/dev/null; then
-            az sql server firewall-rule delete \
-              --resource-group "$AZURE_RESOURCE_GROUP" \
-              --server "${{ steps.infrastructure.outputs.sql_server_name }}" \
-              --name "github-actions-${GITHUB_RUN_ID}" \
-              --yes \
-              --output none
-          fi
+          az sql server firewall-rule delete --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
+            --name "github-actions-${GITHUB_RUN_ID}" --yes --output none 2>/dev/null || true

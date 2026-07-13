@@ -2,6 +2,15 @@
 
 This is the reconciliation point between the repository and any separate ChatGPT conversation used to draft future phase prompts. The repository, migrations, ADRs, documentation, and passing tests are the source of truth.
 
+## Phase 6B Azure CD Readiness
+
+- The approved target is a manually promoted, public-but-noindex `demo` environment in East US 2 funded by the nonprofit grant.
+- Passing `main` CI runs package immutable API, web, and EF artifacts with a commit manifest and SHA-256 checksums. The deployment workflow accepts a CI run ID and refuses non-main or unsuccessful runs.
+- Bicep now defines the shared B1 Linux plan, API/web apps, Basic Azure SQL, private Standard LRS Blob media, Key Vault, and capped workspace-based Application Insights.
+- Production media uses `AzureBlobMediaStorage` through managed identity; Development keeps `LocalMediaStorage`. Public media continues to stream through the API.
+- The first SuperAdmin is created only through the idempotent non-HTTP `--bootstrap-admin` command. Development seeding remains disabled in Production.
+- Azure resources have not been created from this workspace. Organization OIDC, Environment protection, SQL contained-user bootstrap, what-if review, and the first approved workflow run remain operator steps.
+
 ## Current Baseline
 
 - Phase 9 is merged into `main`. Public-site refinement continues on `feature/public-site-refinement` until this feature branch is merged.
@@ -48,7 +57,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Favicon:
   - `apps/web/public/favicon.png`
 - Hall of Fame assets:
-  - `apps/web/public/images/hall-of-fame/rgn-hall-of-fame-banner.png`
+  - `apps/web/public/images/hall-of-fame/rgn-hall-of-fame-crest.png`
   - `apps/web/public/images/hall-of-fame/dani-prunzik.jpeg`
   - `apps/web/public/images/hall-of-fame/kaitlyn-eger.jpg`
 - Downloadable forms:

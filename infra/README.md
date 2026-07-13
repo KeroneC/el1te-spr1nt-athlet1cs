@@ -1,10 +1,10 @@
-# Azure Infrastructure Preparation
+# Azure Demo Infrastructure
 
-These Bicep files describe a future single `demo` environment: one Linux App Service plan, separate Next.js and ASP.NET Core Web Apps, an Azure SQL logical server/database, and a system-assigned identity on the API. Nothing in this directory creates resources by itself.
+These Bicep files describe the approved `demo` environment: one shared Linux App Service plan, separate Next.js and ASP.NET Core apps, Azure SQL, private Blob media, Key Vault, and capped Application Insights. The API uses managed identity for SQL, Blob, and Key Vault.
 
 `main.bicep` is resource-group scoped and composes modules under `modules`. Names are deterministic within the resource group and parameterized by project prefix and environment. `parameters/demo.example.bicepparam` contains placeholders and reads secure values from environment variables.
 
-Phase 6B must review pricing and SKUs before deployment. B1 App Service and Basic SQL are low-cost starting defaults, not free guarantees. SQL public access and the temporary SQL administrator support initial migration/bootstrap only and should be tightened after managed identity database access is established.
+B1 App Service, Basic SQL, and Standard LRS storage are conservative grant-funded defaults, not free guarantees. The deployment workflow configures a $125 monthly resource-group budget. SQL public access and its temporary administrator support migration/bootstrap only.
 
 Validate without signing in when Azure CLI with Bicep is installed:
 
@@ -12,4 +12,4 @@ Validate without signing in when Azure CLI with Bicep is installed:
 az bicep build --file infra/main.bicep
 ```
 
-Do not run an Azure deployment during Phase 6A. See [future Azure deployment](../docs/architecture/future-azure-deployment.md) and [future Azure setup](../docs/guides/future-azure-setup.md).
+Use the manually approved GitHub `demo` Environment workflow rather than deploying from a workstation. See [Azure deployment](../docs/architecture/future-azure-deployment.md) and [Azure setup](../docs/guides/future-azure-setup.md).

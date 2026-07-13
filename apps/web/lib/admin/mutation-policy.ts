@@ -1,5 +1,5 @@
 const resources = new Set(["events", "coaches", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums"]);
-const idPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const idPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | "DELETE"): boolean {
   const [resource, id, action] = path;

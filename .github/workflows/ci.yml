@@ -235,3 +235,39 @@ jobs:
         uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  release-artifacts:
+    name: Immutable Release Artifacts
+    if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    needs: [backend, frontend, end-to-end, documentation, secret-scan]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - name: Download API
+        uses: actions/download-artifact@v8
+        with: { name: api-linux-x64, path: release/api }
+      - name: Download web
+        uses: actions/download-artifact@v8
+        with: { name: web-standalone, path: release/web }
+      - name: Download migration bundle
+        uses: actions/download-artifact@v8
+        with: { name: database-migration-linux-x64, path: release/database }
+      - name: Package and checksum release
+        shell: bash
+        run: |
+          (cd release/api && zip -qr ../api.zip .)
+          (cd release/web && zip -qr ../web.zip .)
+          mv release/database/efbundle release/efbundle
+          chmod +x release/efbundle
+          (cd release && sha256sum api.zip web.zip efbundle > SHA256SUMS)
+          jq -n --arg sha "$GITHUB_SHA" --arg run "$GITHUB_RUN_ID" \
+            '{commitSha:$sha,ciRunId:$run,createdAt:(now|todate)}' > release/manifest.json
+          rm -rf release/api release/web release/database
+      - name: Upload immutable release bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ github.sha }}
+          path: release
+          retention-days: 30

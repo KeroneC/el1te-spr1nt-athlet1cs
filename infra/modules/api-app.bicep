@@ -5,8 +5,11 @@ param sqlServerFqdn string
 param databaseName string
 param jwtIssuer string
 param jwtAudience string
-@secure()
-param jwtSigningKey string
+param jwtSecretUri string
+param blobServiceUri string
+param mediaContainerName string
+param applicationInsightsConnectionString string
+param publicBaseUrl string
 param allowedOrigins array
 param tags object = {}
 
@@ -61,7 +64,35 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'Jwt__Key'
-          value: jwtSigningKey
+          value: '@Microsoft.KeyVault(SecretUri=${jwtSecretUri})'
+        }
+        {
+          name: 'MediaStorage__Provider'
+          value: 'AzureBlob'
+        }
+        {
+          name: 'MediaStorage__BlobServiceUri'
+          value: blobServiceUri
+        }
+        {
+          name: 'MediaStorage__ContainerName'
+          value: mediaContainerName
+        }
+        {
+          name: 'MediaStorage__PublicBaseUrl'
+          value: publicBaseUrl
+        }
+        {
+          name: 'MediaStorage__MaxFileSizeBytes'
+          value: '10485760'
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
+        }
+        {
+          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value: '~3'
         }
       ], corsAppSettings)
     }
