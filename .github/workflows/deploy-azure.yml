@@ -221,4 +221,4 @@ jobs:
         shell: bash
         run: |
           az sql server firewall-rule delete --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
-            --name "github-actions-${GITHUB_RUN_ID}" --yes --output none 2>/dev/null || true
+            --name "github-actions-${GITHUB_RUN_ID}" --output none 2>/dev/null || true
