@@ -10,15 +10,17 @@ import type { SiteSettings } from "@/lib/public/types";
 export function SiteHeader({ settings }: { settings: SiteSettings }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
-  const logoUrl = BRAND.logoWhite;
   const clubName = settings.clubName || BRAND.name;
 
   return (
     <header className="site-header">
       <div className="site-container header-inner">
         <Link className="brand" href="/" aria-label={`${clubName} home`} onClick={() => setOpen(false)}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={logoUrl} alt={clubName} className="brand-logo" />
+          <span className="brand-wordmark" aria-hidden="true">
+            <span>El<span className="brand-one">1</span>te</span>
+            <span>Spr<span className="brand-one">1</span>nt</span>
+            <span>Athlet<span className="brand-one">1</span>cs</span>
+          </span>
         </Link>
         <button
           className="icon-button mobile-menu-button"

@@ -7,6 +7,13 @@ import { getContentBlocks, getSponsors } from "@/lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
 import { sponsorTierClass } from "@/lib/public/site";
 
+const medalTiers = new Set(["Gold", "Silver", "Bronze"]);
+
+function SponsorTierEmblem({ tier }: { tier: string }) {
+  if (!medalTiers.has(tier)) return null;
+  return <span className="sponsor-tier-emblem" aria-hidden="true"><Medal /></span>;
+}
+
 export const metadata: Metadata = {
   title: "Sponsors",
   description: "Meet the community partners who support youth athletics."
@@ -27,7 +34,7 @@ export default async function SponsorsPage() {
         <div className="site-container">
           {sponsors.length ? <div className="sponsor-tier-list">
             {grouped.map((group) => <section className={`sponsor-tier ${sponsorTierClass(group.tier)}`} key={group.tier} aria-labelledby={`sponsor-${group.tier}`}>
-              <div className="section-heading compact centered"><div>{["Gold", "Silver", "Bronze"].includes(group.tier) && <Medal className="sponsor-tier-medal" aria-hidden="true" />}<p className="eyebrow">{group.tier}</p><h2 id={`sponsor-${group.tier}`}>{group.tier} Level Partners</h2></div></div>
+              <div className="sponsor-tier-heading"><SponsorTierEmblem tier={group.tier} /><p className="eyebrow">{group.tier}</p><h2 id={`sponsor-${group.tier}`}>{group.tier} Level Partners</h2></div>
               <div className="sponsor-grid">
                 {group.items.map((sponsor) => <article className="sponsor-card" key={sponsor.slug}>
                   <div className="sponsor-logo">{sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} /> : <span>{sponsor.name}</span>}</div>

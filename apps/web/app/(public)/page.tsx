@@ -1,6 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
 import { ArrowRight, Medal, Timer, Users } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 import { AnnouncementCard, EmptyState, EventCard } from "@/components/public/ui";
 import { getAnnouncements, getCoaches, getContentBlocks, getEvents, getGalleryAlbums, getSponsors } from "@/lib/public/client";
@@ -13,12 +12,8 @@ export default async function HomePage() {
     getEvents("upcomingOnly=true&page=1&pageSize=3"), getCoaches(), getSponsors(), getGalleryAlbums("page=1&pageSize=3")
   ]);
   const blocks = contentByKey(blocksResult.status === "fulfilled" ? blocksResult.value : []);
-  const hero = blocks.get(CONTENT_KEYS.homeHero);
   const mission = blocks.get(CONTENT_KEYS.homeMission);
   const programs = blocks.get(CONTENT_KEYS.homePrograms);
-  const heroTitle = hero?.title ?? "Greatness Begins Here";
-  const heroHasBeginsHere = heroTitle.toLowerCase().includes("begins here");
-  const heroLead = heroHasBeginsHere ? heroTitle.replace(/begins here/i, "").trim() : heroTitle;
   const announcements = newsResult.status === "fulfilled" ? newsResult.value.items : [];
   const events = eventsResult.status === "fulfilled" ? eventsResult.value.items : [];
   const coaches = coachesResult.status === "fulfilled" ? coachesResult.value.slice(0, 3) : [];
@@ -27,25 +22,18 @@ export default async function HomePage() {
 
   return <>
     <section className="home-hero">
-      <Image src="/images/track-hero.png" alt="Youth sprinters training together on an outdoor track" fill priority sizes="100vw" className="hero-image" />
-      <div className="hero-overlay" />
       <div className="site-container hero-content">
-        <div className="hero-brand-lockup">
-          <div className="hero-brand-mark"><img src={BRAND.logoMark} alt="" aria-hidden="true" /></div>
-          <div className="hero-brand-name" aria-label={BRAND.name}>
-            <span aria-hidden="true">El<span>1</span>te</span>
-            <span aria-hidden="true">Spr<span>1</span>nt</span>
-            <span aria-hidden="true">Athlet<span>1</span>cs</span>
-          </div>
+        <div className="hero-logo-panel">
+          <img src="/images/brand/el1te-full-black.png" alt={`${BRAND.name}. ${BRAND.slogan}`} />
         </div>
-        <h1>{heroHasBeginsHere ? <>{heroLead || "Greatness"}<br /><span>Begins Here</span></> : heroTitle}</h1>
-        <p>{hero?.body ?? BRAND.slogan}</p>
         <div className="button-row">
           <Link className="button button-primary" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link>
           <Link className="button button-ghost" href="/gallery">View Gallery</Link>
         </div>
       </div>
     </section>
+
+    <section className="achievement-band"><div className="site-container achievement-layout"><div className="achievement-image"><img src="/images/team/medalists.jpg" alt="Four El1te Spr1nt Athlet1cs competitors displaying their medals after a track meet" /></div><div className="achievement-copy"><p className="eyebrow">Earned together</p><h2>Confidence built at the track</h2><p>Every practice, race, and finish line is a chance for young athletes to grow in discipline, teamwork, and belief.</p><Link className="text-link" href="/about">Our mission<ArrowRight size={17} aria-hidden="true" /></Link></div></div></section>
 
     <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">Train. Grow. Compete.</p><h2>{programs?.title ?? "Programs for young athletes"}</h2></div><Link className="text-link" href="/programs">Explore programs<ArrowRight size={17} aria-hidden="true" /></Link></div>{programs?.body && <p className="section-intro">{programs.body}</p>}<div className="program-grid"><div><Timer aria-hidden="true" /><h3>Speed development</h3><p>Age-appropriate mechanics, acceleration, and confident movement.</p></div><div><Medal aria-hidden="true" /><h3>Competition preparation</h3><p>Training that helps athletes arrive ready for meets and team events.</p></div><div><Users aria-hidden="true" /><h3>Whole-athlete growth</h3><p>Discipline, teamwork, respect, and joy alongside athletic development.</p></div></div></div></section>
 

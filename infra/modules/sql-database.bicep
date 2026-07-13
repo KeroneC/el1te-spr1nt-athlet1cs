@@ -1,5 +1,6 @@
 param serverName string
 param databaseName string
+param location string
 param skuName string
 param tags object = {}
 
@@ -10,7 +11,7 @@ resource server 'Microsoft.Sql/servers@2023-08-01-preview' existing = {
 resource database 'Microsoft.Sql/servers/databases@2023-08-01-preview' = {
   parent: server
   name: databaseName
-  location: server.location
+  location: location
   tags: tags
   sku: {
     name: skuName

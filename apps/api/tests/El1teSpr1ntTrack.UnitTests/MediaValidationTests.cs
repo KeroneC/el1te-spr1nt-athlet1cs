@@ -60,4 +60,41 @@ public sealed class MediaValidationTests
             if (Directory.Exists(root)) Directory.Delete(root, true);
         }
     }
+
+    [Fact]
+    public async Task AzureBlobStorage_RejectsTraversalBeforeAccessingAzure()
+    {
+        var storage = new AzureBlobMediaStorage(new MediaStorageOptions
+        {
+            BlobServiceUri = "https://example.blob.core.windows.net",
+            ContainerName = "media"
+        });
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            storage.ExistsAsync("../outside.png", CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task AzureBlobStorage_RoundTripsWhenIntegrationAccountIsConfigured()
+    {
+        var serviceUri = Environment.GetEnvironmentVariable("AZURE_BLOB_TEST_SERVICE_URI");
+        if (string.IsNullOrWhiteSpace(serviceUri)) return;
+        var storage = new AzureBlobMediaStorage(new MediaStorageOptions
+        {
+            BlobServiceUri = serviceUri,
+            ContainerName = Environment.GetEnvironmentVariable("AZURE_BLOB_TEST_CONTAINER") ?? "media-tests"
+        });
+        await using var content = new MemoryStream([4, 5, 6]);
+        var stored = await storage.SaveAsync(content, ".png", CancellationToken.None);
+        try
+        {
+            Assert.True(await storage.ExistsAsync(stored.StorageKey, CancellationToken.None));
+            await using var read = await storage.OpenReadAsync(stored.StorageKey, CancellationToken.None);
+            Assert.NotNull(read);
+        }
+        finally
+        {
+            await storage.DeleteAsync(stored.StorageKey, CancellationToken.None);
+        }
+    }
 }

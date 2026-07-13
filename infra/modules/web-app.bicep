@@ -2,6 +2,7 @@ param name string
 param location string
 param appServicePlanId string
 param apiBaseUrl string
+param applicationInsightsConnectionString string
 param tags object = {}
 
 resource web 'Microsoft.Web/sites@2023-12-01' = {
@@ -36,6 +37,18 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'WEBSITES_PORT'
           value: '8080'
+        }
+        {
+          name: 'DEPLOYMENT_ENVIRONMENT'
+          value: 'demo'
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
+          value: applicationInsightsConnectionString
+        }
+        {
+          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
+          value: '~3'
         }
       ]
     }

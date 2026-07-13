@@ -51,11 +51,12 @@ public static class ProductionConfigurationValidator
             errors.Add("Cors:AllowedOrigins must contain only absolute HTTPS non-loopback origins in Production.");
         }
 
-        if (!string.Equals(configuration["MediaStorage:Provider"], "Local", StringComparison.OrdinalIgnoreCase))
-        {
-            errors.Add("MediaStorage:Provider must be Local until another provider is configured.");
-        }
-        Required(configuration, "MediaStorage:LocalRoot", errors);
+        if (!string.Equals(configuration["MediaStorage:Provider"], "AzureBlob", StringComparison.OrdinalIgnoreCase))
+            errors.Add("MediaStorage:Provider must be AzureBlob in Production.");
+        if (!Uri.TryCreate(configuration["MediaStorage:BlobServiceUri"], UriKind.Absolute, out var blobServiceUri) ||
+            blobServiceUri.Scheme != Uri.UriSchemeHttps || blobServiceUri.IsLoopback)
+            errors.Add("MediaStorage:BlobServiceUri must be an absolute HTTPS non-loopback URL in Production.");
+        Required(configuration, "MediaStorage:ContainerName", errors);
         if (!long.TryParse(configuration["MediaStorage:MaxFileSizeBytes"], out var maxFileSize) || maxFileSize <= 0)
         {
             errors.Add("MediaStorage:MaxFileSizeBytes must be a positive integer.");

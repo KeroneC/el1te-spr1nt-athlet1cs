@@ -11,6 +11,10 @@ describe("Phase 7 mutation boundary", () => {
     [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"]
   ] as const)("allows supported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(true));
 
+  it("allows deterministic seed GUIDs used by CMS records", () => {
+    expect(isAllowedAdminMutation(["sponsors", "60000000-0000-0000-0000-000000000001"], "PUT")).toBe(true);
+  });
+
   it.each([
     [["users"], "POST"], [["site-settings"], "POST"], [["contact-submissions"], "POST"],
     [["events", "not-a-guid"], "DELETE"], [["contact-submissions", id], "PUT"]

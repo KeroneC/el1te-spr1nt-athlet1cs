@@ -42,8 +42,9 @@ public sealed class DeploymentReadinessTests
             ["Jwt:Audience"] = "https://web.example.invalid",
             ["Jwt:ExpiresMinutes"] = "60",
             ["Cors:AllowedOrigins:0"] = "https://web.example.invalid",
-            ["MediaStorage:Provider"] = "Local",
-            ["MediaStorage:LocalRoot"] = "/var/lib/el1te/media",
+            ["MediaStorage:Provider"] = "AzureBlob",
+            ["MediaStorage:BlobServiceUri"] = "https://media.blob.core.windows.net",
+            ["MediaStorage:ContainerName"] = "media",
             ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
             ["MediaStorage:MaxFileSizeBytes"] = "10485760"
         }).Build();

@@ -8,6 +8,8 @@ public sealed class MediaStorageOptions
     public const string SectionName = "MediaStorage";
     public string Provider { get; set; } = "Local";
     public string LocalRoot { get; set; } = "uploads";
+    public string BlobServiceUri { get; set; } = string.Empty;
+    public string ContainerName { get; set; } = "media";
     public string PublicBaseUrl { get; set; } = "http://localhost:5126";
     public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
 }

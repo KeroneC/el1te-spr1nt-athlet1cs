@@ -83,22 +83,26 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
-builder.Services.AddSingleton<IMediaStorage, LocalMediaStorage>();
 builder.Services.AddSingleton<IImageInspector, SkiaImageInspector>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthorizationHandler, ActiveCmsAdminHandler>();
 builder.Services.AddScoped<DevelopmentAdminSeeder>();
+builder.Services.AddScoped<ProductionAdminBootstrapper>();
 
 var mediaStorageOptions = builder.Configuration
     .GetSection(MediaStorageOptions.SectionName)
     .Get<MediaStorageOptions>() ?? new MediaStorageOptions();
-if (!Path.IsPathRooted(mediaStorageOptions.LocalRoot))
+if (string.Equals(mediaStorageOptions.Provider, "Local", StringComparison.OrdinalIgnoreCase) && !Path.IsPathRooted(mediaStorageOptions.LocalRoot))
 {
     mediaStorageOptions.LocalRoot = Path.Combine(builder.Environment.ContentRootPath, mediaStorageOptions.LocalRoot);
 }
 builder.Services.AddSingleton(mediaStorageOptions);
+builder.Services.AddSingleton<IMediaStorage>(provider =>
+    string.Equals(mediaStorageOptions.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase)
+        ? new AzureBlobMediaStorage(mediaStorageOptions)
+        : new LocalMediaStorage(mediaStorageOptions));
 
 builder.Services.AddDbContext<El1teDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -125,6 +129,14 @@ builder.Services
 builder.Services.AddAuthorization(CmsAdminAuthorization.Configure);
 
 var app = builder.Build();
+
+if (args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase))
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var created = await scope.ServiceProvider.GetRequiredService<ProductionAdminBootstrapper>().RunAsync();
+    Console.WriteLine(created ? "SuperAdmin created." : "Configured admin already exists; no changes made.");
+    return;
+}
 
 if (app.Environment.IsDevelopment())
 {
