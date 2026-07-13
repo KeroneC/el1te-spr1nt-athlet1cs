@@ -14,6 +14,7 @@ using El1teSpr1ntTrack.Infrastructure.Security;
 using El1teSpr1ntTrack.Infrastructure.Media;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -23,6 +24,11 @@ using Serilog;
 var builder = WebApplication.CreateBuilder(args);
 
 ProductionConfigurationValidator.Validate(builder.Configuration, builder.Environment);
+
+if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
+{
+    builder.Services.AddApplicationInsightsTelemetry();
+}
 
 builder.Host.UseSerilog((context, _, configuration) =>
 {
@@ -104,8 +110,22 @@ builder.Services.AddSingleton<IMediaStorage>(provider =>
         ? new AzureBlobMediaStorage(mediaStorageOptions)
         : new LocalMediaStorage(mediaStorageOptions));
 
+var databaseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+var useManagedIdentity = builder.Configuration.GetValue<bool>("Database:UseManagedIdentity");
 builder.Services.AddDbContext<El1teDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    if (!useManagedIdentity)
+    {
+        options.UseSqlServer(databaseConnectionString);
+        return;
+    }
+
+    var connection = new SqlConnection(databaseConnectionString)
+    {
+        AccessTokenCallback = AzureSqlAccessTokenProvider.Callback
+    };
+    options.UseSqlServer(connection, contextOwnsConnection: true);
+});
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)

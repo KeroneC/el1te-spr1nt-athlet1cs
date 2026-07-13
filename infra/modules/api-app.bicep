@@ -13,7 +13,7 @@ param publicBaseUrl string
 param allowedOrigins array
 param tags object = {}
 
-var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Authentication=Active Directory Managed Identity;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
+var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
 var corsAppSettings = map(allowedOrigins, (origin, index) => {
   name: 'Cors__AllowedOrigins__${index}'
   value: origin
@@ -33,7 +33,7 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
     siteConfig: {
       alwaysOn: true
       ftpsState: 'Disabled'
-      healthCheckPath: '/health/ready'
+      healthCheckPath: '/health'
       http20Enabled: true
       linuxFxVersion: 'DOTNETCORE|10.0'
       minTlsVersion: '1.2'
@@ -49,6 +49,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ConnectionStrings__DefaultConnection'
           value: connectionString
+        }
+        {
+          name: 'Database__UseManagedIdentity'
+          value: 'true'
         }
         {
           name: 'Jwt__Issuer'
@@ -89,10 +93,6 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
-        }
-        {
-          name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
-          value: '~3'
         }
       ], corsAppSettings)
     }

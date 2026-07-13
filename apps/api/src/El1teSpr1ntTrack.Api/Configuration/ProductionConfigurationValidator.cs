@@ -22,6 +22,12 @@ public static class ProductionConfigurationValidator
             errors.Add("ConnectionStrings:DefaultConnection must not use LocalDB in Production.");
         }
 
+        if (!bool.TryParse(configuration["Database:UseManagedIdentity"], out var useManagedIdentity) ||
+            !useManagedIdentity)
+        {
+            errors.Add("Database:UseManagedIdentity must be true in Production.");
+        }
+
         Required(configuration, "Jwt:Issuer", errors);
         Required(configuration, "Jwt:Audience", errors);
 
