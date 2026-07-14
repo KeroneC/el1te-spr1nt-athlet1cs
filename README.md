@@ -15,9 +15,11 @@ Implemented:
 - Admin dashboard and complete management for announcements, events, coaches, sponsors, FAQs, content blocks, site settings, and contact submissions
 - Responsive public CMS website for home, about, programs, news, events, coaches, sponsors, FAQs, registration information, and contact submissions
 - Protected JPEG/PNG/WebP media library, reusable CMS image picker, gallery administration, and public gallery
+- Azure Blob media provider with private storage and API-streamed public delivery
+- Manually approved Azure demo delivery through GitHub OIDC, Bicep, immutable artifacts, EF migration bundles, and smoke tests
 - Backend unit/integration tests, focused frontend tests, and a Playwright cross-stack media/gallery workflow
 
-Intentionally not implemented yet: Azure Blob storage, password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, live production infrastructure, and iOS code.
+Intentionally not implemented yet: password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, a custom production domain, deployment slots, automatic production promotion, and iOS code.
 
 ## Documentation
 
@@ -30,7 +32,7 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - [Local development](docs/guides/local-development.md)
 - [Troubleshooting](docs/guides/troubleshooting.md)
 - [Glossary](docs/guides/glossary.md)
-- [CI/CD and future Azure preparation](docs/architecture/cicd-overview.md)
+- [CI/CD and Azure demo delivery](docs/architecture/cicd-overview.md)
 - [AI project handoff](docs/guides/ai-project-handoff.md)
 
 ## Prerequisites

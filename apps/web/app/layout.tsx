@@ -3,7 +3,7 @@ import { robotsForEnvironment } from "@/lib/public/deployment";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
   title: {
     default: "El1te Spr1nt Athlet1cs",
     template: "%s | El1te Spr1nt Athlet1cs"

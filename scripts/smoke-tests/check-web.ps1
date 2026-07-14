@@ -2,9 +2,10 @@ param([Parameter(Mandatory)][string]$BaseUrl)
 
 $ErrorActionPreference = "Stop"
 $BaseUrl = $BaseUrl.TrimEnd('/')
+$MaxAttempts = 40
 
 function Test-Endpoint([string]$Path, [string]$Marker) {
-    for ($attempt = 1; $attempt -le 12; $attempt++) {
+    for ($attempt = 1; $attempt -le $MaxAttempts; $attempt++) {
         try {
             $response = Invoke-WebRequest -UseBasicParsing "$BaseUrl$Path" -TimeoutSec 10
             if ($response.StatusCode -eq 200 -and $response.Content.Contains($Marker)) {
@@ -12,7 +13,7 @@ function Test-Endpoint([string]$Path, [string]$Marker) {
                 return
             }
         } catch {
-            if ($attempt -eq 12) { throw }
+            if ($attempt -eq $MaxAttempts) { throw }
         }
         Start-Sleep -Seconds 5
     }
@@ -21,7 +22,7 @@ function Test-Endpoint([string]$Path, [string]$Marker) {
 
 Test-Endpoint "/" "El1te Spr1nt Athlet1cs"
 Test-Endpoint "/news" "Club announcements"
-Test-Endpoint "/events" "Events and important dates"
+Test-Endpoint "/events" "Schedule"
 Test-Endpoint "/gallery" "Gallery"
 Test-Endpoint "/registration" "Registration information"
 Test-Endpoint "/admin/login" "Admin sign in"

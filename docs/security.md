@@ -6,7 +6,7 @@ The platform may handle sensitive information about minors, parents, coaches, me
 
 ## Secrets
 
-No real secrets belong in the repository. Use user secrets locally, GitHub Actions secrets in CI, Vercel environment variables for web settings, and Azure Key Vault or managed identity for production API secrets.
+No real secrets belong in the repository. Use user secrets locally, protected GitHub Environment secrets for deployment-only values, and Azure Key Vault or managed identity for the demo API. The JWT signing key is generated directly in Key Vault and is not stored as a GitHub secret.
 
 The JWT signing key is `Jwt:Key`. It must be supplied through user secrets or environment-specific secret storage and must be at least 32 characters long. `appsettings*.json` may contain safe `Jwt:Issuer`, `Jwt:Audience`, and `Jwt:ExpiresMinutes` values, but never a real signing key.
 
