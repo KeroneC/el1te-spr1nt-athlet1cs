@@ -4,7 +4,10 @@ namespace El1teSpr1ntTrack.Api.Configuration;
 
 public static class ProductionConfigurationValidator
 {
-    public static void Validate(IConfiguration configuration, IHostEnvironment environment)
+    public static void Validate(
+        IConfiguration configuration,
+        IHostEnvironment environment,
+        bool allowSqlPasswordAuthentication = false)
     {
         if (!environment.IsProduction())
         {
@@ -22,8 +25,9 @@ public static class ProductionConfigurationValidator
             errors.Add("ConnectionStrings:DefaultConnection must not use LocalDB in Production.");
         }
 
-        if (!bool.TryParse(configuration["Database:UseManagedIdentity"], out var useManagedIdentity) ||
-            !useManagedIdentity)
+        if (!allowSqlPasswordAuthentication &&
+            (!bool.TryParse(configuration["Database:UseManagedIdentity"], out var useManagedIdentity) ||
+             !useManagedIdentity))
         {
             errors.Add("Database:UseManagedIdentity must be true in Production.");
         }

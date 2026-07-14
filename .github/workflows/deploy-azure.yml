@@ -193,7 +193,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p /tmp/el1te-api && unzip -q release/api.zip -d /tmp/el1te-api
-          ASPNETCORE_ENVIRONMENT=Production ConnectionStrings__DefaultConnection="$DATABASE_MIGRATION_CONNECTION_STRING" \
+          ASPNETCORE_ENVIRONMENT=Production Database__UseManagedIdentity=false ConnectionStrings__DefaultConnection="$DATABASE_MIGRATION_CONNECTION_STRING" \
             Jwt__Issuer="${{ steps.infrastructure.outputs.apiurl }}" Jwt__Audience="${{ steps.infrastructure.outputs.weburl }}" Jwt__ExpiresMinutes=60 Jwt__Key="$(cat /tmp/jwt)" \
             Cors__AllowedOrigins__0="${{ steps.infrastructure.outputs.weburl }}" MediaStorage__Provider=AzureBlob \
             MediaStorage__BlobServiceUri="https://invalid.blob.core.windows.net" MediaStorage__ContainerName=media MediaStorage__PublicBaseUrl="${{ steps.infrastructure.outputs.apiurl }}" MediaStorage__MaxFileSizeBytes=10485760 \

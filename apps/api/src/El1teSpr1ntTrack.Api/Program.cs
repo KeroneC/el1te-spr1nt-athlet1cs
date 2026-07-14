@@ -22,8 +22,12 @@ using Microsoft.OpenApi;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+var isAdminBootstrap = args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase);
 
-ProductionConfigurationValidator.Validate(builder.Configuration, builder.Environment);
+ProductionConfigurationValidator.Validate(
+    builder.Configuration,
+    builder.Environment,
+    allowSqlPasswordAuthentication: isAdminBootstrap);
 
 if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
 {
@@ -150,7 +154,7 @@ builder.Services.AddAuthorization(CmsAdminAuthorization.Configure);
 
 var app = builder.Build();
 
-if (args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase))
+if (isAdminBootstrap)
 {
     await using var scope = app.Services.CreateAsyncScope();
     var created = await scope.ServiceProvider.GetRequiredService<ProductionAdminBootstrapper>().RunAsync();
