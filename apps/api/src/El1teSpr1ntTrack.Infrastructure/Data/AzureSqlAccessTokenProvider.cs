@@ -16,11 +16,16 @@ public static class AzureSqlAccessTokenProvider
         SqlAuthenticationParameters parameters,
         CancellationToken cancellationToken)
     {
-        var scope = parameters.Resource.EndsWith(DefaultScopeSuffix, StringComparison.Ordinal)
-            ? parameters.Resource
-            : $"{parameters.Resource}{DefaultScopeSuffix}";
+        var scope = BuildScope(parameters.Resource);
         var token = await Credential.GetTokenAsync(new TokenRequestContext([scope]), cancellationToken);
 
         return new SqlAuthenticationToken(token.Token, token.ExpiresOn);
+    }
+
+    internal static string BuildScope(string resource)
+    {
+        return resource.EndsWith(DefaultScopeSuffix, StringComparison.Ordinal)
+            ? resource
+            : $"{resource.TrimEnd('/')}{DefaultScopeSuffix}";
     }
 }
