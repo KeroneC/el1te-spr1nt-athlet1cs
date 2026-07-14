@@ -1,5 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import { ArrowRight, Medal, Timer, Users } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { AnnouncementCard, EmptyState, EventCard } from "@/components/public/ui";
 import { getAnnouncements, getCoaches, getContentBlocks, getEvents, getGalleryAlbums, getSponsors } from "@/lib/public/client";
@@ -33,7 +34,7 @@ export default async function HomePage() {
       </div>
     </section>
 
-    <section className="achievement-band"><div className="site-container achievement-layout"><div className="achievement-image"><img src="/images/team/medalists.jpg" alt="Four El1te Spr1nt Athlet1cs competitors displaying their medals after a track meet" /></div><div className="achievement-copy"><p className="eyebrow">Earned together</p><h2>Confidence built at the track</h2><p>Every practice, race, and finish line is a chance for young athletes to grow in discipline, teamwork, and belief.</p><Link className="text-link" href="/about">Our mission<ArrowRight size={17} aria-hidden="true" /></Link></div></div></section>
+    <section className="achievement-band"><div className="site-container achievement-layout"><div className="achievement-image"><Image src="/images/team/meet-community.jpg" alt="An El1te athlete smiling with two club supporters at a track meet" fill sizes="(max-width: 767px) 100vw, 60vw" priority /></div><div className="achievement-copy"><p className="eyebrow">Earned together</p><h2>Confidence built at the track</h2><p>Every practice, race, and finish line is a chance for young athletes to grow in discipline, teamwork, and belief.</p><Link className="text-link" href="/about">Our mission<ArrowRight size={17} aria-hidden="true" /></Link></div></div></section>
 
     <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">Train. Grow. Compete.</p><h2>{programs?.title ?? "Programs for young athletes"}</h2></div><Link className="text-link" href="/programs">Explore programs<ArrowRight size={17} aria-hidden="true" /></Link></div>{programs?.body && <p className="section-intro">{programs.body}</p>}<div className="program-grid"><div><Timer aria-hidden="true" /><h3>Speed development</h3><p>Age-appropriate mechanics, acceleration, and confident movement.</p></div><div><Medal aria-hidden="true" /><h3>Competition preparation</h3><p>Training that helps athletes arrive ready for meets and team events.</p></div><div><Users aria-hidden="true" /><h3>Whole-athlete growth</h3><p>Discipline, teamwork, respect, and joy alongside athletic development.</p></div></div></div></section>
 
