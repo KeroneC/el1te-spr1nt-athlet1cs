@@ -16,6 +16,7 @@ test("admin can publish an uploaded image in a public gallery album", async ({ p
     await expect(page).toHaveURL(/\/admin$/);
 
     await page.goto("/admin/media");
+    await expect(page.getByLabel("Alt text")).toHaveAttribute("required", "");
     await page.getByLabel("Image").setInputFiles("public/images/track-hero.png");
     await page.getByLabel("Title").fill(mediaTitle);
     await page.getByLabel("Alt text").fill("Runner crossing the finish line");
