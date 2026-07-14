@@ -5,6 +5,7 @@ web_dir="${1:-apps/web}"
 output="${2:-artifacts/web}"
 
 test -f "$web_dir/.next/standalone/apps/web/server.js"
+test -f "$web_dir/.next/standalone/apps/web/.next/BUILD_ID"
 rm -rf "$output"
 mkdir -p "$output"
 cp -R "$web_dir/.next/standalone/." "$output/"

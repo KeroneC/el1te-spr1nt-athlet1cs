@@ -157,6 +157,7 @@ jobs:
         with:
           name: web-standalone
           path: artifacts/web
+          include-hidden-files: true
           retention-days: 7
 
   end-to-end:
@@ -257,8 +258,10 @@ jobs:
       - name: Package and checksum release
         shell: bash
         run: |
+          test -f release/web/apps/web/.next/BUILD_ID
           (cd release/api && zip -qr ../api.zip .)
           (cd release/web && zip -qr ../web.zip .)
+          unzip -Z1 release/web.zip | grep -Fxq 'apps/web/.next/BUILD_ID'
           mv release/database/efbundle release/efbundle
           chmod +x release/efbundle
           (cd release && sha256sum api.zip web.zip efbundle > SHA256SUMS)
