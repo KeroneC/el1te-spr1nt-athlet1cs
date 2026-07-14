@@ -39,6 +39,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
           value: '8080'
         }
         {
+          name: 'WEBSITES_CONTAINER_START_TIME_LIMIT'
+          value: '600'
+        }
+        {
           name: 'DEPLOYMENT_ENVIRONMENT'
           value: 'demo'
         }
