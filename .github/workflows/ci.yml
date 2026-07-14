@@ -121,6 +121,7 @@ jobs:
         working-directory: apps/web
     env:
       API_BASE_URL: https://api.example.invalid
+      SITE_URL: https://el1tesprint-demo-neauu2-web.azurewebsites.net
 
     steps:
       - name: Checkout

@@ -12,7 +12,8 @@ request() {
   local path="$1"
   local expected="${2:-}"
   local body
-  for attempt in {1..12}; do
+  local attempts="${SMOKE_TEST_ATTEMPTS:-40}"
+  for ((attempt = 1; attempt <= attempts; attempt++)); do
     if body=$(curl --fail --silent --show-error --max-time 10 "$base_url$path"); then
       if [[ -z "$expected" || "$body" == *"$expected"* ]]; then
         echo "PASS $path"

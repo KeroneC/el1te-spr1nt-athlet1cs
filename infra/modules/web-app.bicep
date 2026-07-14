@@ -31,6 +31,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
           value: 'production'
         }
         {
+          name: 'SITE_URL'
+          value: 'https://${name}.azurewebsites.net'
+        }
+        {
           name: 'PORT'
           value: '8080'
         }

@@ -40,6 +40,6 @@ The admin browser has an extra security boundary. It submits credentials to a Ne
 
 The API uses DTOs and JWT bearer authentication rather than Next.js-specific contracts. A future iOS client can call the same public and authenticated API routes while storing its token with platform-appropriate secure storage. It would not use the web-only HttpOnly cookie boundary.
 
-Not built yet: password reset and token refresh, revocation, media upload, parent or athlete portals, online registration, commerce, donations, private document workflows, production deployment infrastructure, and mobile code.
+Not built yet: password reset and token refresh, revocation, parent or athlete portals, online registration, commerce, donations, private document workflows, a custom production domain with automatic promotion, and mobile code. Media upload, Azure Blob storage, and the manually promoted Azure demo are implemented.
 
 Related: [backend architecture](backend-architecture.md), [frontend architecture](frontend-architecture.md), and [authentication and authorization](authentication-and-authorization.md).

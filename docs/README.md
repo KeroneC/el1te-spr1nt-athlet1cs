@@ -1,6 +1,6 @@
 # El1te Spr1nt Athlet1cs Documentation
 
-This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 public CMS website, a protected administration workspace, local media/gallery support, and a polished Phase 10 public website surface with downloadable registration forms. Online registration workflows, payments, documents, parent and athlete portals, Azure media storage, and mobile clients are not implemented.
+This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 public CMS website, a protected administration workspace, local and Azure Blob media providers, a public gallery, a polished public website, and a manually promoted Azure demo. Online registration workflows, payments, private documents, parent and athlete portals, automatic production promotion, and mobile clients are not implemented.
 
 ## Suggested Reading Order
 
@@ -26,7 +26,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Authentication and authorization](architecture/authentication-and-authorization.md)
 - [Testing strategy](architecture/testing-strategy.md)
 - [CI/CD overview](architecture/cicd-overview.md)
-- [Future Azure deployment](architecture/future-azure-deployment.md)
+- [Azure demo deployment](architecture/future-azure-deployment.md)
 
 ## Current Public Website Scope
 
@@ -80,7 +80,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)
 - [CI troubleshooting and branch protection](guides/ci-troubleshooting.md)
-- [Future Azure setup](guides/future-azure-setup.md)
+- [Azure setup and release](guides/future-azure-setup.md)
 - [AI project handoff](guides/ai-project-handoff.md)
 
 The older phase-level files at the root of `docs` are retained as short compatibility links. The documents above are the maintained references.

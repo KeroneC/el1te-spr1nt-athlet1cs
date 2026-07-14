@@ -1,3 +1,3 @@
-# Deployment Documentation Moved
+# Deployment Documentation
 
-Phase 6A prepares deployment without creating Azure resources. Read [architecture/cicd-overview.md](architecture/cicd-overview.md), [architecture/future-azure-deployment.md](architecture/future-azure-deployment.md), and [guides/future-azure-setup.md](guides/future-azure-setup.md).
+Phase 6B operates a manually approved Azure demo in Central US. Read [CI/CD overview](architecture/cicd-overview.md), [Azure demo continuous delivery](architecture/future-azure-deployment.md), and [Azure setup and release](guides/future-azure-setup.md).

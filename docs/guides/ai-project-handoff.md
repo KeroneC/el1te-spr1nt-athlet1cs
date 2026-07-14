@@ -2,19 +2,20 @@
 
 This is the reconciliation point between the repository and any separate ChatGPT conversation used to draft future phase prompts. The repository, migrations, ADRs, documentation, and passing tests are the source of truth.
 
-## Phase 6B Azure CD Readiness
+## Phase 6B Azure Demo Delivery
 
-- The approved target is a manually promoted, public-but-noindex `demo` environment in East US 2 funded by the nonprofit grant.
+- The manually promoted, public-but-noindex `demo` environment is live in Central US under `el1te-demo-central-rg`. Central US was selected after the Basic SQL SKU was unavailable in East US 2 and East US.
 - Passing `main` CI runs package immutable API, web, and EF artifacts with a commit manifest and SHA-256 checksums. The deployment workflow accepts a CI run ID and refuses non-main or unsuccessful runs.
-- Bicep now defines the shared B1 Linux plan, API/web apps, Basic Azure SQL, private Standard LRS Blob media, Key Vault, and capped workspace-based Application Insights.
+- Bicep owns the shared B1 Linux plan, API/web apps, Basic Azure SQL, private Standard LRS Blob media, Key Vault, capped workspace-based Application Insights, and 600-second cold-start limits.
 - Production media uses `AzureBlobMediaStorage` through managed identity; Development keeps `LocalMediaStorage`. Public media continues to stream through the API.
 - The first SuperAdmin is created only through the idempotent non-HTTP `--bootstrap-admin` command. Development seeding remains disabled in Production.
-- Azure resources have not been created from this workspace. Organization OIDC, Environment protection, SQL contained-user bootstrap, what-if review, and the first approved workflow run remain operator steps.
+- GitHub OIDC and the protected `demo` Environment are configured. The API managed identity has scoped Blob/Key Vault roles and a contained SQL user with `db_datareader`/`db_datawriter`; temporary probe resources and firewall rules were removed after launch diagnostics.
+- Public demo URLs are `https://el1tesprint-demo-neauu2-web.azurewebsites.net` and `https://el1tesprint-demo-neauu2-api.azurewebsites.net`.
 
 ## Current Baseline
 
-- Phase 9 is merged into `main`. Public-site refinement continues on `feature/public-site-refinement` until this feature branch is merged.
-- The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, inert Azure/Bicep preparation in `infra`, and validation tooling in `scripts`.
+- Public-site refinement and Phase 6B delivery work are merged into `main`.
+- The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, deployed Azure/Bicep infrastructure in `infra`, and validation tooling in `scripts`.
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.
 - The Admin manages announcements, events, coaches, sponsors, FAQs, content blocks, site settings, contact submissions, reusable media, and gallery albums.
 - The public website includes home, about, programs, news, events, coaches, sponsors, FAQs, registration information, forms, scholarship, Hall of Fame, team, contact, gallery list, and gallery detail routes.
@@ -25,7 +26,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Branch: `feature/public-site-refinement`
 - Source branch: updated `main`
 - Scope: public website visual polish, current-site parity, logo/favicon incorporation, Registration Hub, downloadable forms, and docs.
-- Backend scope: no backend changes expected. Online registration, payments, Azure provisioning, Azure Blob Storage, portals, waiver workflows, private documents, and iOS remain deferred.
+- Backend scope for that historical visual branch was intentionally narrow. Online registration, payments, portals, waiver workflows, private documents, and iOS remain deferred.
 
 ## Phase 10 Public Website Work
 
@@ -84,7 +85,7 @@ Run from `apps/web` using `npm.cmd` on Windows PowerShell if `npm.ps1` is blocke
 ## Phase 9 Delivered
 
 - Added `MediaAsset`, `GalleryAlbum`, and `GalleryAlbumMedia`, EF configurations, and migration `AddMediaLibraryAndGallery`.
-- Added `IMediaStorage`; Development uses path-safe local storage under an ignored directory. Azure Blob Storage remains a future provider and has not been provisioned.
+- Added `IMediaStorage`; Development uses path-safe local storage under an ignored directory, while the Azure demo uses the private `AzureBlobMediaStorage` provider.
 - Upload accepts JPEG, PNG, and WebP up to a configurable 10 MB. SkiaSharp validates the declared type, extension, encoded format, dimensions, corruption, and full decodability.
 - Protected API routes are `/api/admin/media` and `/api/admin/gallery-albums`; active image bytes are `/media/{id}`; public albums are `/api/public/gallery-albums`.
 - Admin routes are `/admin/media`, `/admin/media/[id]/edit`, `/admin/gallery`, `/admin/gallery/new`, and `/admin/gallery/[id]/edit`.
@@ -103,8 +104,8 @@ Manual end-to-end testing after implementation found and fixed three integration
 
 ## Automated Verification
 
-- Backend: 38 unit tests and 28 integration tests pass; Release build has zero warnings; EF has no pending model changes; API publish and migration bundle generation succeed.
-- Frontend: 40 Vitest tests, lint, strict typecheck, and standalone production build pass.
+- Backend: 43 unit tests and 30 integration tests pass; Release build, EF model validation, API publish, and migration bundle generation succeed.
+- Frontend: 45 Vitest tests, lint, strict typecheck, standalone production build, and immutable web artifact validation pass.
 - Playwright now exercises the real critical loop across both applications: Admin sign-in, media upload, published album creation, image assignment, and public gallery verification. It uses dedicated ports, `El1teSpr1ntTrack_E2E`, test-only credentials, isolated ignored media storage, and cleanup.
 - GitHub Actions includes the same browser workflow on Windows with LocalDB and uploads failure artifacts.
 - CI artifact helper scripts are tracked under `scripts/artifacts`; runtime build outputs remain ignored under root-level `artifacts`.
@@ -112,7 +113,7 @@ Manual end-to-end testing after implementation found and fixed three integration
 
 ## Deferred Work
 
-- Azure Blob media storage, production resource provisioning, deployment, and DNS changes.
+- Custom domains, deployment slots, automatic production promotion, and private networking hardening beyond the current demo posture.
 - Parent and athlete portals, online athlete registration, payments, digital waivers, volunteer workflows, attendance, meet entry, messaging, private documents, and iOS.
 - Rich text, advanced image transformations, broad browser coverage, accessibility automation, visual regression, and load testing.
 - Hall of Fame inductee detail routes such as `/hall-of-fame/[slug]`; static records already include stable slugs and image metadata for that future work.
@@ -125,15 +126,15 @@ Repository reconciliation update for El1te Spr1nt Athlet1cs, post-Phase 9:
 
 Treat the repository, migrations, ADRs, docs, and passing tests as the source of truth. Phase 9 is merged into main.
 
-The platform now has a protected reusable media library and gallery administration plus public gallery list/detail pages. Phase 9 added MediaAsset, GalleryAlbum, GalleryAlbumMedia, EF configurations, migration AddMediaLibraryAndGallery, an IMediaStorage abstraction with ignored local Development storage, validated JPEG/PNG/WebP uploads up to 10 MB, reusable CMS Media Pickers, protected Admin APIs/routes, public gallery APIs/routes, reference-safe deletion, publication filtering, and album-specific image metadata. Azure Blob Storage is not implemented or provisioned.
+The platform has a protected reusable media library and gallery administration plus public gallery list/detail pages. Phase 9 added MediaAsset, GalleryAlbum, GalleryAlbumMedia, EF configurations, migration AddMediaLibraryAndGallery, an IMediaStorage abstraction with ignored local Development storage, validated JPEG/PNG/WebP uploads up to 10 MB, reusable CMS Media Pickers, protected Admin APIs/routes, public gallery APIs/routes, reference-safe deletion, publication filtering, and album-specific image metadata. Phase 6B added the managed-identity Azure Blob provider and deployed private media storage.
 
 Manual end-to-end testing found and fixed: (1) local API_BASE_URL/profile alignment, (2) missing upload confirmation and an async React form-reset crash, and (3) an EF Core concurrency failure when adding media to an album, fixed by explicitly inserting GalleryAlbumMedia and covered by a database-backed regression test.
 
-Current automated validation is 38 backend unit tests, 28 backend integration tests, and 40 frontend Vitest tests, plus a Playwright cross-stack workflow for Admin sign-in -> upload -> album creation/publish -> image assignment -> public gallery verification. Release build, EF model check, API publish, migration bundle, frontend lint/typecheck/build, docs validation, and secret scanning pass. CI artifact helper scripts are tracked under scripts/artifacts while runtime build outputs remain ignored.
+Current automated validation is 43 backend unit tests, 30 backend integration tests, and 45 frontend Vitest tests, plus a Playwright cross-stack workflow for Admin sign-in -> upload -> album creation/publish -> image assignment -> public gallery verification. Release build, EF model check, API publish, migration bundle, frontend lint/typecheck/build, docs validation, secret scanning, and immutable release packaging pass.
 
 The Admin is functionally mature for the present scope. Future Admin work should be incremental UX/UI fine-tuning informed by use and board feedback, not a rebuild. Public UX/UI refinement can be scoped separately.
 
-Still deferred: Azure provisioning/deployment and Blob provider, portals, online registration, payments, waivers, volunteer/attendance/meet-entry/messaging workflows, private documents, iOS, rich text, advanced image transformations, and broad visual/accessibility/load testing. Do not describe media or galleries as deferred, do not repeat completed CMS work, and do not invent deferred workflows in the next phase prompt.
+The Azure demo is live through manually approved GitHub OIDC delivery. Still deferred: custom domains, slots, automatic production promotion, portals, online registration, payments, waivers, volunteer/attendance/meet-entry/messaging workflows, private documents, iOS, rich text, advanced image transformations, and broad visual/accessibility/load testing. Do not describe media, galleries, Azure Blob, or demo provisioning as deferred.
 ```
 
 ## Reconciliation Procedure

@@ -3,8 +3,8 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-if (process.env.NODE_ENV === "production" && !process.env.API_BASE_URL) {
-  throw new Error("API_BASE_URL is required for a production build.");
+if (process.env.NODE_ENV === "production" && (!process.env.API_BASE_URL || !process.env.SITE_URL)) {
+  throw new Error("API_BASE_URL and SITE_URL are required for a production build.");
 }
 
 /** @type {import('next').NextConfig} */
