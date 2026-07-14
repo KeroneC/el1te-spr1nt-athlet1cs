@@ -35,23 +35,24 @@ public sealed class DeploymentReadinessTests
     [Fact]
     public void ProductionConfiguration_AcceptsRequiredSafeValues()
     {
-        var configuration = new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
-        {
-            ["ConnectionStrings:DefaultConnection"] = "Server=tcp:sql.example.invalid,1433;Initial Catalog=app;Encrypt=True;",
-            ["Database:UseManagedIdentity"] = "true",
-            ["Jwt:Key"] = "test-only-signing-key-with-32-characters-minimum",
-            ["Jwt:Issuer"] = "https://api.example.invalid",
-            ["Jwt:Audience"] = "https://web.example.invalid",
-            ["Jwt:ExpiresMinutes"] = "60",
-            ["Cors:AllowedOrigins:0"] = "https://web.example.invalid",
-            ["MediaStorage:Provider"] = "AzureBlob",
-            ["MediaStorage:BlobServiceUri"] = "https://media.blob.core.windows.net",
-            ["MediaStorage:ContainerName"] = "media",
-            ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
-            ["MediaStorage:MaxFileSizeBytes"] = "10485760"
-        }).Build();
+        var configuration = BuildSafeProductionConfiguration(useManagedIdentity: true);
 
         ProductionConfigurationValidator.Validate(configuration, new TestEnvironment("Production"));
+    }
+
+    [Fact]
+    public void ProductionConfiguration_AllowsSqlPasswordOnlyForExplicitBootstrapCommand()
+    {
+        var configuration = BuildSafeProductionConfiguration(useManagedIdentity: false);
+
+        ProductionConfigurationValidator.Validate(
+            configuration,
+            new TestEnvironment("Production"),
+            allowSqlPasswordAuthentication: true);
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            ProductionConfigurationValidator.Validate(configuration, new TestEnvironment("Production")));
+        Assert.Contains("Database:UseManagedIdentity", exception.Message);
     }
 
     [Theory]
@@ -79,6 +80,25 @@ public sealed class DeploymentReadinessTests
 
         Assert.Equal(expected, document.RootElement.GetProperty("status").GetString());
         Assert.Single(document.RootElement.EnumerateObject());
+    }
+
+    private static IConfiguration BuildSafeProductionConfiguration(bool useManagedIdentity)
+    {
+        return new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        {
+            ["ConnectionStrings:DefaultConnection"] = "Server=tcp:sql.example.invalid,1433;Initial Catalog=app;Encrypt=True;",
+            ["Database:UseManagedIdentity"] = useManagedIdentity.ToString(),
+            ["Jwt:Key"] = "test-only-signing-key-with-32-characters-minimum",
+            ["Jwt:Issuer"] = "https://api.example.invalid",
+            ["Jwt:Audience"] = "https://web.example.invalid",
+            ["Jwt:ExpiresMinutes"] = "60",
+            ["Cors:AllowedOrigins:0"] = "https://web.example.invalid",
+            ["MediaStorage:Provider"] = "AzureBlob",
+            ["MediaStorage:BlobServiceUri"] = "https://media.blob.core.windows.net",
+            ["MediaStorage:ContainerName"] = "media",
+            ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
+            ["MediaStorage:MaxFileSizeBytes"] = "10485760"
+        }).Build();
     }
 
     private sealed class TestEnvironment(string environmentName) : IHostEnvironment
