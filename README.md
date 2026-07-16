@@ -33,6 +33,7 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - [Troubleshooting](docs/guides/troubleshooting.md)
 - [Glossary](docs/guides/glossary.md)
 - [CI/CD and Azure demo delivery](docs/architecture/cicd-overview.md)
+- [Product rebase and staged delivery roadmap](docs/product-roadmap.md)
 - [AI project handoff](docs/guides/ai-project-handoff.md)
 
 ## Prerequisites

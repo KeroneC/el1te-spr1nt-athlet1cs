@@ -26,7 +26,7 @@ dotnet test apps/api/El1teSpr1ntTrack.sln --configuration Release
 
 ## Frontend Tests
 
-`apps/web/tests` uses Vitest. `admin-validation.test.ts` covers login rules, admin-role selection, announcement filters, form validation, and lifecycle labels. `api-error.test.ts` verifies that safe field errors survive while sensitive backend detail does not. The current tests target deterministic boundary logic rather than rendering components or starting browsers.
+`apps/web/tests` uses Vitest. `admin-validation.test.ts` covers login rules, admin-role selection, announcement filters, form validation, and lifecycle labels. `api-error.test.ts` verifies that safe field errors survive while sensitive backend detail does not. `media-upload.test.ts` covers queue title defaults, client file validation, and bounded concurrency. The current tests target deterministic boundary logic rather than rendering components or starting browsers.
 
 Run:
 
@@ -45,7 +45,7 @@ npm.cmd run build
 
 ## Browser End-to-End Test
 
-`apps/web/e2e` uses Playwright with the real Next.js application, ASP.NET Core API, EF Core migrations, SQL Server LocalDB, authentication cookie boundary, and local media storage. The critical test signs in, uploads an image, creates a published album, adds the image, verifies the public album, and removes its records afterward.
+`apps/web/e2e` uses Playwright with the real Next.js application, ASP.NET Core API, EF Core migrations, SQL Server LocalDB, authentication cookie boundary, and local media storage. The critical test signs in, uploads through the media queue, creates a published album, finds the image through the searchable picker, adds it, verifies the public album, and removes its records afterward.
 
 The harness uses dedicated ports (`3100` and `5127`), the dedicated `El1teSpr1ntTrack_E2E` database, fixed test-only credentials, and ignored storage under `artifacts/e2e`. It does not use Development User Secrets or the normal Development database.
 

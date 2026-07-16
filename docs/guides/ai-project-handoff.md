@@ -15,11 +15,21 @@ This is the reconciliation point between the repository and any separate ChatGPT
 ## Current Baseline
 
 - Public-site refinement and Phase 6B delivery work are merged into `main`.
+- The reconciled product direction is maintained in `docs/product-roadmap.md`: operational UX, Azure-backed launch readiness, a Winter registration pilot, hybrid store, then full launch.
 - The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, deployed Azure/Bicep infrastructure in `infra`, and validation tooling in `scripts`.
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.
 - The Admin manages announcements, events, coaches, sponsors, FAQs, content blocks, site settings, contact submissions, reusable media, and gallery albums.
 - The public website includes home, about, programs, news, events, coaches, sponsors, FAQs, registration information, forms, scholarship, Hall of Fame, team, contact, gallery list, and gallery detail routes.
 - The Admin is functionally mature for the current scope. Future Admin work should be targeted UX/UI fine-tuning based on use and board feedback, not a ground-up redesign.
+
+## Active Stage 1 Operational UX
+
+- Bulk media upload queues up to 20 validated images with per-image title, required alt text, optional captions, previews, three concurrent uploads, retryable partial failures, and optional direct album assignment.
+- A successful upload is retained when album assignment fails, so retrying the assignment does not create a duplicate asset.
+- CMS media fields and gallery album editing use a shared searchable, 24-item paginated media browser instead of a long scrolling list.
+- Frontend validation for this slice: lint passed, strict typecheck passed, 48 Vitest tests passed, production build passed with expected offline API fallback logs, and the real Playwright Admin-to-public-gallery workflow passed.
+- Remaining Stage 1 work: grouped public navigation and guarded email-invited Admin/SuperAdmin management.
+- Azure demo deployment remains manually paused until a meaningful reviewed release is ready.
 
 ## Public Refinement Branch
 

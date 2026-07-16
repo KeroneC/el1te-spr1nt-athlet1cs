@@ -36,6 +36,10 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Admin change is not visible immediately | Public page still has a valid 60-second cache entry | Wait one minute and refresh; compare the public API response | Allow the cache window; do not disable public caching or Admin `no-store` behavior |
 | Public site shows a safe unavailable state | API stopped, wrong `API_BASE_URL`, or a malformed response | Check API health and the Next.js server log | Start the API, correct the server-only URL, and restart Next.js after environment changes |
 | Contact form cannot submit | API unavailable or backend validation rejected a field | Check the safe form status and API health; do not expose exception details | Correct highlighted fields or restore API connectivity; contact POSTs are intentionally uncached |
+| Homepage photo works on desktop but is broken on iPhone Safari | A device-specific Next.js runtime image-optimizer request failed or was cached behind Azure App Service affinity | Inspect the rendered `src`/`srcset`, request the exact `/_next/image` URL, and compare it with the original static asset | For a critical fixed image, publish a reasonably sized static JPEG under a new cache-safe filename and reference it directly; verify the live HTML no longer uses the optimizer for that image |
+| Deleted static asset still returns `200` after Azure deployment | ZIP deployment retained an orphaned file from an earlier release | Request the retired path directly after deployment and compare the App Service files with the immutable artifact | Deploy API and web ZIPs with `az webapp deploy --clean true`; verify retired paths return `404` after the release |
+| Phone still shows an old or broken image after a successful release | Browser/CDN cache, an unchanged asset URL, or a genuinely failing optimized request | Test the exact asset URL with a cache-busting query and inspect the page source before assuming it is only cache | Prefer a new fingerprint-like filename for emergency asset replacements, then verify both the new `200` response and old-path `404` responses |
+| Media upload says to check highlighted fields but none is highlighted | Client validation summary is not mapped to the specific queued file field | Submit one image with required alt text blank; inspect field error state, focus, and accessible error association | Mark the exact field invalid, render its message beside the field, and move focus to the first invalid control |
 
 Additional clues:
 
@@ -43,3 +47,13 @@ Additional clues:
 - PowerShell script policy may block `npm`; use `npm.cmd`.
 - Environment and `.env.local` changes require process restarts.
 - Do not solve certificate, cookie, CORS, or authorization problems by turning those protections off.
+
+## Production Incident Notes
+
+### 2026-07-14: iPhone Homepage Photo Failure
+
+- **Symptom:** the replacement homepage achievement photo rendered on desktop but appeared as a broken-image icon in iPhone Safari.
+- **Finding:** the page layout and original file were valid, but the browser depended on a responsive `/_next/image` request. Direct optimizer probes were inconsistent, and a phone cache initially made the problem look like a stale-page issue.
+- **Resolution:** generated a 1920 x 1280, approximately 369 KB JPEG; published it as `/images/team/meet-community-static.jpg`; and used a plain eager-loaded image URL for this fixed homepage asset.
+- **Deployment hardening:** Azure ZIP deployments now use clean mode. The previous `meet-community.jpg` and `medalists.jpg` paths were independently verified as `404`, while the new JPEG and homepage returned `200`.
+- **Regression check:** inspect compiled and live homepage markup to ensure this image does not route through `/_next/image` unless cross-device optimizer behavior is deliberately reintroduced and tested.
