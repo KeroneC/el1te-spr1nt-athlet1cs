@@ -43,7 +43,7 @@ public sealed class GalleryRepository(El1teDbContext dbContext) : IGalleryReposi
         var items = await query.OrderBy(album => album.DisplayOrder).ThenByDescending(album => album.EventDateUtc ?? album.CreatedAtUtc)
             .Skip((page - 1) * pageSize).Take(pageSize)
             .Select(album => new PublicGalleryAlbumListItemDto(album.Title, album.Slug, album.Description,
-                album.CoverMediaAsset != null && album.CoverMediaAsset.IsActive ? album.CoverMediaAsset.PublicUrl : null,
+                album.CoverMediaAsset != null && album.CoverMediaAsset.IsActive ? album.CoverMediaAsset.PublicUrl + "?width=800" : null,
                 album.CoverMediaAsset != null && album.CoverMediaAsset.IsActive ? album.CoverMediaAsset.AltText : null,
                 album.EventDateUtc, album.Media.Count(item => item.MediaAsset.IsActive)))
             .ToListAsync(cancellationToken);
@@ -54,7 +54,7 @@ public sealed class GalleryRepository(El1teDbContext dbContext) : IGalleryReposi
         dbContext.GalleryAlbums.AsNoTracking().Where(album => album.IsPublished && album.Slug == slug)
             .Select(album => new PublicGalleryAlbumDto(album.Title, album.Slug, album.Description, album.EventDateUtc,
                 album.Media.Where(item => item.MediaAsset.IsActive).OrderBy(item => item.DisplayOrder)
-                    .Select(item => new PublicGalleryImageDto(item.MediaAsset.PublicUrl,
+                    .Select(item => new PublicGalleryImageDto(item.MediaAsset.PublicUrl + "?width=1200",
                         item.AltTextOverride ?? item.MediaAsset.AltText,
                         item.CaptionOverride ?? item.MediaAsset.Caption,
                         item.MediaAsset.Width, item.MediaAsset.Height, item.DisplayOrder)).ToList()))
