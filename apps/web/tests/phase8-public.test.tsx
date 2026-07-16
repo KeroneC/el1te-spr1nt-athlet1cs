@@ -3,7 +3,7 @@ import { POST as submitContact } from "../app/api/public/contact/route";
 import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
 import { robotsForEnvironment } from "../lib/public/deployment";
-import { HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
+import { HEADER_NAV_ITEMS, HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
 
@@ -19,8 +19,11 @@ describe("Phase 8 public CMS helpers", () => {
     expect(robotsForEnvironment("production")).toBeUndefined();
   });
 
-  it("keeps FAQs visible in the simplified primary navigation", () => {
-    expect(PRIMARY_NAV_LINKS.map((link) => link.label)).toEqual(["About", "Events", "Gallery", "Sponsors", "FAQs", "Contact"]);
+  it("keeps secondary public pages discoverable without crowding the header", () => {
+    expect(HEADER_NAV_ITEMS.map((item) => item.label)).toEqual(["Club", "Events", "Gallery", "Sponsors", "Resources", "Contact"]);
+    expect(PRIMARY_NAV_LINKS.map((link) => link.label)).toEqual([
+      "About", "Programs", "Coaches", "Team", "Hall of Fame", "Events", "Gallery", "Sponsors", "Forms", "Scholarship", "FAQs", "Contact"
+    ]);
   });
 
   it("prioritizes Gold sponsor logos without changing tier policy", () => {
