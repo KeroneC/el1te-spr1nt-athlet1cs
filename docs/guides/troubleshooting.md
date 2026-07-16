@@ -40,8 +40,6 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Deleted static asset still returns `200` after Azure deployment | ZIP deployment retained an orphaned file from an earlier release | Request the retired path directly after deployment and compare the App Service files with the immutable artifact | Deploy API and web ZIPs with `az webapp deploy --clean true`; verify retired paths return `404` after the release |
 | Phone still shows an old or broken image after a successful release | Browser/CDN cache, an unchanged asset URL, or a genuinely failing optimized request | Test the exact asset URL with a cache-busting query and inspect the page source before assuming it is only cache | Prefer a new fingerprint-like filename for emergency asset replacements, then verify both the new `200` response and old-path `404` responses |
 | Media upload says to check highlighted fields but none is highlighted | Client validation summary is not mapped to the specific queued file field | Submit one image with required alt text blank; inspect field error state, focus, and accessible error association | Mark the exact field invalid, render its message beside the field, and move focus to the first invalid control |
-| Public gallery is slow on its first visit | Camera-sized originals are being transferred for grid-sized presentation, and all images may be loading eagerly | Inspect image transfer sizes, `width` query parameters, loading priority, and API first-byte time in browser Network tools | Use approved API display widths, prioritize only the first visible image, lazy-load the rest, and retain originals separately |
-| Playwright passes but Next dev logs `__webpack_require__.C is not a function` | A prior production build left `.next` output that the development server attempted to reuse | Confirm the browser test passed, then check whether `npm run build` ran in the same worktree before `npm run test:e2e` | Stop local web processes, remove only the `.next` directory under `apps/web`, and rerun the browser test; CI starts from a clean checkout |
 
 Additional clues:
 
@@ -59,11 +57,3 @@ Additional clues:
 - **Resolution:** generated a 1920 x 1280, approximately 369 KB JPEG; published it as `/images/team/meet-community-static.jpg`; and used a plain eager-loaded image URL for this fixed homepage asset.
 - **Deployment hardening:** Azure ZIP deployments now use clean mode. The previous `meet-community.jpg` and `medalists.jpg` paths were independently verified as `404`, while the new JPEG and homepage returned `200`.
 - **Regression check:** inspect compiled and live homepage markup to ensure this image does not route through `/_next/image` unless cross-device optimizer behavior is deliberately reintroduced and tested.
-
-### 2026-07-15: Public Gallery First-View Payload
-
-- **Symptom:** public gallery photos appeared gradually during a visitor's first uncached view.
-- **Finding:** the live 13-image test album transferred approximately 58.1 MB because each grid item requested its 1.68 to 6.27 MB original. Browser caching helped repeat visits but not the first visit.
-- **Resolution:** the public media endpoint accepts only bounded display widths of 480, 800, 1200, or 1600 pixels. Gallery covers use 800 pixels, gallery detail images use 1200 pixels, and only the first detail image is eager/high-priority while later images use lazy asynchronous decoding.
-- **Preservation:** original uploads remain unchanged in private Blob Storage; resizing is a delivery concern, not destructive media editing.
-- **Static artwork:** the Hall of Fame crest uses a pre-optimized 1024-pixel JPEG (approximately 115 KB rather than the 1.56 MB PNG) to avoid paying a runtime image-optimizer startup cost for fixed hero artwork.

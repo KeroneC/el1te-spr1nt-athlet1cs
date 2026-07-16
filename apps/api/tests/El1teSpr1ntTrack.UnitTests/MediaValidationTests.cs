@@ -42,27 +42,6 @@ public sealed class MediaValidationTests
     }
 
     [Fact]
-    public void Resizer_ProducesRequestedJpegDimensions()
-    {
-        using var bitmap = new SKBitmap(2400, 1600);
-        bitmap.Erase(SKColors.Red);
-        using var image = SKImage.FromBitmap(bitmap);
-        using var encoded = image.Encode(SKEncodedImageFormat.Jpeg, 95);
-        using var source = new MemoryStream(encoded.ToArray());
-
-        var result = new SkiaImageResizer().Resize(source, "image/jpeg", 1200);
-        Assert.Equal(result.Stream.Length, result.Length);
-        using (result.Stream)
-        using (var resized = SKBitmap.Decode(result.Stream))
-        {
-            Assert.NotNull(resized);
-            Assert.Equal(1200, resized.Width);
-            Assert.Equal(800, resized.Height);
-            Assert.Equal("image/jpeg", result.ContentType);
-        }
-    }
-
-    [Fact]
     public async Task LocalStorage_GeneratesKeyAndBlocksTraversal()
     {
         var root = Path.Combine(Path.GetTempPath(), $"el1te-media-{Guid.NewGuid():N}");
