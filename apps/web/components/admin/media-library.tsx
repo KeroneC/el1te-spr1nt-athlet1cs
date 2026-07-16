@@ -166,7 +166,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
       {completedCount > 0 && <button type="button" onClick={clearCompleted} disabled={busy} className="inline-flex min-h-10 items-center gap-2 border border-slate-300 px-3 text-sm font-bold"><CheckCircle2 size={17} />Clear completed</button>}
     </div>
     {message && <div className="mt-4"><FormNotice message={message} success={success} /></div>}
-    <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.5fr)] md:items-start">
+    <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.5fr)] md:items-end">
       <div><label htmlFor="media-files" className="mb-2 block text-sm font-bold text-track-ink">Images</label><input id="media-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={addFiles} disabled={busy || items.length >= MAX_MEDIA_FILES} className="min-h-11 w-full border border-slate-300 bg-white p-2 file:mr-3 file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:font-bold" /><p className="mt-1 text-xs text-slate-500">{items.length} of {MAX_MEDIA_FILES} queued</p></div>
       <div><label htmlFor="upload-album" className="mb-2 block text-sm font-bold text-track-ink">Add uploads to album (optional)</label><select id="upload-album" value={albumId} onChange={event => setAlbumId(event.target.value)} disabled={busy} className="min-h-11 w-full border border-slate-300 bg-white px-3"><option value="">Media library only</option>{albums.map(album => <option key={album.id} value={album.id}>{album.title}</option>)}</select></div>
     </div>

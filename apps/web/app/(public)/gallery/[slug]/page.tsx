@@ -5,35 +5,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getGalleryAlbum, PublicApiError } from "@/lib/public/client";
 import { formatDate } from "@/lib/public/format";
-import { sizedPublicMediaUrl } from "@/lib/public/media";
-
-type Props = { params: Promise<{ slug: string }> };
-
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  try {
-    const album = await getGalleryAlbum((await params).slug);
-    return { title: album.title, description: album.description };
-  } catch {
-    return { title: "Gallery album" };
-  }
-}
-
-export default async function GalleryDetail({ params }: Props) {
-  let album;
-  try {
-    album = await getGalleryAlbum((await params).slug);
-  } catch (error) {
-    if (error instanceof PublicApiError && error.status === 404) notFound();
-    throw error;
-  }
-  return <article>
-    <header className="page-hero gallery-detail-hero"><div className="site-container narrow"><Link className="back-link" href="/gallery">Back to gallery</Link><h1>{album.title}</h1><div className="hero-rule" aria-hidden="true" /><p>{album.description}</p>{album.eventDateUtc && <time dateTime={album.eventDateUtc}>{formatDate(album.eventDateUtc)}</time>}</div></header>
-    <div className="site-container content-section">
-      {album.images.length ? <div className="gallery-image-grid">{album.images.map((image, index) => <figure key={`${image.publicUrl}-${index}`}>
-        <img src={sizedPublicMediaUrl(image.publicUrl, 1200)} alt={image.altText} width={image.width} height={image.height} loading={index === 0 ? "eager" : "lazy"} decoding="async" fetchPriority={index === 0 ? "high" : "auto"} />
-        {image.caption && <figcaption>{image.caption}</figcaption>}
-      </figure>)}</div> : <div className="gallery-empty-state"><span className="gallery-empty-icon" aria-hidden="true"><Images /></span><div><p className="eyebrow">Gallery update</p><h2>This album is being prepared</h2><p>Published images will appear here when the album is ready.</p></div></div>}
-      <div className="gallery-detail-actions"><Link className="button button-secondary" href="/gallery">Back to all albums</Link><Link className="button button-primary" href="/contact">Send photo update</Link></div>
-    </div>
-  </article>;
-}
+type Props={params:Promise<{slug:string}>};
+export async function generateMetadata({params}:Props):Promise<Metadata>{try{const album=await getGalleryAlbum((await params).slug);return{title:album.title,description:album.description};}catch{return{title:"Gallery album"};}}
+export default async function GalleryDetail({params}:Props){let album;try{album=await getGalleryAlbum((await params).slug);}catch(error){if(error instanceof PublicApiError&&error.status===404)notFound();throw error;}return <article><header className="page-hero gallery-detail-hero"><div className="site-container narrow"><Link className="back-link" href="/gallery">Back to gallery</Link><h1>{album.title}</h1><div className="hero-rule" aria-hidden="true"/><p>{album.description}</p>{album.eventDateUtc&&<time dateTime={album.eventDateUtc}>{formatDate(album.eventDateUtc)}</time>}</div></header><div className="site-container content-section">{album.images.length?<div className="gallery-image-grid">{album.images.map((image,index)=><figure key={`${image.publicUrl}-${index}`}><img src={image.publicUrl} alt={image.altText} width={image.width} height={image.height}/>{image.caption&&<figcaption>{image.caption}</figcaption>}</figure>)}</div>:<div className="gallery-empty-state"><span className="gallery-empty-icon" aria-hidden="true"><Images/></span><div><p className="eyebrow">Gallery update</p><h2>This album is being prepared</h2><p>Published images will appear here when the album is ready.</p></div></div>}<div className="gallery-detail-actions"><Link className="button button-secondary" href="/gallery">Back to all albums</Link><Link className="button button-primary" href="/contact">Send photo update</Link></div></div></article>}

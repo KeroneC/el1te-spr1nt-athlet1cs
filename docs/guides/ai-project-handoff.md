@@ -27,8 +27,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Bulk media upload queues up to 20 validated images with per-image title, required alt text, optional captions, previews, three concurrent uploads, retryable partial failures, and optional direct album assignment.
 - A successful upload is retained when album assignment fails, so retrying the assignment does not create a duplicate asset.
 - CMS media fields and gallery album editing use a shared searchable, 24-item paginated media browser instead of a long scrolling list.
-- Public galleries retain original uploads but deliver bounded 800-pixel covers and 1200-pixel detail variants; only the first detail image is prioritized and later images lazy-load.
-- Frontend validation for this slice: lint passed, strict typecheck passed, 50 Vitest tests passed, production build passed with expected offline API fallback logs, and the real Playwright Admin-to-public-gallery workflow passed with a resized public image response.
+- Frontend validation for this slice: lint passed, strict typecheck passed, 48 Vitest tests passed, production build passed with expected offline API fallback logs, and the real Playwright Admin-to-public-gallery workflow passed.
 - Remaining Stage 1 work: grouped public navigation and guarded email-invited Admin/SuperAdmin management.
 - Azure demo deployment remains manually paused until a meaningful reviewed release is ready.
 
@@ -69,7 +68,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Favicon:
   - `apps/web/public/favicon.png`
 - Hall of Fame assets:
-  - `apps/web/public/images/hall-of-fame/rgn-hall-of-fame-crest-static.jpg`
+  - `apps/web/public/images/hall-of-fame/rgn-hall-of-fame-crest.png`
   - `apps/web/public/images/hall-of-fame/dani-prunzik.jpeg`
   - `apps/web/public/images/hall-of-fame/kaitlyn-eger.jpg`
 - Downloadable forms:
@@ -115,7 +114,7 @@ Manual end-to-end testing after implementation found and fixed three integration
 
 ## Automated Verification
 
-- Backend: 44 unit tests and 30 integration tests pass; Release build, EF model validation, API publish, and migration bundle generation succeed.
+- Backend: 43 unit tests and 30 integration tests pass; Release build, EF model validation, API publish, and migration bundle generation succeed.
 - Frontend: 45 Vitest tests, lint, strict typecheck, standalone production build, and immutable web artifact validation pass.
 - Playwright now exercises the real critical loop across both applications: Admin sign-in, media upload, published album creation, image assignment, and public gallery verification. It uses dedicated ports, `El1teSpr1ntTrack_E2E`, test-only credentials, isolated ignored media storage, and cleanup.
 - GitHub Actions includes the same browser workflow on Windows with LocalDB and uploads failure artifacts.

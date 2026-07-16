@@ -11,7 +11,6 @@ public sealed class MediaService(
     IMediaRepository repository,
     IMediaStorage storage,
     IImageInspector imageInspector,
-    IImageResizer imageResizer,
     MediaStorageOptions options,
     IClock clock,
     ILogger<MediaService> logger) : IMediaService
@@ -103,17 +102,12 @@ public sealed class MediaService(
         catch (Exception exception) { logger.LogWarning(exception, "Media metadata was deleted but the stored file could not be removed for asset {MediaAssetId}.", id); }
     }
 
-    public async Task<PublicMediaFile?> OpenPublicAsync(Guid id, int? width, CancellationToken cancellationToken)
+    public async Task<PublicMediaFile?> OpenPublicAsync(Guid id, CancellationToken cancellationToken)
     {
         var asset = await repository.GetActiveAsync(id, cancellationToken);
         if (asset is null) return null;
         var stream = await storage.OpenReadAsync(asset.StorageKey, cancellationToken);
-        if (stream is null) return null;
-        if (width is null || asset.Width <= width) return new PublicMediaFile(stream, asset.ContentType, asset.FileSizeBytes);
-        await using (stream)
-        {
-            return imageResizer.Resize(stream, asset.ContentType, width.Value);
-        }
+        return stream is null ? null : new PublicMediaFile(stream, asset.ContentType, asset.FileSizeBytes);
     }
 
     private static Dictionary<string, string[]> ValidateMetadata(string title, string altText, string? caption)
