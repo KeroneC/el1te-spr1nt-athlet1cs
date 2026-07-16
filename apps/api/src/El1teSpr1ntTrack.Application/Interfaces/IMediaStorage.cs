@@ -14,3 +14,8 @@ public interface IImageInspector
 {
     InspectedImage Inspect(Stream stream, string originalFileName, string declaredContentType);
 }
+
+public interface IImageResizer
+{
+    PublicMediaFile Resize(Stream stream, string contentType, int width);
+}

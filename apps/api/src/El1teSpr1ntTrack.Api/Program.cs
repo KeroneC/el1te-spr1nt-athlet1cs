@@ -94,6 +94,7 @@ builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
 builder.Services.AddSingleton<IImageInspector, SkiaImageInspector>();
+builder.Services.AddSingleton<IImageResizer, SkiaImageResizer>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();

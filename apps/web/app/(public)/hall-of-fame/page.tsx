@@ -15,7 +15,8 @@ export default function HallOfFamePage() {
       <div className="site-container hall-hero-content">
         <p className="eyebrow light">A family legacy</p>
         <h1 className="sr-only">RGN El1te Hall of Fame</h1>
-        <Image src="/images/hall-of-fame/rgn-hall-of-fame-crest.png" alt="" width={1024} height={1024} priority sizes="(max-width: 48rem) 90vw, 36rem" className="hall-crest" />
+        {/* eslint-disable-next-line @next/next/no-img-element -- fixed pre-optimized brand artwork avoids runtime optimizer startup latency */}
+        <img src="/images/hall-of-fame/rgn-hall-of-fame-crest-static.jpg" alt="" width={1024} height={1024} loading="eager" decoding="async" fetchPriority="high" className="hall-crest" />
       </div>
     </section>
 

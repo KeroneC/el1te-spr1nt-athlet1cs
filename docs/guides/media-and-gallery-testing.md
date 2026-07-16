@@ -5,7 +5,7 @@
 3. Upload with and without optional direct album assignment. Confirm three-at-a-time progress, successful partial results, retry behavior, and that retrying a failed album assignment does not upload a duplicate asset.
 4. Edit metadata and active status. Use Choose in announcement, event, coach, sponsor, content block, and site logo forms; search, pagination, manual URLs, clear, and selection must work.
 5. Create an album, open Add images, search for several existing assets, add them, use arrow controls to reorder, select a cover, and save it as draft. Confirm it is absent from `/gallery`.
-6. Publish it and verify list/detail images, captions, alt text, and mobile layout. Deactivate an asset and confirm it disappears publicly.
+6. Publish it and verify list/detail images, captions, alt text, and mobile layout. In browser Network tools, confirm covers request `width=800`, detail images request `width=1200`, and images below the first visible item are lazy-loaded. Deactivate an asset and confirm it disappears publicly.
 7. Reuse an asset in two albums. Delete one album and confirm the asset remains. Attempt to delete a referenced asset and expect `409`; remove references and delete a disposable asset.
 
 Do not commit files from the API upload runtime directory.

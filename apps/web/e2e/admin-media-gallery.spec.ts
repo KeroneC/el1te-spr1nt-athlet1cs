@@ -52,10 +52,17 @@ test("admin can publish an uploaded image in a public gallery album", async ({ p
 
     await page.goto("/gallery");
     await expect(page.getByRole("heading", { name: albumTitle })).toBeVisible();
+    const displayImageResponse = page.waitForResponse(response => response.url().includes(`/media/${mediaId}?width=1200`));
     await page.getByRole("link", { name: new RegExp(albumTitle) }).click();
     await expect(page).toHaveURL(new RegExp(`/gallery/${albumSlug}$`));
     await expect(page.getByRole("heading", { name: albumTitle })).toBeVisible();
-    await expect(page.getByAltText("Runner crossing the finish line")).toBeVisible();
+    const publicImage = page.getByAltText("Runner crossing the finish line");
+    await expect(publicImage).toBeVisible();
+    await expect(publicImage).toHaveAttribute("src", /\?width=1200$/);
+    const displayResponse = await displayImageResponse;
+    expect(displayResponse.status()).toBe(200);
+    expect(displayResponse.headers()["content-type"]).toContain("image/png");
+    expect((await displayResponse.body()).byteLength).toBeLessThan(1_942_939);
     await expect(page.getByText("E2E gallery verification image")).toBeVisible();
   } finally {
     if (albumId) await page.request.delete(`/api/admin/gallery-albums/${albumId}`);
