@@ -14,7 +14,8 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 8. [Testing strategy](architecture/testing-strategy.md)
 9. [Public website CMS integration](learning-notes/public-website-cms-integration.md)
 10. [Architecture decisions](#architecture-decisions)
-11. [Troubleshooting](guides/troubleshooting.md)
+11. [Product rebase and staged delivery roadmap](product-roadmap.md)
+12. [Troubleshooting](guides/troubleshooting.md)
 
 ## Architecture
 
@@ -70,6 +71,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 
 ## Guides
 
+- [Product rebase and staged delivery roadmap](product-roadmap.md)
 - [Local development](guides/local-development.md)
 - [Authentication testing](guides/authentication-testing.md)
 - [Announcements testing](guides/announcements-testing.md)

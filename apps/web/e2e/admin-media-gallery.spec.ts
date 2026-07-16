@@ -16,17 +16,17 @@ test("admin can publish an uploaded image in a public gallery album", async ({ p
     await expect(page).toHaveURL(/\/admin$/);
 
     await page.goto("/admin/media");
-    await expect(page.getByLabel("Alt text")).toHaveAttribute("required", "");
-    await page.getByLabel("Image").setInputFiles("public/images/track-hero.png");
+    await page.getByLabel("Images").setInputFiles("public/images/track-hero.png");
     await page.getByLabel("Title").fill(mediaTitle);
     await page.getByLabel("Alt text").fill("Runner crossing the finish line");
     await page.getByLabel("Caption").fill("E2E gallery verification image");
     const uploadResponse = page.waitForResponse((response) => response.url().endsWith("/api/admin/media") && response.request().method() === "POST");
-    await page.getByRole("button", { name: "Upload" }).click();
+    await page.getByRole("button", { name: "Upload queue" }).click();
     const uploaded = await uploadResponse;
     expect(uploaded.status()).toBe(201);
     mediaId = (await uploaded.json() as { id: string }).id;
-    await expect(page.getByRole("status")).toContainText(`${mediaTitle} uploaded successfully.`);
+    await expect(page.getByText("1 image uploaded successfully.", { exact: true })).toBeVisible();
+    await expect(page.getByText("Uploaded successfully.", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: mediaTitle })).toBeVisible();
 
     await page.goto("/admin/gallery/new");
@@ -41,10 +41,12 @@ test("admin can publish an uploaded image in a public gallery album", async ({ p
     albumId = (await created.json() as { id: string }).id;
     await expect(page).toHaveURL(new RegExp(`/admin/gallery/${albumId}/edit`));
 
-    const albumImages = page.getByRole("heading", { name: "Album images" }).locator("..");
-    await albumImages.getByRole("combobox").selectOption({ label: mediaTitle });
+    const albumImages = page.getByRole("region", { name: "Album images" });
+    await albumImages.getByRole("button", { name: "Add images" }).click();
+    await albumImages.getByLabel("Search media").fill(mediaTitle);
+    await expect(albumImages.getByRole("button", { name: `Add ${mediaTitle}` })).toBeVisible();
     const addResponse = page.waitForResponse((response) => response.url().endsWith(`/api/admin/gallery-albums/${albumId}/media`) && response.request().method() === "POST");
-    await albumImages.getByRole("button", { name: "Add" }).click();
+    await albumImages.getByRole("button", { name: `Add ${mediaTitle}` }).click();
     expect((await addResponse).status()).toBe(201);
     await expect(albumImages.getByRole("heading", { name: mediaTitle })).toBeVisible();
 
