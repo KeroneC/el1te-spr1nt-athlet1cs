@@ -22,6 +22,8 @@ The first stage removes friction from workflows already in use.
 - Grouped public navigation so Scholarship, Hall of Fame, Forms, Programs, Coaches, and Team are discoverable without crowding the primary header.
 - Email-invited Admin and guarded SuperAdmin management, including active-state controls, audit records, and protection against removing the final SuperAdmin or accidentally disabling the current user.
 
+Delivery status: the media workflow, searchable media selection, and grouped public navigation are implemented. Guarded Admin/SuperAdmin invitation and management is the next Stage 1 slice.
+
 ## Stage 2: Launch Readiness
 
 This stage prepares a separate production environment and the support practices needed for public use.

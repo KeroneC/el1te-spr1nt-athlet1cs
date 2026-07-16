@@ -21,14 +21,37 @@ export const BRAND = {
   contactPhone: "(412) 654-6798"
 } as const;
 
-export const PRIMARY_NAV_LINKS = [
-  { href: "/about", label: "About" },
+export type PublicNavLink = { href: string; label: string };
+export type PublicNavGroup = { label: string; links: readonly PublicNavLink[] };
+
+export const HEADER_NAV_ITEMS = [
+  {
+    label: "Club",
+    links: [
+      { href: "/about", label: "About" },
+      { href: "/programs", label: "Programs" },
+      { href: "/coaches", label: "Coaches" },
+      { href: "/team", label: "Team" },
+      { href: "/hall-of-fame", label: "Hall of Fame" }
+    ]
+  },
   { href: "/events", label: "Events" },
   { href: "/gallery", label: "Gallery" },
   { href: "/sponsors", label: "Sponsors" },
-  { href: "/faqs", label: "FAQs" },
+  {
+    label: "Resources",
+    links: [
+      { href: "/forms", label: "Forms" },
+      { href: "/scholarship", label: "Scholarship" },
+      { href: "/faqs", label: "FAQs" }
+    ]
+  },
   { href: "/contact", label: "Contact" }
-] as const;
+] as const satisfies readonly (PublicNavLink | PublicNavGroup)[];
+
+export const PRIMARY_NAV_LINKS: readonly PublicNavLink[] = HEADER_NAV_ITEMS.flatMap<PublicNavLink>((item) =>
+  "links" in item ? item.links : [item]
+);
 
 export function sponsorTierClass(tier: string) {
   const normalizedTier = tier.toLowerCase();

@@ -27,8 +27,9 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Bulk media upload queues up to 20 validated images with per-image title, required alt text, optional captions, previews, three concurrent uploads, retryable partial failures, and optional direct album assignment.
 - A successful upload is retained when album assignment fails, so retrying the assignment does not create a duplicate asset.
 - CMS media fields and gallery album editing use a shared searchable, 24-item paginated media browser instead of a long scrolling list.
-- Frontend validation for this slice: lint passed, strict typecheck passed, 48 Vitest tests passed, production build passed with expected offline API fallback logs, and the real Playwright Admin-to-public-gallery workflow passed.
-- Remaining Stage 1 work: grouped public navigation and guarded email-invited Admin/SuperAdmin management.
+- The public header keeps six concise top-level choices while `Club` groups About, Programs, Coaches, Team, and Hall of Fame, and `Resources` groups Forms, Scholarship, and FAQs. Both disclosures support nested active states, Escape/focus restoration, outside-click closing, and the mobile menu closes after navigation.
+- Frontend validation for this Stage 1 work: lint passed, strict typecheck passed, 48 Vitest tests passed, and the production build passed. Three Playwright scenarios passed: the real Admin-to-public-gallery workflow, desktop grouped-navigation disclosure/Escape behavior, and mobile navigation closure after selecting a grouped destination.
+- Remaining Stage 1 work: guarded email-invited Admin/SuperAdmin management.
 - Azure demo deployment remains manually paused until a meaningful reviewed release is ready.
 
 ## Public Refinement Branch
@@ -54,10 +55,10 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Refinement pass after visual review: tightened the homepage closer to the Figma reference by splitting `Greatness` and `Begins Here` into white/red display lines, shortening the first viewport so the Programs section peeks in, moving Programs directly after the hero, adding active red navigation state, removing the extra hero logo, and adding CSS motion patterns for hero reveal, badge snap-in, slow hero-image drift, button shine, card lift, download-row slide, event-row slide, gallery zoom overlays, and coach grayscale-to-color hover.
 - Kept the real El1te logo and favicon assets already placed in the app because the generated project did not contain real logo/favicon files.
 - Preserved CMS/public API behavior for existing CMS-driven sections. Static parity pages are intentionally simple and easy to move into CMS later.
-- Latest brand refinement: the public header uses the full white logo and a simplified navigation with direct About, Events, Gallery, Sponsors, FAQs, and Contact links plus Shop and one Registration CTA. The homepage hero now leads with the real black logo on a red field and a white club-name lockup with red numeral `1`s.
+- Latest brand refinement: the public header uses a typographic home lockup and grouped navigation, with direct Events, Gallery, Sponsors, and Contact links plus Shop and one Registration CTA. The homepage hero now leads with the real black logo on a red field and a white club-name lockup with red numeral `1`s.
 - Latest homepage refinement: Upcoming Events uses a dedicated compact card variant, the mission statement is a left-aligned vertical stack, decorative legacy green and yellow-orange accents were removed, text links use the primary red, and the sponsor preview aligns to the main content grid.
 - Sponsor policy remains unchanged across Admin, API, and stored data. Public presentation gives Gold, Silver, and Bronze track-medal treatments, Platinum a premium black/red treatment, Community a neutral/red individual-support treatment, and Other a neutral fallback. Homepage previews prioritize Gold and use sponsor logos when available.
-- FAQs are directly discoverable from primary navigation and the Registration Hub. Native details/summary disclosure behavior and CMS grouping remain intact.
+- FAQs remain discoverable in the Resources navigation group and the Registration Hub. Native details/summary disclosure behavior and CMS grouping remain intact.
 - The RGN El1te Hall of Fame was rebuilt around its family memorial purpose. It restores the dedication to Roland George Newton, uses the existing RGN crest and real inductee photography, and stores profile-ready slugs/image metadata without adding incomplete detail routes.
 
 ## Phase 10 Assets

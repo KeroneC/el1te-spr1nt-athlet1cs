@@ -22,7 +22,7 @@ Start the API and web app using [Local development](local-development.md). Open 
 2. Enable public email and confirm it appears, then deactivate and confirm the coach disappears.
 3. Verify active sponsors are policy-tiered, missing logos use text, and external links open safely. Confirm Gold/Silver/Bronze use medal treatments, Platinum uses black/red, Community uses neutral/red, and Other remains neutral.
 4. Confirm the homepage preview prioritizes Gold sponsors, renders configured logos, and falls back to sponsor names without broken images.
-5. Verify FAQs are linked from primary navigation and the Registration Hub. Check category groups and keyboard-operable disclosure controls; deactivate a test FAQ and confirm it disappears.
+5. Verify FAQs are linked from the Resources navigation group and the Registration Hub. Check category groups and keyboard-operable disclosure controls; deactivate a test FAQ and confirm it disappears.
 
 ## Contact and Registration
 
@@ -34,12 +34,14 @@ Start the API and web app using [Local development](local-development.md). Open 
 
 ## Phase 10 Public Parity Routes
 
-1. Confirm the full white header logo, simplified navigation, direct FAQ link, Registration CTA, Shop external link, footer links, and social links render on desktop and mobile.
-2. Open `/forms` and confirm all available PDFs download from `apps/web/public/forms`.
-3. Open `/scholarship` and confirm the BVN scholarship copy is respectful, links the scholarship form, and does not invent detailed criteria beyond the form.
-4. Open `/hall-of-fame` and confirm the local RGN crest, Roland George Newton dedication, Dani Prunzik and Kaitlyn Eger photographs, meaningful alt text, and non-clickable inductee profiles render; open `/rgnhof` and confirm it redirects.
-5. Open `/team` and confirm it describes team identity without publishing a private athlete roster.
-6. Confirm `/registration` remains a Registration Hub with downloads/contact guidance only, not an online submission workflow.
+1. Confirm the typographic header lockup, grouped navigation, Registration CTA, Shop external link, footer links, and social links render on desktop and mobile.
+2. Open Club and confirm About, Programs, Coaches, Team, and Hall of Fame are present. Open Resources and confirm Forms, Scholarship, and FAQs are present.
+3. Verify Escape closes an open group and returns focus to its trigger, outside clicks close disclosures, active child routes highlight their parent group, and mobile navigation closes after selecting a destination.
+4. Open `/forms` and confirm all available PDFs download from `apps/web/public/forms`.
+5. Open `/scholarship` and confirm the BVN scholarship copy is respectful, links the scholarship form, and does not invent detailed criteria beyond the form.
+6. Open `/hall-of-fame` and confirm the local RGN crest, Roland George Newton dedication, Dani Prunzik and Kaitlyn Eger photographs, meaningful alt text, and non-clickable inductee profiles render; open `/rgnhof` and confirm it redirects.
+7. Open `/team` and confirm it describes team identity without publishing a private athlete roster.
+8. Confirm `/registration` remains a Registration Hub with downloads/contact guidance only, not an online submission workflow.
 
 ## Phase 10 Figma Correction Pass
 
