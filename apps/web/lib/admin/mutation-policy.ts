@@ -1,4 +1,4 @@
-const resources = new Set(["events", "coaches", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums"]);
+const resources = new Set(["events", "coaches", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations"]);
 const idPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | "DELETE"): boolean {
@@ -7,6 +7,13 @@ export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | 
   if (resource === "media") {
     if (method === "POST") return path.length === 1;
     return path.length === 2 && idPattern.test(id ?? "") && (method === "PUT" || method === "DELETE");
+  }
+  if (resource === "users") return method === "PUT" && path.length === 2 && idPattern.test(id ?? "");
+  if (resource === "invitations") {
+    if (method === "POST" && path.length === 1) return true;
+    if (!idPattern.test(id ?? "")) return false;
+    if (method === "DELETE") return path.length === 2;
+    return method === "POST" && path.length === 3 && action === "reissue";
   }
   if (resource === "gallery-albums" && path.length > 2) {
     if (!idPattern.test(id ?? "") || action !== "media") return false;

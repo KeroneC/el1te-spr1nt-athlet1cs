@@ -19,7 +19,8 @@ export function safeProblem(status: number, value: unknown): AdminApiError {
     404: "The requested record was not found.",
     409: "This change conflicts with existing content."
   };
-  return new AdminApiError(status, messages[status] ?? "The service could not complete the request.", problem.errors ?? {});
+  const safeDetail = (status === 404 || status === 409) && typeof problem.detail === "string" ? problem.detail.trim() : "";
+  return new AdminApiError(status, safeDetail || messages[status] || "The service could not complete the request.", problem.errors ?? {});
 }
 
 function isProblem(value: unknown): value is ApiProblem {

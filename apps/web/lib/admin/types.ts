@@ -162,3 +162,24 @@ export interface AdminGalleryAlbumMedia {
 export interface AdminGalleryAlbum extends Omit<AdminGalleryAlbumListItem, "coverImageUrl" | "imageCount"> {
   media: AdminGalleryAlbumMedia[];
 }
+
+export interface AdminUser {
+  id: string; firstName: string; lastName: string; email: string; role: "Admin" | "SuperAdmin";
+  isActive: boolean; createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminInvitation {
+  id: string; firstName: string; lastName: string; email: string; role: "Admin" | "SuperAdmin";
+  status: "Pending" | "Accepted" | "Expired" | "Revoked"; expiresAtUtc: string; createdAtUtc: string;
+  invitedByDisplayName: string;
+}
+export interface AdminInvitationCreated {
+  invitation: AdminInvitation;
+  invitationUrl: string;
+}
+export interface AdminActivityLog {
+  id: string; createdAtUtc: string; actorDisplayName: string; action: string; targetType: string;
+  targetId: string | null; summary: string; correlationId: string | null;
+}
+export interface AdminInvitationDetails {
+  firstName: string; lastName: string; email: string; role: "Admin" | "SuperAdmin"; expiresAtUtc: string;
+}

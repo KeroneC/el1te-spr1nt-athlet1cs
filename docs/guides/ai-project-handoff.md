@@ -28,8 +28,12 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - A successful upload is retained when album assignment fails, so retrying the assignment does not create a duplicate asset.
 - CMS media fields and gallery album editing use a shared searchable, 24-item paginated media browser instead of a long scrolling list.
 - The public header keeps six concise top-level choices while `Club` groups About, Programs, Coaches, Team, and Hall of Fame, and `Resources` groups Forms, Scholarship, and FAQs. Both disclosures support nested active states, Escape/focus restoration, outside-click closing, and the mobile menu closes after navigation.
-- Frontend validation for this Stage 1 work: lint passed, strict typecheck passed, 48 Vitest tests passed, and the production build passed. Three Playwright scenarios passed: the real Admin-to-public-gallery workflow, desktop grouped-navigation disclosure/Escape behavior, and mobile navigation closure after selecting a grouped destination.
-- Remaining Stage 1 work: guarded email-invited Admin/SuperAdmin management.
+- Frontend validation for this Stage 1 work: lint passed, strict typecheck passed, 55 Vitest tests passed, and the production build passed. Four Playwright scenarios passed: the real Admin-to-public-gallery workflow, desktop grouped-navigation behavior, mobile navigation closure, and the SuperAdmin invitation-to-Admin authorization boundary.
+- Guarded Admin/SuperAdmin management is implemented on `feature/admin-user-management`: active SuperAdmins create email-bound, 72-hour invitations; secrets are hash-only in SQL and returned in URL fragments for trusted manual delivery; recipients set a strong password through the public acceptance route.
+- Access changes are database-authoritative. A SuperAdmin cannot change their own role/status or demote/deactivate the final active SuperAdmin. Admins cannot open the access workspace.
+- `AdminActivityLogs` is append-only at the application boundary and records safe summaries for invitation and privileged account changes. The activity view is SuperAdmin-only; passwords, raw tokens, JWTs, cookies, and request bodies are excluded.
+- Backend Release validation passed with 49 unit tests, 34 integration tests, zero build warnings, and no pending EF model changes. Documentation validation passed for 59 Markdown files, and Bicep compilation passed.
+- Stage 1 is complete. Stage 2 begins with observability/support references, privacy-conscious analytics, feedback triage, accessibility, production isolation, and Azure Communication Services invitation delivery.
 - Azure demo deployment remains manually paused until a meaningful reviewed release is ready.
 
 ## Public Refinement Branch

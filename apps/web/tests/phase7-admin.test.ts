@@ -8,7 +8,8 @@ const id = "c6ca4e2a-0244-4f9d-9af6-95bbc65ca612";
 describe("Phase 7 mutation boundary", () => {
   it.each([
     [["events"], "POST"], [["coaches", id], "PUT"], [["content-blocks", id], "DELETE"],
-    [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"]
+    [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"],
+    [["users", id], "PUT"], [["invitations"], "POST"], [["invitations", id, "reissue"], "POST"], [["invitations", id], "DELETE"]
   ] as const)("allows supported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(true));
 
   it("allows deterministic seed GUIDs used by CMS records", () => {
@@ -16,7 +17,7 @@ describe("Phase 7 mutation boundary", () => {
   });
 
   it.each([
-    [["users"], "POST"], [["site-settings"], "POST"], [["contact-submissions"], "POST"],
+    [["users"], "POST"], [["users", id], "DELETE"], [["invitations", id], "PUT"], [["site-settings"], "POST"], [["contact-submissions"], "POST"],
     [["events", "not-a-guid"], "DELETE"], [["contact-submissions", id], "PUT"]
   ] as const)("rejects unsupported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(false));
 });

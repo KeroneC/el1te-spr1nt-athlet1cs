@@ -17,6 +17,12 @@ export async function requireAdminUser(): Promise<CurrentUser> {
   }
 }
 
+export async function requireSuperAdminUser(): Promise<CurrentUser> {
+  const user = await requireAdminUser();
+  if (user.role !== "SuperAdmin") redirect("/admin/access-denied");
+  return user;
+}
+
 export function handleAdminPageError(error: unknown): never {
   if (error instanceof AdminApiError && error.status === 401) redirect("/api/admin-session/logout?reason=expired");
   if (error instanceof AdminApiError && error.status === 403) redirect("/admin/access-denied");

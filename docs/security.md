@@ -14,7 +14,7 @@ The JWT signing key is `Jwt:Key`. It must be supplied through user secrets or en
 
 Passwords are stored only as BCrypt hashes. Auth endpoints return DTOs and never return `PasswordHash` or EF entities directly.
 
-Public registration defaults to the `Parent` role. This avoids public self-assignment of privileged `Coach` or `Admin` roles; elevated roles should be assigned later through an audited administrative process.
+Public registration defaults to the `Parent` role. This avoids public self-assignment of privileged roles. Admin and SuperAdmin accounts use one-time, email-bound invitations created by an active SuperAdmin. Invitation secrets are stored only as SHA-256 hashes, expire after 72 hours, and are placed in a browser URL fragment so routine HTTP request logging does not receive them. The demo returns each link once for trusted manual delivery; production email delivery remains a Stage 2 capability.
 
 Current roles are:
 
@@ -22,6 +22,7 @@ Current roles are:
 - `Athlete`
 - `Coach`
 - `Admin`
+- `SuperAdmin`
 
 ## DTOs and Validation
 
@@ -48,6 +49,12 @@ Development CORS allows localhost origins for local Next.js work. Production COR
 
 Logs should not include passwords, password hashes, JWTs, refresh tokens, payment data, medical notes, emergency contact details, private document URLs, or raw request bodies containing sensitive data.
 
-## Audit Goals
+## Administrative Audit
 
-Before production use, add audit trails for authentication events, role changes, athlete profile changes, consent records, document access, payments, refunds, donation updates, and admin actions.
+Invitation creation, reissue, revocation, acceptance, and privileged role/active-status changes write append-only activity records. Only SuperAdmins may read the activity view. The application provides no update or delete endpoint for activity records.
+
+The initial activity scope intentionally excludes CMS edits and private future registration records. Expand it through reviewed, safe summaries rather than full entity or request snapshots.
+
+## Future Audit Goals
+
+Before production use, extend audit coverage for authentication events, CMS changes, athlete profile changes, consent records, document access, payments, refunds, and donation updates.

@@ -10,4 +10,7 @@ public sealed record AdminCoachOptions(string? Search, bool? IsActive, int Page 
 public sealed record AdminSponsorOptions(string? Search, SponsorTier? Tier, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminFaqOptions(string? Search, string? Category, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminContactOptions(string? Search, ContactSubmissionStatus? Status, InquiryType? InquiryType, DateTimeOffset? FromDate, DateTimeOffset? ToDate, int Page = 1, int PageSize = 20);
+public sealed record AdminUserOptions(string? Search, UserRole? Role, bool? IsActive, int Page = 1, int PageSize = 20);
+public sealed record AdminInvitationOptions(string? Search, string? Status, int Page = 1, int PageSize = 20);
+public sealed record AdminActivityOptions(string? Search, string? Action, DateTimeOffset? FromDate, DateTimeOffset? ToDate, int Page = 1, int PageSize = 20);
 public sealed record AdminPage<T>(IReadOnlyList<T> Items, int TotalCount);

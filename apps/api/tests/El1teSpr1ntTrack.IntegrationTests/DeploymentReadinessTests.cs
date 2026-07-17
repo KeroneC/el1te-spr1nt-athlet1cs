@@ -97,7 +97,9 @@ public sealed class DeploymentReadinessTests
             ["MediaStorage:BlobServiceUri"] = "https://media.blob.core.windows.net",
             ["MediaStorage:ContainerName"] = "media",
             ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
-            ["MediaStorage:MaxFileSizeBytes"] = "10485760"
+            ["MediaStorage:MaxFileSizeBytes"] = "10485760",
+            ["AdminInvitations:SiteUrl"] = "https://web.example.invalid",
+            ["AdminInvitations:ExpiresHours"] = "72"
         }).Build();
     }
 
