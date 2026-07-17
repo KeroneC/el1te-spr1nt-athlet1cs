@@ -185,7 +185,7 @@ jobs:
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
         run: |
-          az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.apiappname }}" --src-path release/api.zip --type zip --clean true --async true
+          bash scripts/deployment/deploy-webapp-artifact.sh "$AZURE_RESOURCE_GROUP" "${{ steps.infrastructure.outputs.apiappname }}" release/api.zip
           bash scripts/smoke-tests/check-api.sh "${{ steps.infrastructure.outputs.apiurl }}"
 
       - name: Bootstrap first SuperAdmin
@@ -205,7 +205,7 @@ jobs:
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
         run: |
-          az webapp deploy --resource-group "$AZURE_RESOURCE_GROUP" --name "${{ steps.infrastructure.outputs.webappname }}" --src-path release/web.zip --type zip --clean true --async true
+          bash scripts/deployment/deploy-webapp-artifact.sh "$AZURE_RESOURCE_GROUP" "${{ steps.infrastructure.outputs.webappname }}" release/web.zip
           bash scripts/smoke-tests/check-web.sh "${{ steps.infrastructure.outputs.weburl }}"
 
       - name: Deployment summary

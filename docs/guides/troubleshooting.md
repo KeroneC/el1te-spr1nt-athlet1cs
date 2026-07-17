@@ -40,6 +40,7 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Deleted static asset still returns `200` after Azure deployment | ZIP deployment retained an orphaned file from an earlier release | Request the retired path directly after deployment and compare the App Service files with the immutable artifact | Deploy API and web ZIPs with `az webapp deploy --clean true`; verify retired paths return `404` after the release |
 | Phone still shows an old or broken image after a successful release | Browser/CDN cache, an unchanged asset URL, or a genuinely failing optimized request | Test the exact asset URL with a cache-busting query and inspect the page source before assuming it is only cache | Prefer a new fingerprint-like filename for emergency asset replacements, then verify both the new `200` response and old-path `404` responses |
 | Media upload says to check highlighted fields but none is highlighted | Client validation summary is not mapped to the specific queued file field | Submit one image with required alt text blank; inspect field error state, focus, and accessible error association | Mark the exact field invalid, render its message beside the field, and move focus to the first invalid control |
+| Azure deployment says the site failed to start, but health checks pass | Azure CLI Linux startup tracking retained stale container-timeout state after Kudu activated the new artifact | Compare `az webapp log deployment list`, `az webapp log startup show`, and the live readiness endpoint | Track the new active Kudu deployment ID, restart after activation, then run application smoke tests; do not accept an old-version health response as proof of promotion |
 
 Additional clues:
 
@@ -57,3 +58,10 @@ Additional clues:
 - **Resolution:** generated a 1920 x 1280, approximately 369 KB JPEG; published it as `/images/team/meet-community-static.jpg`; and used a plain eager-loaded image URL for this fixed homepage asset.
 - **Deployment hardening:** Azure ZIP deployments now use clean mode. The previous `meet-community.jpg` and `medalists.jpg` paths were independently verified as `404`, while the new JPEG and homepage returned `200`.
 - **Regression check:** inspect compiled and live homepage markup to ensure this image does not route through `/_next/image` unless cross-device optimizer behavior is deliberately reintroduced and tested.
+
+### 2026-07-17: Azure CLI Reported a False API Startup Failure
+
+- **Symptom:** `az webapp deploy` reported that the API worker failed to start within 10 minutes, so the workflow skipped the web artifact.
+- **Finding:** Kudu marked the new API ZIP deployment active and successful, the new invitation endpoint was live, and App Service logs showed the application listening on port 8080 with a successful platform startup probe. The CLI continued polling stale container-timeout state and eventually returned exit code 1.
+- **Resolution:** deployment now disables the unreliable Linux startup tracker, waits for a new active Kudu deployment ID with success status, explicitly restarts the app, and then runs the existing API or web smoke tests.
+- **Safety:** the temporary SQL firewall rule was removed by the workflow's unconditional cleanup even though the deployment step failed.
