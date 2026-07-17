@@ -54,6 +54,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [EF Core deployment artifacts](learning-notes/ef-core-deployment-artifacts.md)
 - [Bicep infrastructure](learning-notes/bicep-infrastructure.md)
 - [Media library and gallery](learning-notes/media-library-and-gallery.md)
+- [Admin access management testing](guides/admin-access-management-testing.md)
 
 ## Architecture Decisions
 
@@ -68,12 +69,14 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [ADR 009: Use Bicep for Azure infrastructure](decisions/009-use-bicep-for-azure-infrastructure.md)
 - [ADR 010: Separate preparation from live provisioning](decisions/010-separate-phase-6a-and-6b.md)
 - [ADR 011: Use a storage abstraction for media](decisions/011-use-storage-abstraction-for-media.md)
+- [ADR 012: Use hashed Admin invitations and append-only activity records](decisions/012-use-hashed-admin-invitations-and-append-only-audit.md)
 
 ## Guides
 
 - [Product rebase and staged delivery roadmap](product-roadmap.md)
 - [Local development](guides/local-development.md)
 - [Authentication testing](guides/authentication-testing.md)
+- [Admin access management testing](guides/admin-access-management-testing.md)
 - [Announcements testing](guides/announcements-testing.md)
 - [Core CMS admin testing](guides/core-cms-admin-testing.md)
 - [Public website testing](guides/public-website-testing.md)

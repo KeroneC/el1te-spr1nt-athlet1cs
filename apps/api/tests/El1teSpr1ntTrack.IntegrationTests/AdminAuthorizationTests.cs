@@ -28,11 +28,33 @@ public sealed class AdminAuthorizationTests
         services.AddLogging();
         services.AddAuthorizationCore(CmsAdminAuthorization.Configure);
         services.AddSingleton<IAuthorizationHandler>(new ActiveCmsAdminHandler(repository));
+        services.AddSingleton<IAuthorizationHandler>(new ActiveSuperAdminHandler(repository));
         await using var provider = services.BuildServiceProvider();
         var authorization = provider.GetRequiredService<IAuthorizationService>();
         var principal = Principal(user);
 
         var result = await authorization.AuthorizeAsync(principal, null, CmsAdminAuthorization.PolicyName);
+
+        Assert.Equal(expected, result.Succeeded);
+    }
+
+    [Theory]
+    [InlineData(UserRole.SuperAdmin, true, true)]
+    [InlineData(UserRole.Admin, true, false)]
+    [InlineData(UserRole.SuperAdmin, false, false)]
+    public async Task SuperAdminPolicy_UsesCurrentDatabaseRoleAndStatus(UserRole role, bool active, bool expected)
+    {
+        var user = new User { Role = role, IsActive = active, Email = "user@example.com" };
+        var repository = new FakeUserRepository(user);
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAuthorizationCore(CmsAdminAuthorization.Configure);
+        services.AddSingleton<IAuthorizationHandler>(new ActiveCmsAdminHandler(repository));
+        services.AddSingleton<IAuthorizationHandler>(new ActiveSuperAdminHandler(repository));
+        await using var provider = services.BuildServiceProvider();
+
+        var result = await provider.GetRequiredService<IAuthorizationService>()
+            .AuthorizeAsync(Principal(user), null, CmsAdminAuthorization.SuperAdminPolicyName);
 
         Assert.Equal(expected, result.Succeeded);
     }
@@ -68,6 +90,17 @@ public sealed class AdminAuthorizationTests
         {
             var attribute = Assert.Single(type.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
             Assert.Equal(CmsAdminAuthorization.PolicyName, attribute.Policy);
+        }
+    }
+
+    [Fact]
+    public void IdentityManagementControllers_RequireSuperAdminPolicy()
+    {
+        Type[] controllerTypes = [typeof(AdminUsersController), typeof(El1teSpr1ntTrack.Api.Controllers.Admin.AdminInvitationsController), typeof(AdminActivityController)];
+        foreach (var type in controllerTypes)
+        {
+            var attribute = Assert.Single(type.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
+            Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName, attribute.Policy);
         }
     }
 

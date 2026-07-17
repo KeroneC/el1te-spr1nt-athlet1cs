@@ -22,7 +22,7 @@ The first stage removes friction from workflows already in use.
 - Grouped public navigation so Scholarship, Hall of Fame, Forms, Programs, Coaches, and Team are discoverable without crowding the primary header.
 - Email-invited Admin and guarded SuperAdmin management, including active-state controls, audit records, and protection against removing the final SuperAdmin or accidentally disabling the current user.
 
-Delivery status: the media workflow, searchable media selection, and grouped public navigation are implemented. Guarded Admin/SuperAdmin invitation and management is the next Stage 1 slice.
+Delivery status: Stage 1 is implemented. The platform now includes the media workflow, searchable media selection, grouped public navigation, email-bound Admin/SuperAdmin invitations, guarded access controls, and append-only privileged identity activity history. Automated email delivery, MFA, password recovery, session management, and broader CMS audit coverage move to Stage 2 launch readiness.
 
 ## Stage 2: Launch Readiness
 

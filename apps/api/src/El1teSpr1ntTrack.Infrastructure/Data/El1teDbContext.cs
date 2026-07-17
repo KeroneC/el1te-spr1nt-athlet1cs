@@ -7,6 +7,10 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 {
     public DbSet<User> Users => Set<User>();
 
+    public DbSet<AdminInvitation> AdminInvitations => Set<AdminInvitation>();
+
+    public DbSet<AdminActivityLog> AdminActivityLogs => Set<AdminActivityLog>();
+
     public DbSet<Athlete> Athletes => Set<Athlete>();
 
     public DbSet<SiteSetting> SiteSettings => Set<SiteSetting>();

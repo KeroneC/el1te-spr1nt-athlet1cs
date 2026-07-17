@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Bell, CalendarDays, ChevronRight, CircleHelp, FileImage, FileText, GalleryHorizontal, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, Users, X } from "lucide-react";
+import { Bell, CalendarDays, ChevronRight, CircleHelp, FileImage, FileText, GalleryHorizontal, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, Users, X } from "lucide-react";
 import type { CurrentUser } from "@/lib/admin/types";
 
 const active = [
@@ -23,6 +23,7 @@ const active = [
 export function AdminShell({ user, children }: { user: CurrentUser; children: React.ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const navigation = user.role === "SuperAdmin" ? [...active, { href: "/admin/users", label: "Access control", icon: ShieldCheck, exact: false }] : active;
   const section = pathname.split("/").filter(Boolean).at(-1)?.replaceAll("-", " ") ?? "Dashboard";
   return <div className="min-h-screen bg-slate-100 lg:grid lg:grid-cols-[248px_1fr]">
     {open && <button className="fixed inset-0 z-30 bg-black/50 lg:hidden" aria-label="Close navigation" onClick={() => setOpen(false)} />}
@@ -30,7 +31,7 @@ export function AdminShell({ user, children }: { user: CurrentUser; children: Re
       <div className="flex h-16 items-center justify-between border-b border-white/10 px-5"><Link href="/admin" className="font-black">EL1TE <span className="text-track-red">ADMIN</span></Link><button onClick={() => setOpen(false)} className="p-2 lg:hidden" aria-label="Close navigation"><X size={20} /></button></div>
       <nav className="flex-1 overflow-y-auto px-3 py-5" aria-label="Admin navigation">
         <p className="px-3 text-xs font-bold uppercase text-slate-400">Workspace</p>
-        <ul className="mt-2 space-y-1">{active.map((item) => { const selected = item.exact ? pathname === item.href : pathname.startsWith(item.href); const Icon = item.icon; return <li key={item.href}><Link href={item.href} onClick={() => setOpen(false)} aria-current={selected ? "page" : undefined} className={`flex min-h-11 items-center gap-3 border-l-4 px-3 text-sm font-bold ${selected ? "border-track-red bg-white/10 text-white" : "border-transparent text-slate-300 hover:bg-white/5 hover:text-white"}`}><Icon size={19} />{item.label}{selected && <ChevronRight size={16} className="ml-auto" />}</Link></li>; })}</ul>
+        <ul className="mt-2 space-y-1">{navigation.map((item) => { const selected = item.exact ? pathname === item.href : pathname.startsWith(item.href); const Icon = item.icon; return <li key={item.href}><Link href={item.href} onClick={() => setOpen(false)} aria-current={selected ? "page" : undefined} className={`flex min-h-11 items-center gap-3 border-l-4 px-3 text-sm font-bold ${selected ? "border-track-red bg-white/10 text-white" : "border-transparent text-slate-300 hover:bg-white/5 hover:text-white"}`}><Icon size={19} />{item.label}{selected && <ChevronRight size={16} className="ml-auto" />}</Link></li>; })}</ul>
       </nav>
     </aside>
     <div className="min-w-0">

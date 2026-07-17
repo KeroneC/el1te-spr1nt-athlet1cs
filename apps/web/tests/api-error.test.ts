@@ -9,6 +9,11 @@ describe("safe API errors", () => {
     expect(error.message).not.toContain("SQL");
   });
 
+  it("shows controlled conflict details needed to resolve guarded changes", () => {
+    expect(safeProblem(409, { detail: "The final active SuperAdmin cannot be deactivated." }).message)
+      .toBe("The final active SuperAdmin cannot be deactivated.");
+  });
+
   it("maps session and permission failures safely", () => {
     expect(safeProblem(401, {}).message).toContain("session");
     expect(safeProblem(403, {}).message).toContain("permission");

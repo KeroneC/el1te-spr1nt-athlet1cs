@@ -57,7 +57,7 @@ Successful response: `200 OK`
 
 Validation failures return `400 Bad Request`. Duplicate email is treated as a validation failure.
 
-New public registrations default to `Parent` because coach and admin roles must be granted through a controlled future workflow.
+New public registrations default to `Parent`. Privileged roles are created through the controlled SuperAdmin invitation workflow described below.
 
 ### Login
 
@@ -75,6 +75,23 @@ Request:
 Successful response: `200 OK` with the same auth response shape as registration.
 
 Invalid credentials or inactive users return `401 Unauthorized`.
+
+## Administrative Identity
+
+The following routes require the `SuperAdmin` policy unless marked public:
+
+- `GET /api/admin/users`
+- `PUT /api/admin/users/{id}`
+- `GET/POST /api/admin/invitations`
+- `POST /api/admin/invitations/{id}/reissue`
+- `POST /api/admin/invitations/{id}/revoke`
+- `GET /api/admin/activity`
+- `POST /api/admin-invitations/inspect` (public)
+- `POST /api/admin-invitations/accept` (public)
+
+Invitations are email-address-bound, expire after the configured interval, and can be used once. The generated secret is returned only when an invitation is created or reissued. It is sent in the acceptance page URL fragment and submitted in a JSON request body; SQL stores only its SHA-256 hash. The demo workflow presents a link for an authorized SuperAdmin to copy manually. Automated email delivery is deferred.
+
+SuperAdmins cannot change their own role or active status, and the final active SuperAdmin cannot be demoted or deactivated. Identity-management actions create append-only activity records containing safe summaries and correlation identifiers, not credentials or invitation secrets.
 
 ## Athletes
 

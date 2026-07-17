@@ -37,6 +37,8 @@ The `CmsAdmin` policy requires:
 
 The database lookup in `ActiveCmsAdminHandler` means disabling or demoting an account takes effect for admin authorization even if an older JWT still contains an admin role. Frontend route protection improves navigation and privacy, but it cannot replace this API policy.
 
+The separate `SuperAdmin` policy does not trust the JWT role claim by itself. `ActiveSuperAdminHandler` loads the current database record and requires an active SuperAdmin, so deactivation or demotion immediately removes access-control authority. Signing in again refreshes the JWT role used by other role-aware paths after a promotion.
+
 `401 Unauthorized` means authentication is missing or invalid. `403 Forbidden` means the caller is authenticated but lacks current permission. The web clears invalid sessions on `401` and shows `/admin/access-denied` for `403`.
 
 ## Web Session
@@ -49,6 +51,6 @@ Logout deletes the web cookie. The API token is stateless and is not revoked. Th
 
 ## Registration and Development Administration
 
-Public registration always creates an active Parent in `AuthService`; request data cannot select a privileged role. Admin and SuperAdmin access must be granted through controlled data administration. For local learning, `DevelopmentAdminSeeder` can create one SuperAdmin from User Secrets. It runs only in Development, skips incomplete configuration, and never changes an existing user.
+Public registration always creates an active Parent in `AuthService`; request data cannot select a privileged role. Admin and SuperAdmin access is granted through a one-time invitation created by an active SuperAdmin. The secret is returned only at creation/reissue, stored as a SHA-256 hash, expires after 72 hours, and is accepted through a browser-fragment link so normal request URLs do not contain it. For local learning, `DevelopmentAdminSeeder` can create one SuperAdmin from User Secrets. It runs only in Development, skips incomplete configuration, and never changes an existing user. Production keeps the non-HTTP bootstrap command for initial provisioning and recovery only.
 
 Never place signing keys, seed passwords, JWT values, or production credentials in Git, docs, logs, URLs, or screenshots.

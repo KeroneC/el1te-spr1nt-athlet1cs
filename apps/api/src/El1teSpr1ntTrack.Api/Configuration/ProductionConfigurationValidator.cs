@@ -77,6 +77,16 @@ public static class ProductionConfigurationValidator
             errors.Add("MediaStorage:PublicBaseUrl must be an absolute HTTPS non-loopback URL in Production.");
         }
 
+        if (!Uri.TryCreate(configuration["AdminInvitations:SiteUrl"], UriKind.Absolute, out var invitationSiteUrl) ||
+            invitationSiteUrl.Scheme != Uri.UriSchemeHttps || invitationSiteUrl.IsLoopback)
+        {
+            errors.Add("AdminInvitations:SiteUrl must be an absolute HTTPS non-loopback URL in Production.");
+        }
+        if (!int.TryParse(configuration["AdminInvitations:ExpiresHours"], out var invitationExpiresHours) || invitationExpiresHours is < 1 or > 168)
+        {
+            errors.Add("AdminInvitations:ExpiresHours must be between 1 and 168.");
+        }
+
         if (errors.Count > 0)
         {
             throw new InvalidOperationException(

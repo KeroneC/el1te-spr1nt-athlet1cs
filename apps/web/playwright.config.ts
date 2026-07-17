@@ -38,6 +38,8 @@ export default defineConfig({
         SeedAdmin__Password: "E2eAdmin!2026Pass",
         SeedAdmin__FirstName: "E2E",
         SeedAdmin__LastName: "Admin",
+        AdminInvitations__SiteUrl: webUrl,
+        AdminInvitations__ExpiresHours: "72",
         MediaStorage__LocalRoot: "../../../../artifacts/e2e/uploads",
         MediaStorage__PublicBaseUrl: apiUrl,
       },

@@ -82,6 +82,8 @@ builder.Services.AddApiCors(builder.Configuration);
 
 builder.Services.AddScoped<IClock, SystemClock>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAdminIdentityService, AdminIdentityService>();
+builder.Services.AddScoped<IAdminIdentityRepository, AdminIdentityRepository>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 builder.Services.AddScoped<ISlugGenerator, SlugGenerator>();
 builder.Services.AddScoped<ICmsValidationService, CmsValidationService>();
@@ -98,8 +100,14 @@ builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IAuthorizationHandler, ActiveCmsAdminHandler>();
+builder.Services.AddScoped<IAuthorizationHandler, ActiveSuperAdminHandler>();
 builder.Services.AddScoped<DevelopmentAdminSeeder>();
 builder.Services.AddScoped<ProductionAdminBootstrapper>();
+
+var adminInvitationSettings = builder.Configuration
+    .GetSection(AdminInvitationSettings.SectionName)
+    .Get<AdminInvitationSettings>() ?? new AdminInvitationSettings();
+builder.Services.AddSingleton(adminInvitationSettings);
 
 var mediaStorageOptions = builder.Configuration
     .GetSection(MediaStorageOptions.SectionName)

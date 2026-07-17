@@ -91,6 +91,14 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: '10485760'
         }
         {
+          name: 'AdminInvitations__SiteUrl'
+          value: jwtAudience
+        }
+        {
+          name: 'AdminInvitations__ExpiresHours'
+          value: '72'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
         }
