@@ -1,0 +1,94 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Dev: Start database",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/local-dev/mac-start-database.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: API",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "run",
+        "--project",
+        "apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj",
+        "--launch-profile",
+        "http"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "base": "$msCompile",
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*",
+            "endsPattern": "Now listening on:"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Dev: Web",
+      "type": "npm",
+      "script": "dev",
+      "path": "apps/web",
+      "isBackground": true,
+      "problemMatcher": [
+        {
+          "pattern": {
+            "regexp": "^(?!x)x$"
+          },
+          "background": {
+            "activeOnStart": true,
+            "beginsPattern": ".*",
+            "endsPattern": "Ready in|Local:"
+          }
+        }
+      ]
+    },
+    {
+      "label": "Dev: Start full stack",
+      "dependsOn": [
+        "Dev: Start database",
+        "Dev: API",
+        "Dev: Web"
+      ],
+      "dependsOrder": "sequence",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Stop database",
+      "type": "shell",
+      "command": "${workspaceFolder}/scripts/local-dev/mac-stop-database.sh",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build: API",
+      "type": "process",
+      "command": "dotnet",
+      "args": [
+        "build",
+        "apps/api/El1teSpr1ntTrack.sln"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": "$msCompile"
+    },
+    {
+      "label": "Check: Web",
+      "type": "shell",
+      "command": "npm run lint && npm run typecheck && npm run test",
+      "options": {
+        "cwd": "${workspaceFolder}/apps/web"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

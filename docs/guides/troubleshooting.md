@@ -14,6 +14,7 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | --- | --- | --- | --- |
 | SDK projects cannot load | .NET 10 SDK or IDE workload missing | `dotnet --version`, `dotnet --list-sdks` | Install compatible .NET 10/Visual Studio support; restart IDE |
 | Database connection/login failure | LocalDB stopped, database absent, or connection mismatch | `sqllocaldb info MSSQLLocalDB`; compare Development connection | Start LocalDB and apply migrations with explicit `El1teSpr1ntTrack_Dev` connection |
+| Database connection fails on macOS | LocalDB is Windows-only, Colima is stopped, or the SQL container is unhealthy | `colima status`; `docker ps`; `docker logs el1te-sqlserver` | Follow the [macOS guide](macos-development.md), start the container, and re-run the bootstrap if the User Secret is missing |
 | Table/column missing | Migration not applied to runtime database | `dotnet ef migrations list`; inspect `__EFMigrationsHistory` | Apply migrations to the same connection the API uses |
 | `Jwt:Key is required` or too short | User Secret missing/invalid | `dotnet user-secrets list --project <api-project>` without sharing output | Set a private key of at least 32 characters; restart API |
 | Login says invalid credentials | Wrong password/email, inactive account, or seed not created | Normalize email; check local user and API startup log | Correct local credentials; configure all seed fields before startup |

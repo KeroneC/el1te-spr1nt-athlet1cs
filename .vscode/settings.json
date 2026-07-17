@@ -1,0 +1,14 @@
+{
+  "dotnet.defaultSolution": "apps/api/El1teSpr1ntTrack.sln",
+  "editor.formatOnSave": true,
+  "eslint.workingDirectories": [
+    "apps/web"
+  ],
+  "files.exclude": {
+    "**/.next": true,
+    "**/bin": true,
+    "**/node_modules": true,
+    "**/obj": true
+  },
+  "typescript.tsdk": "apps/web/node_modules/typescript/lib"
+}

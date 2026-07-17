@@ -7,8 +7,10 @@ Run commands from the repository root unless stated otherwise.
 - .NET 10 SDK compatible with `global.json` (`10.0.301`, newer .NET 10 feature bands allowed)
 - Visual Studio with .NET 10 and ASP.NET workload, or another editor
 - Node.js 22 or newer and npm (`package-lock.json` is committed)
-- SQL Server Express LocalDB for the default Windows setup
+- SQL Server Express LocalDB for Windows, or the repository SQL Server container for macOS
 - EF Core CLI 10.0.9
+
+Apple Silicon Mac users should follow the complete [macOS development guide](macos-development.md). It includes the one-command bootstrap, Docker database, VS Code tasks, Keychain credentials, and cross-computer Git workflow.
 
 ```powershell
 dotnet --version
@@ -43,6 +45,8 @@ dotnet user-secrets set "SeedAdmin:LastName" "Admin" --project $apiProject
 User Secrets live outside Git. Do not put these values in `appsettings*.json`, `.env.local`, docs, screenshots, or commits. Seeding runs at Development startup, skips incomplete configuration, and does not modify an existing email.
 
 ## Database
+
+The commands below are for Windows LocalDB. On macOS, use `./scripts/local-dev/mac-start-database.sh`; the Mac bootstrap stores the matching SQL connection string in User Secrets.
 
 Start LocalDB and update the database used by the Development API:
 

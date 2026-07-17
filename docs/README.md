@@ -17,6 +17,8 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 11. [Product rebase and staged delivery roadmap](product-roadmap.md)
 12. [Troubleshooting](guides/troubleshooting.md)
 
+Apple Silicon developers can go directly to [macOS development](guides/macos-development.md) for first-time setup and the VS Code workflow.
+
 ## Architecture
 
 - [System overview](architecture/system-overview.md)
@@ -75,6 +77,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 
 - [Product rebase and staged delivery roadmap](product-roadmap.md)
 - [Local development](guides/local-development.md)
+- [Apple Silicon macOS development](guides/macos-development.md)
 - [Authentication testing](guides/authentication-testing.md)
 - [Admin access management testing](guides/admin-access-management-testing.md)
 - [Announcements testing](guides/announcements-testing.md)

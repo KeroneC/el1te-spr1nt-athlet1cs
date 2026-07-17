@@ -30,6 +30,7 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - [Core CMS admin frontend](docs/learning-notes/core-cms-admin-frontend.md)
 - [Public website CMS integration](docs/learning-notes/public-website-cms-integration.md)
 - [Local development](docs/guides/local-development.md)
+- [Apple Silicon macOS development](docs/guides/macos-development.md)
 - [Troubleshooting](docs/guides/troubleshooting.md)
 - [Glossary](docs/guides/glossary.md)
 - [CI/CD and Azure demo delivery](docs/architecture/cicd-overview.md)
@@ -41,11 +42,19 @@ Start at the [documentation home](docs/README.md). Useful entry points:
 - .NET 10 SDK compatible with `global.json`
 - Node.js 22 or newer and npm
 - SQL Server Express LocalDB for the default Windows setup
+- Colima/Docker SQL-compatible local database for Apple Silicon macOS development; see the Mac guide for its local-only support boundary
 - EF Core CLI 10.0.9
 
 ## Local Quick Start
 
 The complete first-time setup, User Secrets, migration command, and certificate guidance are in [local development](docs/guides/local-development.md).
+
+On Apple Silicon macOS, use the dedicated [Mac setup and VS Code workflow](docs/guides/macos-development.md):
+
+```bash
+./scripts/local-dev/mac-bootstrap.sh
+code .
+```
 
 After setup, start the API from the repository root:
 

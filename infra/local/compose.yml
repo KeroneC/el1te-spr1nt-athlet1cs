@@ -1,0 +1,26 @@
+name: el1te-local
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/azure-sql-edge@sha256:3544cf1c6847c5cb60e071638c48b1b45d05a64eb2d88d0f83d44b397f40b186
+    container_name: el1te-sqlserver
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+      MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in infra/local/.env}
+    ports:
+      - "127.0.0.1:1433:1433"
+    volumes:
+      - el1te-sqlserver-data:/var/opt/mssql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - /bin/bash -c 'exec 3<>/dev/tcp/127.0.0.1/1433'
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  el1te-sqlserver-data:
