@@ -11,7 +11,7 @@
 
 1. Create an invitation for a unique email address and choose Admin or SuperAdmin.
 2. Confirm the invitation appears as Pending and expires 72 hours after creation.
-3. Copy the displayed link. The secret must appear only after `#token=` and must not be copied into logs or documentation.
+3. Confirm the UI warns that the link cannot be displayed again, then copy it before closing the panel. The secret must appear only after `#token=` and must not be copied into logs or documentation.
 4. Open the link in a private browser session, confirm the recipient identity, and create a password meeting the displayed requirements.
 5. Sign in as the invited account.
 6. Confirm an Admin cannot see or open Access control. Confirm a SuperAdmin can.
@@ -22,7 +22,7 @@
 - Attempt to change the signed-in SuperAdmin's own role or status. The API must return `409` and make no change.
 - With one active SuperAdmin remaining, attempt to demote or deactivate that account from another authorized session. The API must return `409`.
 - Deactivate an Admin and confirm the next protected API request is denied even if the old JWT has not expired.
-- Reissue a pending invitation and confirm the old link stops working while the new link succeeds.
+- Choose **Generate new link** for a pending invitation. Confirm the warning explains that the old link will stop working and the 72-hour expiration will reset, then generate the replacement and verify the old link fails while the new link succeeds.
 - Revoke a pending invitation and confirm its link stops working.
 
 ## Activity history
@@ -44,4 +44,4 @@ npm.cmd run build
 npm.cmd run test:e2e
 ```
 
-The identity Playwright scenario creates a real invitation, accepts it as a new Admin, signs in, and confirms the SuperAdmin boundary.
+The identity Playwright scenario creates a real invitation, generates and confirms a replacement link, accepts it as a new Admin, signs in, and confirms the SuperAdmin boundary.

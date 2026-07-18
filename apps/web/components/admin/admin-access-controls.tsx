@@ -68,6 +68,7 @@ export function AdminUserControls({ user, currentUserId }: { user: AdminUser; cu
 
 export function InvitationActions({ invitation }: { invitation: AdminInvitation }) {
   const [busy, setBusy] = useState<"reissue" | "revoke" | null>(null);
+  const [confirmingReissue, setConfirmingReissue] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
   const router = useRouter();
@@ -81,13 +82,15 @@ export function InvitationActions({ invitation }: { invitation: AdminInvitation 
       const body = response.status === 204 ? null : await response.json() as AdminInvitationCreated & { message?: string };
       if (!response.ok) { setMessage(body?.message ?? "The invitation could not be updated."); return; }
       if (body?.invitationUrl) setInvitationUrl(body.invitationUrl);
-      setMessage(action === "reissue" ? "A new invitation link is ready." : "Invitation revoked.");
+      setConfirmingReissue(false);
+      setMessage(action === "reissue" ? "A replacement invitation link is ready. The previous link no longer works." : "Invitation revoked.");
       router.refresh();
     } catch { setMessage("The invitation could not be updated."); }
     finally { setBusy(null); }
   }
   return <div className="min-w-[280px]">
-    <div className="flex justify-end gap-2"><button type="button" disabled={Boolean(busy)} onClick={() => act("reissue")} className="inline-flex min-h-9 items-center gap-2 border border-slate-300 px-3 text-xs font-bold"><RefreshCw size={15} className={busy === "reissue" ? "animate-spin" : ""} />Reissue</button><button type="button" disabled={Boolean(busy)} onClick={() => act("revoke")} className="inline-flex min-h-9 items-center gap-2 border border-red-300 px-3 text-xs font-bold text-red-700"><XCircle size={15} />Revoke</button></div>
+    <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={Boolean(busy) || confirmingReissue} aria-expanded={confirmingReissue} onClick={() => { setConfirmingReissue(true); setMessage(null); }} className="inline-flex min-h-9 items-center gap-2 border border-slate-300 px-3 text-xs font-bold disabled:opacity-60"><RefreshCw size={15} />Generate new link</button><button type="button" disabled={Boolean(busy) || confirmingReissue} onClick={() => act("revoke")} className="inline-flex min-h-9 items-center gap-2 border border-red-300 px-3 text-xs font-bold text-red-700 disabled:opacity-60"><XCircle size={15} />Revoke</button></div>
+    {confirmingReissue && <div role="group" aria-label={`Confirm replacement link for ${invitation.email}`} className="mt-2 border border-amber-300 bg-amber-50 p-3 text-left"><p className="text-xs font-bold leading-5 text-amber-950">Generate a replacement link for {invitation.email}? The previous link will stop working, and the expiration resets to 72 hours.</p><div className="mt-2 flex flex-wrap justify-end gap-2"><button type="button" disabled={Boolean(busy)} onClick={() => act("reissue")} className="inline-flex min-h-9 items-center gap-2 bg-track-ink px-3 text-xs font-bold text-white disabled:opacity-60">{busy === "reissue" ? <LoaderCircle size={15} className="animate-spin" /> : <RefreshCw size={15} />}{busy === "reissue" ? "Generating..." : "Generate replacement link"}</button><button type="button" disabled={Boolean(busy)} onClick={() => setConfirmingReissue(false)} className="min-h-9 border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 disabled:opacity-60">Cancel</button></div></div>}
     {message && <p role="status" className="mt-1 text-right text-xs text-slate-600">{message}</p>}
     {invitationUrl && <InviteLinkPanel url={invitationUrl} onClose={() => setInvitationUrl(null)} compact />}
   </div>;
@@ -96,7 +99,7 @@ export function InvitationActions({ invitation }: { invitation: AdminInvitation 
 function InviteLinkPanel({ url, onClose, compact = false }: { url: string; onClose: () => void; compact?: boolean }) {
   const [copied, setCopied] = useState(false);
   async function copy() { await navigator.clipboard.writeText(url); setCopied(true); }
-  return <div className={`${compact ? "mt-2" : "mt-5"} border-l-4 border-track-red bg-slate-100 p-3`}><div className="flex items-center justify-between gap-3"><p className="text-xs font-bold text-track-ink">Share this link once with the intended recipient.</p><button type="button" onClick={onClose} className="text-xs font-bold text-slate-500">Close</button></div><div className="mt-2 flex gap-2"><input readOnly value={url} aria-label="Invitation link" className="min-w-0 flex-1 border border-slate-300 bg-white px-2 text-xs" /><button type="button" onClick={copy} className="inline-flex h-10 items-center gap-2 bg-track-ink px-3 text-xs font-bold text-white">{copied ? <Check size={15} /> : <Clipboard size={15} />}{copied ? "Copied" : "Copy"}</button></div></div>;
+  return <div className={`${compact ? "mt-2" : "mt-5"} border-l-4 border-track-red bg-slate-100 p-3`}><div className="flex items-start justify-between gap-3"><div><p className="text-xs font-bold text-track-ink">Copy this link now. For security, it cannot be displayed again.</p><p className="mt-1 text-xs text-slate-600">Share it only with the intended recipient.</p></div><button type="button" onClick={onClose} className="text-xs font-bold text-slate-500">Close</button></div><div className="mt-2 flex gap-2"><input readOnly value={url} aria-label="Invitation link" className="min-w-0 flex-1 border border-slate-300 bg-white px-2 text-xs" /><button type="button" onClick={copy} className="inline-flex h-10 items-center gap-2 bg-track-ink px-3 text-xs font-bold text-white">{copied ? <Check size={15} /> : <Clipboard size={15} />}{copied ? "Copied" : "Copy"}</button></div></div>;
 }
 
 function validateInvitation(request: { firstName: string; lastName: string; email: string; role: string }): FieldErrors {
