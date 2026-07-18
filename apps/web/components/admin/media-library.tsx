@@ -8,6 +8,7 @@ import type { AdminGalleryAlbumListItem, AdminMediaAsset } from "@/lib/admin/typ
 import { MAX_MEDIA_FILES, MEDIA_UPLOAD_CONCURRENCY, runWithConcurrency, titleFromFileName, validateMediaFile } from "@/lib/admin/media-upload";
 import type { FieldErrors } from "@/lib/admin/validation";
 import { FormNotice } from "./form-controls";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 
 type UploadStatus = "pending" | "uploading" | "success" | "error";
 type UploadItem = {
@@ -125,6 +126,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
           formData.set("altText", item.altText.trim());
           formData.set("caption", item.caption.trim());
           const response = await fetch("/api/admin/media", { method: "POST", body: formData });
+          if (redirectForAdminResponse(response)) throw new Error("Session expired.");
           const result = await response.json() as AdminMediaAsset & { message?: string; errors?: FieldErrors };
           if (!response.ok) {
             const fieldMessage = Object.values(result.errors ?? {}).flat()[0];
@@ -140,6 +142,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ mediaAssetId: assetId, displayOrder: selectedAlbum.imageCount + index })
           });
+          if (redirectForAdminResponse(response)) throw new Error("Session expired.");
           if (!response.ok) {
             const result = await response.json() as { message?: string };
             throw new Error(result.message ?? "Uploaded, but could not be added to the album.");
@@ -190,6 +193,6 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
 
 export function MediaActions({asset}:{asset:AdminMediaAsset}) {
   const router=useRouter(); const [busy,setBusy]=useState(false);
-  async function remove(){if(!confirm(`Delete ${asset.title}? This cannot be undone.`))return;setBusy(true);const r=await fetch(`/api/admin/media/${asset.id}`,{method:"DELETE"});setBusy(false);if(r.ok)router.refresh();else alert((await r.json()).message??"Could not delete media.");}
+  async function remove(){if(!confirm(`Delete ${asset.title}? This cannot be undone.`))return;setBusy(true);const r=await fetch(`/api/admin/media/${asset.id}`,{method:"DELETE"});setBusy(false);if(redirectForAdminResponse(r))return;if(r.ok)router.refresh();else alert((await r.json()).message??"Could not delete media.");}
   return <button type="button" disabled={busy} onClick={remove} title="Delete media" aria-label={`Delete ${asset.title}`} className="h-9 w-9 border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button>;
 }

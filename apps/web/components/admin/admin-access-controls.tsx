@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Clipboard, LoaderCircle, RefreshCw, Save, Send, XCircle } from "lucide-react";
 import { Field, FormNotice, SelectField, fieldError } from "./form-controls";
 import { useAdminMutation } from "@/lib/admin/use-admin-mutation";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 import type { AdminInvitation, AdminInvitationCreated, AdminUser } from "@/lib/admin/types";
 import type { FieldErrors } from "@/lib/admin/validation";
 
@@ -77,8 +78,7 @@ export function InvitationActions({ invitation }: { invitation: AdminInvitation 
     setBusy(action); setMessage(null);
     try {
       const response = await fetch(`/api/admin/invitations/${invitation.id}${action === "reissue" ? "/reissue" : ""}`, { method: action === "reissue" ? "POST" : "DELETE" });
-      if (response.status === 401) { window.location.assign("/api/admin-session/logout?reason=expired"); return; }
-      if (response.status === 403) { window.location.assign("/admin/access-denied"); return; }
+      if (redirectForAdminResponse(response)) return;
       const body = response.status === 204 ? null : await response.json() as AdminInvitationCreated & { message?: string };
       if (!response.ok) { setMessage(body?.message ?? "The invitation could not be updated."); return; }
       if (body?.invitationUrl) setInvitationUrl(body.invitationUrl);

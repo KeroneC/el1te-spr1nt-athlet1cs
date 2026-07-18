@@ -4,6 +4,7 @@
 import { ChevronLeft, ChevronRight, Image as ImageIcon, Search } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { AdminMediaAsset, PagedResult } from "@/lib/admin/types";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 
 const PAGE_SIZE = 24;
 
@@ -42,6 +43,7 @@ export function MediaOptionBrowser({
     setMessage("");
     void fetch(`/api/admin/media/options?${params}`, { signal: controller.signal })
       .then(async response => {
+        if (redirectForAdminResponse(response)) throw new Error("Session expired.");
         if (!response.ok) throw new Error("Media could not be loaded.");
         return response.json() as Promise<PagedResult<AdminMediaAsset>>;
       })

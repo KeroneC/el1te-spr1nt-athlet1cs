@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { ArrowRight, CalendarDays, Handshake, Inbox, Plus, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
-import { requireAdminUser } from "@/lib/admin/auth";
+import { handleAdminPageError, requireAdminUser } from "@/lib/admin/auth";
+import { AdminApiError } from "@/lib/admin/api-error";
 import { adminApiFetch } from "@/lib/admin/server-api";
 import type { AdminContactSubmission, AdminEvent, PagedResult } from "@/lib/admin/types";
 
@@ -19,6 +20,6 @@ export default async function AdminDashboardPage() {
     <section className="mt-8"><div className="mb-3 flex items-center justify-between"><h2 className="text-xl font-black text-track-ink">New contact submissions</h2><Link href="/admin/contact-submissions" className="text-sm font-bold text-track-red hover:underline">View all</Link></div>{contacts.items.length?<div className="divide-y divide-slate-200 border border-slate-200 bg-white">{contacts.items.map(item=><Link key={item.id} href={`/admin/contact-submissions/${item.id}`} className="flex items-center justify-between gap-4 p-4 hover:bg-slate-50"><div className="min-w-0"><p className="font-bold">{item.name}</p><p className="mt-1 truncate text-xs text-slate-500">{item.message}</p></div><ArrowRight size={18} className="shrink-0"/></Link>)}</div>:<div className="border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-600">No new contact submissions.</div>}</section>
   </>;
 }
-async function count<T>(path:string):Promise<{total:number;items:T[]}>{try{const result=await adminApiFetch<PagedResult<T>>(path);return{total:result.totalCount,items:result.items}}catch{return{total:0,items:[]}}}
+async function count<T>(path:string):Promise<{total:number;items:T[]}>{try{const result=await adminApiFetch<PagedResult<T>>(path);return{total:result.totalCount,items:result.items}}catch(error){if(error instanceof AdminApiError&&(error.status===401||error.status===403))handleAdminPageError(error);return{total:0,items:[]}}}
 function Metric({label,value,href,icon:Icon}:{label:string;value:number;href:string;icon:typeof CalendarDays}){return <Link href={href} className="border-l-4 border-track-field bg-white p-5 shadow-sm"><Icon size={21} className="text-track-field"/><p className="mt-3 text-3xl font-black">{value}</p><p className="mt-1 text-sm font-semibold text-slate-600">{label}</p></Link>}
 function Quick({href,title,description}:{href:string;title:string;description:string}){return <Link href={href} className="border-l-4 border-track-red bg-white p-5 shadow-sm"><Plus size={20} className="text-track-red"/><h2 className="mt-3 font-black">{title}</h2><p className="mt-1 text-sm text-slate-600">{description}</p></Link>}

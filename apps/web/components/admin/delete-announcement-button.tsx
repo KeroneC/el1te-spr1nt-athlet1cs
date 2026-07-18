@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LoaderCircle, Trash2, X } from "lucide-react";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 
 export function DeleteAnnouncementButton({ id, title }: { id: string; title: string }) {
   const router = useRouter();
@@ -14,8 +15,7 @@ export function DeleteAnnouncementButton({ id, title }: { id: string; title: str
     setSubmitting(true); setError(null);
     try {
       const response = await fetch(`/api/admin/announcements/${encodeURIComponent(id)}`, { method: "DELETE" });
-      if (response.status === 401) { window.location.assign("/api/admin-session/logout?reason=expired"); return; }
-      if (response.status === 403) { window.location.assign("/admin/access-denied"); return; }
+      if (redirectForAdminResponse(response)) return;
       if (!response.ok) { const body = await response.json() as { message?: string }; setError(body.message ?? "Announcement could not be deleted."); return; }
       dialog.current?.close(); router.refresh();
     } catch { setError("Announcement could not be deleted. Try again."); }

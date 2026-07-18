@@ -2,7 +2,7 @@ import { FilterActions, FilterText, EmptyState, formatDate } from "@/components/
 import { PageHeader } from "@/components/admin/page-header";
 import { Pagination } from "@/components/admin/pagination";
 import { requireSuperAdminUser } from "@/lib/admin/auth";
-import { adminApiFetch } from "@/lib/admin/server-api";
+import { getAdminList } from "@/lib/admin/page-data";
 import type { AdminActivityLog, PagedResult } from "@/lib/admin/types";
 import { buildListQuery } from "@/lib/admin/validation";
 
@@ -12,7 +12,7 @@ export default async function AdminActivityPage({ searchParams }: { searchParams
   await requireSuperAdminUser();
   const filters = await searchParams;
   const query = buildListQuery(filters, ["search", "fromDate", "toDate"]);
-  const result = await adminApiFetch<PagedResult<AdminActivityLog>>(`/api/admin/activity?${query}`);
+  const result = await getAdminList<PagedResult<AdminActivityLog>>(`/api/admin/activity?${query}`);
   const params = new URLSearchParams(query); params.delete("pageSize");
   const filtered = Boolean(filters.search || filters.fromDate || filters.toDate);
   return <><PageHeader title="Administrative activity" description="Append-only history for invitations, privileged account acceptance, and access changes." />
