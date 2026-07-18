@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedAdminMutation } from "../lib/admin/mutation-policy";
+import { readAdminMutationBody } from "../lib/admin/mutation-request";
 import type { CoachWriteRequest, ContentBlockWriteRequest, EventWriteRequest, FaqWriteRequest, SiteSettingsWriteRequest, SponsorWriteRequest } from "../lib/admin/types";
 import { buildListQuery, validateCoach, validateContentBlock, validateEvent, validateFaq, validateSiteSettings, validateSponsor } from "../lib/admin/validation";
 
@@ -20,6 +21,21 @@ describe("Phase 7 mutation boundary", () => {
     [["users"], "POST"], [["users", id], "DELETE"], [["invitations", id], "PUT"], [["site-settings"], "POST"], [["contact-submissions"], "POST"],
     [["events", "not-a-guid"], "DELETE"], [["contact-submissions", id], "PUT"]
   ] as const)("rejects unsupported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(false));
+
+  it("allows a bodyless invitation reissue request", async () => {
+    const request = new Request(`https://example.test/api/admin/invitations/${id}/reissue`, { method: "POST" });
+
+    await expect(readAdminMutationBody(request, "POST")).resolves.toBeUndefined();
+  });
+
+  it("preserves JSON mutation bodies", async () => {
+    const request = new Request("https://example.test/api/admin/invitations", {
+      method: "POST",
+      body: JSON.stringify({ email: "admin@example.test", role: "Admin" })
+    });
+
+    await expect(readAdminMutationBody(request, "POST")).resolves.toBe('{"email":"admin@example.test","role":"Admin"}');
+  });
 });
 
 describe("Phase 7 filters and validation", () => {
