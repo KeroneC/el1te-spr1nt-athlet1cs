@@ -22,7 +22,17 @@ test("SuperAdmin can invite an Admin whose accepted account cannot manage access
   const invitationResponse = page.waitForResponse(response => response.url().endsWith("/api/admin/invitations") && response.request().method() === "POST");
   await inviteForm.getByRole("button", { name: "Create invitation" }).click();
   expect((await invitationResponse).status()).toBe(201);
-  const invitationUrl = await page.getByLabel("Invitation link").inputValue();
+  const originalInvitationUrl = await page.getByLabel("Invitation link").inputValue();
+  const invitationRow = page.getByRole("row").filter({ hasText: email });
+  await expect(invitationRow).toBeVisible();
+  await invitationRow.getByRole("button", { name: "Generate new link" }).click();
+  await expect(invitationRow.getByText("The previous link will stop working, and the expiration resets to 72 hours.")).toBeVisible();
+  const reissueResponse = page.waitForResponse(response => response.url().endsWith("/reissue") && response.request().method() === "POST");
+  await invitationRow.getByRole("button", { name: "Generate replacement link" }).click();
+  expect((await reissueResponse).status()).toBe(201);
+  await expect(invitationRow.getByText("The previous link no longer works.")).toBeVisible();
+  const invitationUrl = await invitationRow.getByLabel("Invitation link").inputValue();
+  expect(invitationUrl).not.toBe(originalInvitationUrl);
 
   await page.goto(invitationUrl);
   await expect(page.getByText(email)).toBeVisible();
