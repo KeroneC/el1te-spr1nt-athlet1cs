@@ -32,83 +32,7 @@
 
 .heroInner {
   position: relative;
-  padding-block: clamp(1.5rem, 4vw, 3rem) clamp(4.5rem, 8vw, 7rem);
-}
-
-.previewControls {
-  position: relative;
-  z-index: 10;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  background: rgba(9, 9, 11, 0.58);
-  padding: 0.8rem;
-  backdrop-filter: blur(12px);
-}
-
-.previewLabel,
-.previewHint {
-  display: block;
-}
-
-.previewLabel {
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-
-.previewHint {
-  margin-top: 0.2rem;
-  color: #a1a1aa;
-  font-size: 0.7rem;
-}
-
-.previewActions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 0.45rem;
-}
-
-.previewButton,
-.previewButtonActive,
-.replayButton {
-  display: inline-flex;
-  min-height: 2.4rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  padding: 0.5rem 0.75rem;
-  color: #ffffff;
-  font-size: 0.72rem;
-  font-weight: 900;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  cursor: pointer;
-}
-
-.previewButton,
-.replayButton {
-  background: transparent;
-}
-
-.previewButton:hover,
-.replayButton:hover {
-  border-color: #ef4444;
-  background: rgba(220, 38, 38, 0.18);
-}
-
-.previewButtonActive {
-  border-color: #dc2626;
-  background: #dc2626;
-}
-
-.replayButton {
-  color: #d4d4d8;
+  padding-block: clamp(3rem, 6vw, 5rem) clamp(4.5rem, 8vw, 7rem);
 }
 
 .bloomStage {
@@ -116,7 +40,6 @@
   display: grid;
   min-height: clamp(25rem, 58vw, 39rem);
   place-items: center;
-  margin-top: clamp(1.5rem, 4vw, 3rem);
 }
 
 .bloomField {
@@ -128,7 +51,6 @@
   transform: translate(-50%, -50%);
 }
 
-.abstractBloom,
 .literalBloom,
 .literalOuter,
 .literalInner {
@@ -136,7 +58,6 @@
   inset: 0;
 }
 
-.abstractPetal,
 .literalOuterPetal,
 .literalInnerPetal {
   position: absolute;
@@ -144,39 +65,6 @@
   top: 50%;
   display: block;
   transform-origin: 50% 100%;
-}
-
-.abstractPetal {
-  width: 13%;
-  height: 46%;
-  border: 2px solid rgba(255, 255, 255, 0.44);
-  background: linear-gradient(180deg, rgba(239, 68, 68, 0.5), rgba(220, 38, 38, 0.03) 68%);
-  clip-path: polygon(50% 0, 100% 38%, 68% 100%, 32% 100%, 0 38%);
-  animation:
-    abstractOpen 1.35s cubic-bezier(0.18, 0.82, 0.22, 1) var(--delay) both,
-    abstractBreathe 7s ease-in-out calc(1.55s + var(--delay)) infinite;
-}
-
-.abstractPetal:nth-child(3n + 2) {
-  border-color: rgba(239, 68, 68, 0.76);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.015) 72%);
-}
-
-.abstractPetal:nth-child(3n) {
-  width: 10.5%;
-  height: 42%;
-  border-color: rgba(220, 38, 38, 0.6);
-}
-
-.abstractRing {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 35%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 50%;
-  animation: ringOpen 1.4s cubic-bezier(0.18, 0.82, 0.22, 1) 380ms both, ringGlow 6s ease-in-out 1.8s infinite;
 }
 
 .literalOuterPetal {
@@ -210,17 +98,17 @@
     literalInnerBreathe 7s ease-in-out calc(1.65s + var(--delay)) infinite;
 }
 
-.literalCore {
+.literalCenterShade {
   position: absolute;
+  z-index: 2;
   left: 50%;
   top: 50%;
-  width: 13%;
-  aspect-ratio: 1;
-  border: 1px solid rgba(255, 255, 255, 0.42);
+  width: 76%;
+  height: 42%;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #fca5a5, #dc2626 44%, #7f1d1d 100%);
-  box-shadow: 0 0 3rem rgba(220, 38, 38, 0.38);
-  animation: coreOpen 1s cubic-bezier(0.18, 0.82, 0.22, 1) 650ms both, coreGlow 5s ease-in-out 1.8s infinite;
+  background: radial-gradient(ellipse at center, rgba(9, 9, 11, 0.94) 0 28%, rgba(23, 23, 23, 0.78) 50%, rgba(41, 41, 41, 0) 78%);
+  transform: translate(-50%, -50%);
+  animation: centerShadeReveal 1.15s ease-out 360ms both;
 }
 
 .logoLink {
@@ -418,17 +306,6 @@
   width: 100%;
 }
 
-@keyframes abstractOpen {
-  0% { opacity: 0; transform: translate(-50%, -100%) rotate(calc(var(--rotation) - 24deg)) scale(0.04, 0.16); }
-  70% { opacity: 0.82; transform: translate(-50%, -100%) rotate(calc(var(--rotation) + 3deg)) scale(1.04, 1.08); }
-  100% { opacity: 0.68; transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1); }
-}
-
-@keyframes abstractBreathe {
-  0%, 100% { opacity: 0.68; transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1); }
-  50% { opacity: 0.82; transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1.025, 1.04); }
-}
-
 @keyframes literalOpen {
   0% { opacity: 0; transform: translate(-50%, -100%) rotate(calc(var(--rotation) - 38deg)) scale(0.03, 0.08); }
   72% { opacity: 0.8; transform: translate(-50%, -100%) rotate(calc(var(--rotation) + 2deg)) scale(1.04, 1.08); }
@@ -450,24 +327,9 @@
   50% { opacity: 0.84; transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1.03, 1.05); }
 }
 
-@keyframes ringOpen {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.08); }
+@keyframes centerShadeReveal {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.62); }
   100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-@keyframes ringGlow {
-  0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); }
-  50% { opacity: 0.75; transform: translate(-50%, -50%) scale(1.08); }
-}
-
-@keyframes coreOpen {
-  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.05); }
-  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
-
-@keyframes coreGlow {
-  0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 3rem rgba(220, 38, 38, 0.34); }
-  50% { transform: translate(-50%, -50%) scale(1.06); box-shadow: 0 0 4.5rem rgba(239, 68, 68, 0.5); }
 }
 
 @keyframes logoReveal {
@@ -481,20 +343,6 @@
 }
 
 @media (max-width: 48rem) {
-  .previewControls {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .previewActions {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .replayButton {
-    grid-column: 1 / -1;
-  }
-
   .bloomStage {
     min-height: clamp(23rem, 116vw, 31rem);
   }
@@ -513,19 +361,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .abstractPetal,
   .literalOuterPetal,
   .literalInnerPetal,
-  .abstractRing,
-  .literalCore,
+  .literalCenterShade,
   .logoLink,
   .heroCopy {
     animation: none;
-  }
-
-  .abstractPetal {
-    opacity: 0.68;
-    transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1);
   }
 
   .literalOuterPetal {
@@ -538,8 +379,7 @@
     transform: translate(-50%, -100%) rotate(var(--rotation)) scale(1);
   }
 
-  .abstractRing,
-  .literalCore {
+  .literalCenterShade {
     opacity: 1;
     transform: translate(-50%, -50%) scale(1);
   }
