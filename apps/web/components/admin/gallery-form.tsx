@@ -8,6 +8,7 @@ import type { AdminGalleryAlbum, AdminMediaAsset } from "@/lib/admin/types";
 import { Checkbox, Field, FormActions, FormNotice, FormSection, SelectField, TextArea } from "./form-controls";
 import { MediaOptionBrowser } from "./media-option-browser";
 import { useAdminMutation } from "@/lib/admin/use-admin-mutation";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 
 export function GalleryForm({album,assets}:{album?:AdminGalleryAlbum;assets:AdminMediaAsset[]}) {
   const router=useRouter(); const mutation=useAdminMutation<AdminGalleryAlbum>();
@@ -17,7 +18,7 @@ export function GalleryForm({album,assets}:{album?:AdminGalleryAlbum;assets:Admi
 
 function GalleryImages({album}:{album:AdminGalleryAlbum}) {
   const router=useRouter(); const [pickerOpen,setPickerOpen]=useState(false); const [busy,setBusy]=useState(false); const [message,setMessage]=useState("");
-  async function mutate(path:string,method:string,body?:unknown){setBusy(true);setMessage("");const r=await fetch(path,{method,headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});setBusy(false);if(!r.ok){const result=await r.json() as {message?:string};setMessage(result.message??"Gallery could not be updated.");return false;}router.refresh();return true;}
+  async function mutate(path:string,method:string,body?:unknown){setBusy(true);setMessage("");const r=await fetch(path,{method,headers:body?{"Content-Type":"application/json"}:undefined,body:body?JSON.stringify(body):undefined});setBusy(false);if(redirectForAdminResponse(r))return false;if(!r.ok){const result=await r.json() as {message?:string};setMessage(result.message??"Gallery could not be updated.");return false;}router.refresh();return true;}
   async function add(mediaAssetId:string){const added=await mutate(`/api/admin/gallery-albums/${album.id}/media`,"POST",{mediaAssetId,displayOrder:album.media.length});if(added)setMessage("Image added to the album.");}
   async function move(index:number,direction:number){const ordered=[...album.media];const target=index+direction;if(target<0||target>=ordered.length)return;[ordered[index],ordered[target]]=[ordered[target],ordered[index]];await mutate(`/api/admin/gallery-albums/${album.id}/media/order`,"PUT",{items:ordered.map((item,i)=>({albumMediaId:item.id,displayOrder:i}))});}
   return <section className="mt-8 border border-slate-200 bg-white p-5" aria-labelledby="album-images-heading">

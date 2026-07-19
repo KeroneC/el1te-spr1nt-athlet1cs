@@ -3,14 +3,14 @@ import { AdminUserControls, InvitationActions, InviteAdminForm } from "@/compone
 import { Badge, EmptyState, formatDate } from "@/components/admin/list-controls";
 import { PageHeader } from "@/components/admin/page-header";
 import { requireSuperAdminUser } from "@/lib/admin/auth";
-import { adminApiFetch } from "@/lib/admin/server-api";
+import { getAdminList } from "@/lib/admin/page-data";
 import type { AdminInvitation, AdminUser, PagedResult } from "@/lib/admin/types";
 
 export default async function AdminUsersPage() {
   const currentUser = await requireSuperAdminUser();
   const [users, invitations] = await Promise.all([
-    adminApiFetch<PagedResult<AdminUser>>("/api/admin/users?page=1&pageSize=100"),
-    adminApiFetch<PagedResult<AdminInvitation>>("/api/admin/invitations?page=1&pageSize=100")
+    getAdminList<PagedResult<AdminUser>>("/api/admin/users?page=1&pageSize=100"),
+    getAdminList<PagedResult<AdminInvitation>>("/api/admin/invitations?page=1&pageSize=100")
   ]);
   return <><PageHeader title="Access control" description="Invite administrators, manage active access, and protect the club's SuperAdmin coverage." action={{ href: "/admin/users/activity", label: "View activity", icon: ScrollText }} />
     <InviteAdminForm />

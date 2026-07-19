@@ -4,6 +4,7 @@ import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
 import { robotsForEnvironment } from "../lib/public/deployment";
 import { HEADER_NAV_ITEMS, HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
+import { SCHOLARSHIP_COPY } from "../lib/public/scholarship";
 import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
 
@@ -42,6 +43,12 @@ describe("Phase 8 public CMS helpers", () => {
   it("keeps Hall of Fame records ready for future profile routes", () => {
     expect(HALL_OF_FAME_INDUCTEES).toHaveLength(2);
     expect(HALL_OF_FAME_INDUCTEES.every((inductee) => inductee.slug && inductee.imageSrc.startsWith("/images/hall-of-fame/"))).toBe(true);
+  });
+
+  it("preserves the approved BVN memorial wording", () => {
+    expect(SCHOLARSHIP_COPY.introduction).toContain("Beulah Veronica Newton");
+    expect(SCHOLARSHIP_COPY.legacy).toContain("Miss Beulah");
+    expect(SCHOLARSHIP_COPY.award).toContain("Click the logo or use the button below");
   });
 
   it("looks up content by exact key", () => {

@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { AdminAnnouncement, AnnouncementWriteRequest } from "@/lib/admin/types";
 import { validateAnnouncement, type FieldErrors } from "@/lib/admin/validation";
 import { MediaPicker } from "./media-picker";
+import { redirectForAdminResponse } from "@/lib/admin/client-response";
 
 export function AnnouncementForm({ announcement }: { announcement?: AdminAnnouncement }) {
   const router = useRouter();
@@ -29,8 +30,7 @@ export function AnnouncementForm({ announcement }: { announcement?: AdminAnnounc
     try {
       const url = announcement ? `/api/admin/announcements/${encodeURIComponent(announcement.id)}` : "/api/admin/announcements";
       const response = await fetch(url, { method: announcement ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
-      if (response.status === 401) { window.location.assign("/api/admin-session/logout?reason=expired"); return; }
-      if (response.status === 403) { window.location.assign("/admin/access-denied"); return; }
+      if (redirectForAdminResponse(response)) return;
       const result = await response.json() as AdminAnnouncement & { message?: string; errors?: FieldErrors };
       if (!response.ok) { setErrors(normalizeErrors(result.errors ?? {})); setMessage(result.message ?? "The announcement could not be saved."); return; }
       if (!announcement) { router.replace(`/admin/announcements/${result.id}/edit?saved=created`); router.refresh(); return; }
