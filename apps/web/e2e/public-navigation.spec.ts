@@ -17,7 +17,7 @@ test("grouped public navigation exposes secondary destinations on desktop", asyn
   await resources.click();
   await navigation.getByRole("link", { name: "Scholarship" }).click();
   await expect(page).toHaveURL(/\/scholarship$/);
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Honoring Beulah Veronica Newton");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("In honor of Beulah Veronica Newton");
   await expect(navigation.getByRole("button", { name: "Resources" })).toHaveClass(/is-active/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
