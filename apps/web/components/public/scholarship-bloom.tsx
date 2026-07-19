@@ -46,6 +46,5 @@ function LiteralBloom() {
     <div className={styles.literalInner}>
       {literalInnerPetals.map((petal) => <span key={petal.id} className={styles.literalInnerPetal} style={{ "--rotation": petal.rotation, "--delay": petal.delay } as PetalStyle} />)}
     </div>
-    <span className={styles.literalCenterShade} />
   </div>;
 }
