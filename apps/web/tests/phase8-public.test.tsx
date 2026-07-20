@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { POST as submitContact } from "../app/api/public/contact/route";
+import { hasUsableSponsorLogo, SponsorLogoTile } from "../components/public/sponsor-logo-tile";
+import { SponsorTierSection } from "../components/public/sponsor-tier-section";
 import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
 import { robotsForEnvironment } from "../lib/public/deployment";
@@ -38,6 +42,40 @@ describe("Phase 8 public CMS helpers", () => {
 
     expect(result.map((item) => item.name)).toEqual(["Gold logo", "Gold text", "Community", "Silver"]);
     expect(sponsorTierClass("Other")).toBe("sponsor-tier-other");
+  });
+
+  it("renders linked sponsor logos as safe, accessible external links", () => {
+    const sponsor: Sponsor = { name: "Example Partner", slug: "example-partner", tier: "Gold", logoUrl: "/logo.png", websiteUrl: "https://example.com/", description: null, displayOrder: 1 };
+    const markup = renderToStaticMarkup(createElement(SponsorLogoTile, { sponsor }));
+
+    expect(markup).toContain('aria-label="Visit Example Partner website (opens in a new tab)"');
+    expect(markup).toContain('target="_blank"');
+    expect(markup).toContain('rel="noreferrer noopener"');
+    expect(markup).toContain('src="/logo.png"');
+    expect(markup).toContain('alt=""');
+  });
+
+  it("keeps unlinked logos named and falls back to visible sponsor text", () => {
+    const unlinked: Sponsor = { name: "The Beecher Family", slug: "beecher-family", tier: "Community", logoUrl: "/beecher.png", websiteUrl: null, description: null, displayOrder: 1 };
+    const missing: Sponsor = { ...unlinked, name: "Logo Pending", slug: "logo-pending", logoUrl: null };
+
+    expect(renderToStaticMarkup(createElement(SponsorLogoTile, { sponsor: unlinked }))).toContain('alt="The Beecher Family logo"');
+    expect(renderToStaticMarkup(createElement(SponsorLogoTile, { sponsor: missing }))).toContain("Logo Pending");
+    expect(hasUsableSponsorLogo("/logo.png", false)).toBe(true);
+    expect(hasUsableSponsorLogo("/logo.png", true)).toBe(false);
+  });
+
+  it("renders a centered sponsor tier with stagger order", () => {
+    const sponsors: Sponsor[] = [
+      { name: "First Gold", slug: "first-gold", tier: "Gold", logoUrl: "/first.png", websiteUrl: "https://example.com/first", description: null, displayOrder: 1 },
+      { name: "Second Gold", slug: "second-gold", tier: "Gold", logoUrl: "/second.png", websiteUrl: null, description: null, displayOrder: 2 }
+    ];
+    const markup = renderToStaticMarkup(createElement(SponsorTierSection, { sponsors, tier: "Gold" }));
+
+    expect(markup).toContain("sponsor-tier-band sponsor-tier-gold");
+    expect(markup).toContain("Gold Sponsors");
+    expect(markup).not.toContain("sponsor-tier-kicker");
+    expect(markup).toContain("--sponsor-reveal-index:1");
   });
 
   it("keeps Hall of Fame records ready for future profile routes", () => {

@@ -1,18 +1,9 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
-import { ExternalLink, Medal } from "lucide-react";
 import Link from "next/link";
+import { SponsorTierSection } from "@/components/public/sponsor-tier-section";
 import { EmptyState, PageHero, PublicErrorState } from "@/components/public/ui";
 import { getContentBlocks, getSponsors } from "@/lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
-import { sponsorTierClass } from "@/lib/public/site";
-
-const medalTiers = new Set(["Gold", "Silver", "Bronze"]);
-
-function SponsorTierEmblem({ tier }: { tier: string }) {
-  if (!medalTiers.has(tier)) return null;
-  return <span className="sponsor-tier-emblem" aria-hidden="true"><Medal /></span>;
-}
 
 export const metadata: Metadata = {
   title: "Sponsors",
@@ -30,24 +21,13 @@ export default async function SponsorsPage() {
 
     return <>
       <PageHero eyebrow="Community partners" title="Our" accent="Sponsors" summary={intro?.body ?? intro?.title} />
-      <section className="content-section">
-        <div className="site-container">
-          {sponsors.length ? <div className="sponsor-tier-list">
-            {grouped.map((group) => <section className={`sponsor-tier ${sponsorTierClass(group.tier)}`} key={group.tier} aria-labelledby={`sponsor-${group.tier}`}>
-              <div className="sponsor-tier-heading"><SponsorTierEmblem tier={group.tier} /><p className="eyebrow">{group.tier}</p><h2 id={`sponsor-${group.tier}`}>{group.tier} Level Partners</h2></div>
-              <div className="sponsor-grid">
-                {group.items.map((sponsor) => <article className="sponsor-card" key={sponsor.slug}>
-                  <div className="sponsor-logo">{sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} /> : <span>{sponsor.name}</span>}</div>
-                  <span className="tag">{sponsor.tier}</span>
-                  <h2>{sponsor.name}</h2>
-                  {sponsor.description && <p>{sponsor.description}</p>}
-                  {sponsor.websiteUrl && <a className="text-link" href={sponsor.websiteUrl} target="_blank" rel="noreferrer noopener">Visit website<ExternalLink size={15} aria-hidden="true" /></a>}
-                </article>)}
-              </div>
-            </section>)}
-          </div> : <EmptyState title="Sponsor profiles are coming soon" message="Active community partners will be recognized here." />}
-        </div>
-      </section>
+      {sponsors.length ? <div className="sponsor-podium">
+        {grouped.map((group) => <SponsorTierSection
+          key={group.tier}
+          sponsors={group.items}
+          tier={group.tier as (typeof sponsors)[number]["tier"]}
+        />)}
+      </div> : <section className="content-section"><div className="site-container"><EmptyState title="Sponsor profiles are coming soon" message="Active community partners will be recognized here." /></div></section>}
       <section className="cta-band"><div className="site-container"><div><h2>Interested in supporting the team?</h2><p>Start a sponsorship conversation with the club. No sponsor payments are collected through this site.</p></div><Link className="button button-light" href="/contact">Contact us</Link></div></section>
     </>;
   } catch {

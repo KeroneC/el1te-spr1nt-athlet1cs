@@ -20,8 +20,8 @@ Start the API and web app using [Local development](local-development.md). Open 
 
 1. Create an active coach with a private email and confirm the email is omitted on `/coaches`.
 2. Enable public email and confirm it appears, then deactivate and confirm the coach disappears.
-3. Verify active sponsors are policy-tiered, missing logos use text, and external links open safely. Confirm Gold/Silver/Bronze use medal treatments, Platinum uses black/red, Community uses neutral/red, and Other remains neutral.
-4. Confirm the homepage preview prioritizes Gold sponsors, renders configured logos, and falls back to sponsor names without broken images.
+3. Verify active sponsors appear in tier order within white, centered logo sections; missing or failed logos fall back to sponsor names, and external links open safely in a new tab. Confirm tier headings retain their restrained Gold, Silver, Bronze, Community, Platinum, or Other accent without changing the page background.
+4. Confirm the homepage preview prioritizes Gold sponsors, reuses the normalized border-free logo treatment, renders configured logos at a useful size, and falls back to sponsor names without broken images. Follow [Sponsor logo image guide](sponsor-logo-images.md) when adding or replacing media.
 5. Verify FAQs are linked from the Resources navigation group and the Registration Hub. Check category groups and keyboard-operable disclosure controls; deactivate a test FAQ and confirm it disappears.
 
 ## Contact and Registration
@@ -49,7 +49,7 @@ Start the API and web app using [Local development](local-development.md). Open 
 2. Confirm the public header uses the Figma-inspired black shell, thick red rule, skewed brand block, uppercase nav, Shop link, and red Registration CTA while keeping the real El1te logo.
 3. Confirm the homepage uses the Figma-style dark track hero, red skew badge, huge uppercase display headline, and skewed CTA buttons.
 4. Confirm public page headers use the black hero, red highlighted title word, and skewed red underline.
-5. Confirm events, forms, gallery, coaches, sponsors, and contact use the adapted Figma patterns: date slabs, document rows, hover overlays, grayscale image cards, tier panels, and muted contact form panel.
+5. Confirm events, forms, gallery, coaches, sponsors, and contact use the adapted Figma patterns: date slabs, document rows, hover overlays, grayscale image cards, a centered sponsor logo wall, and the muted contact form panel.
 6. Confirm these visual changes do not alter CMS/API contracts, Admin routes, online registration scope, or deferred payment/Azure/portal work.
 
 ## Responsive and Accessibility Pass

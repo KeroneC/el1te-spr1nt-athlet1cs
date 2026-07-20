@@ -1,10 +1,11 @@
 /* eslint-disable @next/next/no-img-element */
 import { ArrowRight, Medal, Timer, Users } from "lucide-react";
 import Link from "next/link";
+import { SponsorLogoTile } from "@/components/public/sponsor-logo-tile";
 import { AnnouncementCard, EmptyState, EventCard } from "@/components/public/ui";
 import { getAnnouncements, getCoaches, getContentBlocks, getEvents, getGalleryAlbums, getSponsors } from "@/lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
-import { BRAND, prioritizeSponsorPreviews, sponsorTierClass } from "@/lib/public/site";
+import { BRAND, prioritizeSponsorPreviews } from "@/lib/public/site";
 
 export default async function HomePage() {
   const [blocksResult, newsResult, eventsResult, coachesResult, sponsorsResult, galleryResult] = await Promise.allSettled([
@@ -47,7 +48,7 @@ export default async function HomePage() {
 
     <section className="content-section"><div className="site-container"><div className="section-heading"><div><p className="eyebrow">Season snapshots</p><h2>Moments from the team</h2></div><Link className="text-link" href="/gallery">Open gallery<ArrowRight size={17} aria-hidden="true" /></Link></div>{albums.length ? <div className="gallery-album-grid compact">{albums.map((album) => <Link href={`/gallery/${album.slug}`} key={album.slug} className="gallery-album-card">{album.coverImageUrl ? <img src={album.coverImageUrl} alt={album.coverAltText ?? ""} /> : <div className="gallery-placeholder">Gallery album</div>}<div><p className="eyebrow">{album.imageCount} {album.imageCount === 1 ? "photo" : "photos"}</p><h2>{album.title}</h2><p>{album.description}</p></div></Link>)}</div> : <EmptyState title="Gallery albums are coming soon" message="Published team photo collections will appear here." />}</div></section>
 
-    {sponsors.length > 0 && <section className="sponsor-strip"><div className="site-container"><div className="sponsor-strip-heading"><div><p className="eyebrow">Community partners</p><h2>Backing the next generation</h2></div><Link className="text-link" href="/sponsors">Meet our sponsors<ArrowRight size={17} aria-hidden="true" /></Link></div><div className="sponsor-name-list">{sponsors.map((sponsor) => <article className={sponsorTierClass(sponsor.tier)} key={sponsor.slug}><small>{sponsor.tier}</small><div className="sponsor-preview-logo">{sponsor.logoUrl ? <img src={sponsor.logoUrl} alt={`${sponsor.name} logo`} /> : <span>{sponsor.name}</span>}</div></article>)}</div></div></section>}
+    {sponsors.length > 0 && <section className="sponsor-strip"><div className="site-container"><div className="sponsor-strip-heading"><div><p className="eyebrow">Community partners</p><h2>Backing the next generation</h2></div><Link className="text-link" href="/sponsors">Meet our sponsors<ArrowRight size={17} aria-hidden="true" /></Link></div><div className="sponsor-preview-grid" role="list">{sponsors.map((sponsor) => <SponsorLogoTile sponsor={sponsor} variant="preview" key={sponsor.slug} />)}</div></div></section>}
 
     <section className="cta-band"><div className="site-container"><div><p className="eyebrow light">Ready for the next step?</p><h2>{BRAND.slogan}</h2><p>Review the registration packet and contact the club before submitting paperwork for staff review.</p></div><div className="button-row"><Link className="button button-light" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link><Link className="button button-ghost" href="/contact">Ask a question</Link></div></div></section>
   </>;
