@@ -343,8 +343,11 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .home-hero::after { content: ""; position: absolute; z-index: -1; top: 0; right: 25%; width: 24%; height: 100%; background: #7f1d1d; opacity: 0.48; clip-path: polygon(58% 0, 100% 0, 42% 100%, 0 100%); }
 .hero-logo { display: none; }
 .hero-content { min-height: clamp(37rem, 76svh, 46rem); padding-block: clamp(2.5rem, 6vw, 4rem); }
-.hero-logo-panel { width: min(35rem, 68vw); animation: heroReveal 420ms ease-out both; }
-.hero-logo-panel img { display: block; width: 100%; height: auto; }
+.hero-logo-panel { position: relative; width: min(35rem, 68vw); isolation: isolate; animation: heroReveal 420ms ease-out both; }
+.hero-logo-panel::before, .hero-logo-panel::after { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; -webkit-mask: url("/images/brand/el1te-full-black.png") center / 100% 100% no-repeat; mask: url("/images/brand/el1te-full-black.png") center / 100% 100% no-repeat; }
+.hero-logo-panel::before { background: #7f1d1d; opacity: 0.34; transform: scale(1.16); }
+.hero-logo-panel::after { background: var(--figma-red); opacity: 0.1; transform: scale(1.23); }
+.hero-logo-panel img { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
 .hero-content .button-row { margin-top: 1.5rem; animation: heroReveal 360ms ease-out 100ms both; }
 .achievement-band { background: #ffffff; padding-block: clamp(3.5rem, 7vw, 5.5rem); }
 .achievement-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(20rem, 0.8fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }
