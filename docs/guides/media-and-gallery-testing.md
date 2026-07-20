@@ -8,4 +8,6 @@
 6. Publish it and verify list/detail images, captions, alt text, and mobile layout. Deactivate an asset and confirm it disappears publicly.
 7. Reuse an asset in two albums. Delete one album and confirm the asset remains. Attempt to delete a referenced asset and expect `409`; remove references and delete a disposable asset.
 
+Sponsor marks have additional canvas and review requirements. Follow [Sponsor logo image guide](sponsor-logo-images.md) before uploading or replacing a sponsor logo.
+
 Do not commit files from the API upload runtime directory.
