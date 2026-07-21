@@ -20,6 +20,8 @@ This is the reconciliation point between the repository and any separate ChatGPT
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.
 - The Admin manages announcements, events, coaches, sponsors, FAQs, content blocks, site settings, contact submissions, reusable media, and gallery albums.
 - The public website includes home, about, programs, news, events, coaches, sponsors, FAQs, registration information, forms, scholarship, Hall of Fame, team, contact, gallery list, and gallery detail routes.
+- The About page uses the established club mission from the legacy public website in the stable `about.story` CMS block. Its public title is "Our Mission"; the separate `about.values` block remains "What We Value."
+- Migration `UpdateAboutMissionContent` updates existing databases as well as fresh seed data. Validation passed with 50 backend unit tests, 34 backend integration tests, 63 frontend tests, 5 Playwright scenarios, a zero-warning Release build, a production web build, no pending EF model changes, and 61 validated Markdown files.
 - The Admin is functionally mature for the current scope. Future Admin work should be targeted UX/UI fine-tuning based on use and board feedback, not a ground-up redesign.
 
 ## Active Stage 1 Operational UX
