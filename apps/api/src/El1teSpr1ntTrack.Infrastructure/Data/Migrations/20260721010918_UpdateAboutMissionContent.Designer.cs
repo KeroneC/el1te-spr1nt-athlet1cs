@@ -4,6 +4,7 @@ using El1teSpr1ntTrack.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(El1teDbContext))]
-    partial class El1teDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260721010918_UpdateAboutMissionContent")]
+    partial class UpdateAboutMissionContent
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

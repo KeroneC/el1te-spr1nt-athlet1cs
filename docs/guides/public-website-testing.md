@@ -8,6 +8,7 @@ Start the API and web app using [Local development](local-development.md). Open 
 2. Open the homepage and allow up to 60 seconds for the public cache window.
 3. Confirm the hero displays the new title/body, then restore the seeded value.
 4. Unpublish a noncritical test block and confirm its section is omitted without exposing the key.
+5. On `/about`, confirm `about.story` renders as "Our Mission" with the approved club mission and `about.values` remains "What We Value."
 
 ## News and Events
 

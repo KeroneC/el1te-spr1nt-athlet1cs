@@ -37,3 +37,12 @@ test("mobile grouped navigation closes after navigating", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("RGN El1te Hall of Fame");
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 });
+
+test("about page renders the approved mission and preserves club values", async ({ page }) => {
+  await page.goto("/about");
+
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Our Mission");
+  await expect(page.getByText(/promoting track and field for youth ages 7 to 18/i)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What We Value" })).toBeVisible();
+  await expect(page.getByText("Our Story", { exact: true })).toHaveCount(0);
+});
