@@ -141,7 +141,6 @@ resource queryAlerts 'Microsoft.Insights/scheduledQueryRules@2023-12-01' = [for 
     windowSize: alert.windowSize
     scopes: [insights.id]
     autoMitigate: true
-    muteActionsDuration: 'PT30M'
     skipQueryValidation: false
     criteria: {
       allOf: [

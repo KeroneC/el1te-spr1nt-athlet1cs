@@ -50,7 +50,7 @@ Operational alerts use the same email recipient configured for grant-budget noti
 | Dependency failures | Five failures in 10 minutes | Identify SQL, Blob, or HTTP dependency and verify its Azure health |
 | Request latency | p95 above five seconds with at least 10 requests, sustained twice | Check B1 cold starts, dependencies, request volume, and recent releases |
 
-Alerts evaluate every five minutes, auto-resolve after recovery, and suppress repeat emails for 30 minutes. A single transient B1 cold start should not trigger a notification.
+Alerts evaluate every five minutes and use Azure Monitor's stateful auto-mitigation. The action group is notified when an incident becomes active, is not notified on every evaluation while that incident remains active, and the alert auto-resolves after recovery. A later recurrence can open a new incident. A single transient B1 cold start should not trigger a notification.
 
 Record confirmed incidents with start/end time, impact, affected safe route templates, reference IDs, release SHA, cause, resolution, and follow-up. Do not copy raw private telemetry into GitHub issues or public channels.
 
