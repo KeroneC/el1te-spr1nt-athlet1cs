@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import type { ContactRequest, ValidationProblem } from "@/lib/public/types";
+import { SUPPORT_REFERENCE_HEADER, validSupportReference } from "@/lib/observability/support-reference";
+import { createSupportReference, logUnexpectedWebFailure } from "@/lib/observability/support-reference.server";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:5000";
 
@@ -23,10 +25,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Please correct the highlighted fields.", errors: payload.errors ?? {} }, { status: 400 });
     }
     if (!response.ok) {
-      return NextResponse.json({ message: "Your message could not be sent. Please try again." }, { status: 502 });
+      const referenceId = validSupportReference(response.headers.get(SUPPORT_REFERENCE_HEADER))
+        ?? validSupportReference(payload.referenceId)
+        ?? createSupportReference();
+      logUnexpectedWebFailure({ referenceId, category: "contact-upstream-failure", status: response.status });
+      return NextResponse.json(
+        { message: "Your message could not be sent. Please try again.", referenceId },
+        { status: 502, headers: { [SUPPORT_REFERENCE_HEADER]: referenceId } }
+      );
     }
     return NextResponse.json(payload, { status: 201 });
   } catch {
-    return NextResponse.json({ message: "The contact service is temporarily unavailable. Please try again." }, { status: 503 });
+    const referenceId = createSupportReference();
+    logUnexpectedWebFailure({ referenceId, category: "contact-service-unavailable", status: 503 });
+    return NextResponse.json(
+      { message: "The contact service is temporarily unavailable. Please try again.", referenceId },
+      { status: 503, headers: { [SUPPORT_REFERENCE_HEADER]: referenceId } }
+    );
   }
 }

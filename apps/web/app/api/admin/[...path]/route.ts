@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AdminApiError } from "@/lib/admin/api-error";
 import { adminApiFetch } from "@/lib/admin/server-api";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 import { isAllowedAdminMutation } from "@/lib/admin/mutation-policy";
 import { readAdminMutationBody } from "@/lib/admin/mutation-request";
 
@@ -18,7 +18,6 @@ async function proxy(request: Request, context: Context, method: "POST" | "PUT" 
     const result = await adminApiFetch<unknown>(`/api/admin/${path.map(encodeURIComponent).join("/")}`, { method, body });
     return method === "DELETE" ? new NextResponse(null, { status: 204 }) : NextResponse.json(result, { status: method === "POST" ? 201 : 200 });
   } catch (error) {
-    if (error instanceof AdminApiError) return NextResponse.json({ message: error.message, errors: error.fieldErrors }, { status: error.status });
-    return NextResponse.json({ message: "The request could not be completed." }, { status: 500 });
+    return adminErrorResponse(error, "The request could not be completed.", "admin-mutation-proxy");
   }
 }

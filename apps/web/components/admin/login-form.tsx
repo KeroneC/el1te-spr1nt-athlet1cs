@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
 import { validateLoginInput, type FieldErrors } from "@/lib/admin/validation";
+import { SupportReference } from "@/components/shared/support-reference";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 export function LoginForm() {
   const router = useRouter();
@@ -11,6 +13,7 @@ export function LoginForm() {
   const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -20,6 +23,7 @@ export function LoginForm() {
     const clientErrors = validateLoginInput(input);
     setErrors(clientErrors);
     setMessage(null);
+    setReferenceId(null);
     if (Object.keys(clientErrors).length) return;
 
     setSubmitting(true);
@@ -27,10 +31,11 @@ export function LoginForm() {
       const response = await fetch("/api/admin-session/login", {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(input)
       });
-      const result = await response.json() as { message?: string; errors?: FieldErrors };
+      const result = await response.json() as { message?: string; errors?: FieldErrors; referenceId?: string };
       if (!response.ok) {
         setErrors(result.errors ?? {});
         setMessage(result.message ?? "Sign in could not be completed.");
+        setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null);
         return;
       }
       router.replace("/admin");
@@ -44,7 +49,7 @@ export function LoginForm() {
 
   return (
     <form onSubmit={submit} noValidate className="space-y-5" aria-describedby={message ? "login-message" : undefined}>
-      {message && <div id="login-message" role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}</div>}
+      {message && <div id="login-message" role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}<SupportReference referenceId={referenceId}/></div>}
       <Field label="Email" name="email" type="email" autoComplete="email" error={errors.email?.[0]} />
       <div>
         <label htmlFor="password" className="mb-2 block text-sm font-bold text-track-ink">Password</label>

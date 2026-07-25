@@ -3,6 +3,7 @@ import { AdminApiError } from "@/lib/admin/api-error";
 import { ADMIN_SESSION_COOKIE, backendFetch } from "@/lib/admin/server-api";
 import type { CurrentUser, LoginRequest, LoginResponse } from "@/lib/admin/types";
 import { isAdminRole, validateLoginInput } from "@/lib/admin/validation";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 
 export async function POST(request: Request) {
   let body: LoginRequest;
@@ -43,6 +44,6 @@ export async function POST(request: Request) {
     if (error instanceof AdminApiError && error.status === 401) {
       return NextResponse.json({ message: "Email or password is incorrect." }, { status: 401 });
     }
-    return NextResponse.json({ message: "The admin service is unavailable. Please try again." }, { status: 503 });
+    return adminErrorResponse(error, "The admin service is unavailable. Please try again.", "admin-login");
   }
 }

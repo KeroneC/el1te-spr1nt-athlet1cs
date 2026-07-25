@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AdminApiError } from "@/lib/admin/api-error";
 import { backendFetch } from "@/lib/admin/server-api";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 
 export async function POST(request: Request) {
   let body: { token: string; password: string; confirmPassword: string };
@@ -16,7 +16,6 @@ export async function POST(request: Request) {
     await backendFetch<null>("/api/admin-invitations/accept", { method: "POST", body: JSON.stringify(body) });
     return new NextResponse(null, { status: 204 });
   } catch (error) {
-    if (error instanceof AdminApiError) return NextResponse.json({ message: error.message, errors: error.fieldErrors }, { status: error.status });
-    return NextResponse.json({ message: "The invitation service is temporarily unavailable." }, { status: 503 });
+    return adminErrorResponse(error, "The invitation service is temporarily unavailable.", "invitation-accept");
   }
 }

@@ -11,6 +11,7 @@ param mediaContainerName string
 param applicationInsightsConnectionString string
 param publicBaseUrl string
 param allowedOrigins array
+param releaseSha string
 param tags object = {}
 
 var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
@@ -101,6 +102,18 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
+        }
+        {
+          name: 'RELEASE_SHA'
+          value: releaseSha
+        }
+        {
+          name: 'OTEL_SERVICE_NAME'
+          value: 'api'
+        }
+        {
+          name: 'OTEL_SERVICE_VERSION'
+          value: releaseSha
         }
         {
           name: 'WEBSITES_CONTAINER_START_TIME_LIMIT'

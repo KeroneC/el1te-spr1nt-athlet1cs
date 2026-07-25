@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { AdminApiError } from "@/lib/admin/api-error";
 import { adminApiFetch } from "@/lib/admin/server-api";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 
 export async function GET(request: NextRequest) {
   try {
@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     }
     return NextResponse.json(await adminApiFetch(`/api/admin/media?${params}`));
   } catch (error) {
-    if (error instanceof AdminApiError) return NextResponse.json({ message: error.message }, { status: error.status });
-    return NextResponse.json({ message: "Media could not be loaded." }, { status: 500 });
+    return adminErrorResponse(error, "Media could not be loaded.", "admin-media-options");
   }
 }

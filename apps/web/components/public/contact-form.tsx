@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 import type { ContactRequest, ValidationProblem } from "@/lib/public/types";
 import { labelEnum } from "@/lib/public/format";
 import { INQUIRY_TYPES, validateContact } from "@/lib/public/validation";
+import { SupportReference } from "@/components/shared/support-reference";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 const initial: ContactRequest = { name: "", email: "", phone: null, inquiryType: "General", message: "" };
 
@@ -13,6 +15,7 @@ export function ContactForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof ContactRequest, string>>>({});
   const [status, setStatus] = useState<"idle" | "submitting" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [referenceId, setReferenceId] = useState<string | null>(null);
 
   function update<K extends keyof ContactRequest>(key: K, value: ContactRequest[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -32,6 +35,7 @@ export function ContactForm() {
 
     setStatus("submitting");
     setMessage("");
+    setReferenceId(null);
     try {
       const response = await fetch("/api/public/contact", {
         method: "POST",
@@ -48,15 +52,18 @@ export function ContactForm() {
         setErrors(fieldErrors);
         setStatus("error");
         setMessage(payload.message ?? "Your message could not be sent. Please try again.");
+        setReferenceId(response.status >= 500 ? validSupportReference(payload.referenceId) : null);
         return;
       }
       setValues(initial);
       setErrors({});
       setStatus("success");
       setMessage(payload.message ?? "Your message has been received.");
+      setReferenceId(null);
     } catch {
       setStatus("error");
       setMessage("Your message could not be sent. Please check your connection and try again.");
+      setReferenceId(null);
     }
   }
 
@@ -69,6 +76,7 @@ export function ContactForm() {
     </div>
     <Field label="Message" name="message" error={errors.message}><textarea id="message" rows={7} maxLength={4000} value={values.message} onChange={(event)=>update("message",event.target.value)} aria-invalid={Boolean(errors.message)} aria-describedby={errors.message?"message-error":undefined} /></Field>
     {message && <p className={`form-status ${status}`} role="status">{message}</p>}
+    <SupportReference referenceId={referenceId} />
     <button className="button button-primary" type="submit" disabled={status==="submitting"}>{status==="submitting"?"Sending...":<>Send message<Send size={17} aria-hidden="true"/></>}</button>
   </form>;
 }

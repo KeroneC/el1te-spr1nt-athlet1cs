@@ -30,7 +30,7 @@ export default async function SponsorsPage() {
       </div> : <section className="content-section"><div className="site-container"><EmptyState title="Sponsor profiles are coming soon" message="Active community partners will be recognized here." /></div></section>}
       <section className="cta-band"><div className="site-container"><div><h2>Interested in supporting the team?</h2><p>Start a sponsorship conversation with the club. No sponsor payments are collected through this site.</p></div><Link className="button button-light" href="/contact">Contact us</Link></div></section>
     </>;
-  } catch {
-    return <><PageHero title="Our" accent="Sponsors" /><div className="site-container content-section"><PublicErrorState /></div></>;
+  } catch (error) {
+    return <><PageHero title="Our" accent="Sponsors" /><div className="site-container content-section"><PublicErrorState error={error} /></div></>;
   }
 }

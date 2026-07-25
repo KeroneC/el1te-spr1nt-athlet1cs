@@ -3,6 +3,8 @@ import { ArrowRight, CalendarDays, MapPin } from "lucide-react";
 import Link from "next/link";
 import { formatDate, formatEventDate, labelEnum } from "@/lib/public/format";
 import type { AnnouncementListItem, ContentBlock, EventListItem } from "@/lib/public/types";
+import { PublicApiError } from "@/lib/public/client";
+import { SupportReference } from "@/components/shared/support-reference";
 
 export function PageHero({ eyebrow, title, accent, summary }: { eyebrow?: string; title: string; accent?: string; summary?: string | null }) {
   return <section className="page-hero"><div className="site-container narrow">{eyebrow && <p className="eyebrow light">{eyebrow}</p>}<h1>{title}{accent && <> <span>{accent}</span></>}</h1><div className="hero-rule" aria-hidden="true" />{summary && <p>{summary}</p>}</div></section>;
@@ -16,8 +18,9 @@ export function EmptyState({ title, message }: { title: string; message: string 
   return <div className="empty-state"><h2>{title}</h2><p>{message}</p></div>;
 }
 
-export function PublicErrorState() {
-  return <div className="empty-state error-state"><h2>We could not load this content</h2><p>Please try again shortly. The rest of the website is still available.</p><Link className="button button-secondary" href="/">Return home</Link></div>;
+export function PublicErrorState({ error }: { error?: unknown }) {
+  const referenceId = error instanceof PublicApiError ? error.referenceId : null;
+  return <div className="empty-state error-state"><h2>We could not load this content</h2><p>Please try again shortly. The rest of the website is still available.</p><SupportReference referenceId={referenceId} /><Link className="button button-secondary" href="/">Return home</Link></div>;
 }
 
 export function AnnouncementCard({ item }: { item: AnnouncementListItem }) {

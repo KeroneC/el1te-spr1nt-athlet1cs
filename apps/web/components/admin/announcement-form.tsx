@@ -8,12 +8,15 @@ import type { AdminAnnouncement, AnnouncementWriteRequest } from "@/lib/admin/ty
 import { validateAnnouncement, type FieldErrors } from "@/lib/admin/validation";
 import { MediaPicker } from "./media-picker";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
+import { SupportReference } from "@/components/shared/support-reference";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 export function AnnouncementForm({ announcement }: { announcement?: AdminAnnouncement }) {
   const router = useRouter();
   const [errors, setErrors] = useState<FieldErrors>({});
   const [message, setMessage] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (submitting) return;
@@ -24,15 +27,15 @@ export function AnnouncementForm({ announcement }: { announcement?: AdminAnnounc
       isFeatured: data.get("isFeatured") === "on", isPublished: data.get("isPublished") === "on",
       publishDateUtc: iso(String(data.get("publishDateUtc") ?? "")), expirationDateUtc: iso(String(data.get("expirationDateUtc") ?? ""))
     };
-    const clientErrors = validateAnnouncement(request); setErrors(clientErrors); setMessage(null);
+    const clientErrors = validateAnnouncement(request); setErrors(clientErrors); setMessage(null); setReferenceId(null);
     if (Object.keys(clientErrors).length) return;
     setSubmitting(true);
     try {
       const url = announcement ? `/api/admin/announcements/${encodeURIComponent(announcement.id)}` : "/api/admin/announcements";
       const response = await fetch(url, { method: announcement ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(request) });
       if (redirectForAdminResponse(response)) return;
-      const result = await response.json() as AdminAnnouncement & { message?: string; errors?: FieldErrors };
-      if (!response.ok) { setErrors(normalizeErrors(result.errors ?? {})); setMessage(result.message ?? "The announcement could not be saved."); return; }
+      const result = await response.json() as AdminAnnouncement & { message?: string; errors?: FieldErrors; referenceId?: string };
+      if (!response.ok) { setErrors(normalizeErrors(result.errors ?? {})); setMessage(result.message ?? "The announcement could not be saved."); setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null); return; }
       if (!announcement) { router.replace(`/admin/announcements/${result.id}/edit?saved=created`); router.refresh(); return; }
       setMessage("Announcement saved successfully."); router.refresh();
     } catch { setMessage("The announcement could not be saved. Try again."); }
@@ -40,7 +43,7 @@ export function AnnouncementForm({ announcement }: { announcement?: AdminAnnounc
   }
 
   return <form onSubmit={submit} noValidate className="space-y-6">
-    {message && <div role="status" className={`border-l-4 px-4 py-3 text-sm font-semibold ${message.includes("success") ? "border-track-field bg-emerald-50 text-emerald-900" : "border-track-red bg-red-50 text-red-900"}`}>{message}</div>}
+    {message && <div role="status" className={`border-l-4 px-4 py-3 text-sm font-semibold ${message.includes("success") ? "border-track-field bg-emerald-50 text-emerald-900" : "border-track-red bg-red-50 text-red-900"}`}>{message}<SupportReference referenceId={referenceId}/></div>}
     <section className="border border-slate-200 bg-white p-5 sm:p-6" aria-labelledby="content-heading"><h2 id="content-heading" className="text-lg font-black text-track-ink">Content</h2><div className="mt-5 grid gap-5">
       <Field label="Title" name="title" required maxLength={200} defaultValue={announcement?.title} error={field(errors, "title")} />
       {announcement && <div><label className="mb-2 block text-sm font-bold text-track-ink">Public slug</label><div className="min-h-11 border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">/{announcement.slug}</div><p className="mt-1 text-xs text-slate-500">The backend preserves this slug when the title changes.</p></div>}

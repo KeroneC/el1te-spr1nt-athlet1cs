@@ -4,6 +4,7 @@ param appServicePlanId string
 param apiBaseUrl string
 param applicationInsightsConnectionString string
 param tags object = {}
+param releaseSha string
 
 resource web 'Microsoft.Web/sites@2023-12-01' = {
   name: name
@@ -57,6 +58,26 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'ApplicationInsightsAgent_EXTENSION_VERSION'
           value: '~3'
+        }
+        {
+          name: 'APPLICATIONINSIGHTS_CONFIGURATION_CONTENT'
+          value: '{"roleName":"web","enableAutoCollectConsole":true}'
+        }
+        {
+          name: 'APPINSIGHTS_JAVASCRIPT_ENABLED'
+          value: 'false'
+        }
+        {
+          name: 'RELEASE_SHA'
+          value: releaseSha
+        }
+        {
+          name: 'OTEL_SERVICE_NAME'
+          value: 'web'
+        }
+        {
+          name: 'OTEL_SERVICE_VERSION'
+          value: releaseSha
         }
       ]
     }

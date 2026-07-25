@@ -66,6 +66,7 @@ export interface ApiProblem {
   detail?: string;
   status?: number;
   errors?: Record<string, string[]>;
+  referenceId?: string;
 }
 
 export interface AnnouncementFilters {

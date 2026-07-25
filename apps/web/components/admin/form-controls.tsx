@@ -2,9 +2,10 @@ import Link from "next/link";
 import { ArrowLeft, LoaderCircle, Save } from "lucide-react";
 import type { FieldErrors } from "@/lib/admin/validation";
 import { MediaPicker } from "./media-picker";
+import { SupportReference } from "@/components/shared/support-reference";
 
-export function FormNotice({ message, success = false }: { message: string | null; success?: boolean }) {
-  return message ? <div role={success ? "status" : "alert"} className={`border-l-4 px-4 py-3 text-sm font-semibold ${success ? "border-track-field bg-emerald-50 text-emerald-900" : "border-track-red bg-red-50 text-red-900"}`}>{message}</div> : null;
+export function FormNotice({ message, success = false, referenceId }: { message: string | null; success?: boolean; referenceId?: string | null }) {
+  return message ? <div role={success ? "status" : "alert"} className={`border-l-4 px-4 py-3 text-sm font-semibold ${success ? "border-track-field bg-emerald-50 text-emerald-900" : "border-track-red bg-red-50 text-red-900"}`}>{message}<SupportReference referenceId={referenceId} /></div> : null;
 }
 export function FormSection({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return <section className="border border-slate-200 bg-white p-5 sm:p-6"><h2 className="text-lg font-black text-track-ink">{title}</h2>{description && <p className="mt-1 text-sm leading-6 text-slate-600">{description}</p>}<div className="mt-5 grid gap-5 sm:grid-cols-2">{children}</div></section>;
