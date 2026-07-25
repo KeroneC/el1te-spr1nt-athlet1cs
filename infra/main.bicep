@@ -36,6 +36,14 @@ param frontendAllowedOrigin string = ''
 param tags object = {}
 param mediaContainerName string = 'media'
 
+@description('Email recipient for Azure Monitor operational alerts.')
+param monitoringAlertEmail string
+
+@description('Immutable Git commit SHA promoted by the deployment workflow.')
+@minLength(7)
+@maxLength(40)
+param releaseSha string
+
 var normalizedPrefix = toLower(replace(namePrefix, '-', ''))
 var normalizedEnvironment = toLower(replace(environmentName, '-', ''))
 var suffix = substring(uniqueString(resourceGroup().id, environmentName), 0, 6)
@@ -110,6 +118,8 @@ module monitoring 'modules/monitoring.bicep' = {
   params: {
     baseName: baseName
     location: location
+    apiReadinessUrl: 'https://${apiAppName}.azurewebsites.net/health/ready'
+    alertEmail: monitoringAlertEmail
     tags: tags
   }
 }
@@ -127,6 +137,7 @@ module api 'modules/api-app.bicep' = {
     mediaContainerName: storage.outputs.containerName
     applicationInsightsConnectionString: monitoring.outputs.connectionString
     publicBaseUrl: 'https://${apiAppName}.azurewebsites.net'
+    releaseSha: releaseSha
     location: location
     name: apiAppName
     sqlServerFqdn: sqlServer.outputs.fullyQualifiedDomainName
@@ -142,6 +153,7 @@ module web 'modules/web-app.bicep' = {
     appServicePlanId: plan.outputs.id
     location: location
     name: webAppName
+    releaseSha: releaseSha
     tags: tags
   }
 }

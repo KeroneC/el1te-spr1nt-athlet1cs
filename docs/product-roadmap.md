@@ -38,6 +38,8 @@ This stage prepares a separate production environment and the support practices 
 - Keep raw logs in Azure behind RBAC and document the support path from reported time, route, and reference ID to the relevant trace and deployment SHA.
 - Retain the current cost controls unless observed traffic justifies a reviewed change: 30-day logs and the configured daily ingestion cap.
 
+Delivery status: the server-side support foundation is implemented. Next.js and API failures are correlated with safe, copyable references; Bicep owns the readiness check, workbook, alerts, release markers, and RBAC-protected support workflow. Cookie-free browser analytics remains deferred to its own privacy review, so browser page views, performance, and client-side event tracking are not yet collected.
+
 ### Feedback and accessibility
 
 - Add a public feedback route for problems, feature ideas, accessibility issues, content corrections, and general feedback.

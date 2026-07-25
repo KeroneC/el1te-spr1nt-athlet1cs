@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, LoaderCircle } from "lucide-react";
 import type { AdminInvitationDetails } from "@/lib/admin/types";
 import type { FieldErrors } from "@/lib/admin/validation";
+import { SupportReference } from "@/components/shared/support-reference";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 export function InvitationAcceptance() {
   const [token, setToken] = useState("");
@@ -14,6 +16,7 @@ export function InvitationAcceptance() {
   const [complete, setComplete] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [referenceId, setReferenceId] = useState<string | null>(null);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.hash.slice(1));
@@ -26,8 +29,8 @@ export function InvitationAcceptance() {
   async function inspect(invitationToken: string) {
     try {
       const response = await fetch("/api/admin-invitations/inspect", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token: invitationToken }) });
-      const result = await response.json() as AdminInvitationDetails & { message?: string };
-      if (!response.ok) { setMessage(result.message ?? "This invitation is no longer available."); return; }
+      const result = await response.json() as AdminInvitationDetails & { message?: string; referenceId?: string };
+      if (!response.ok) { setMessage(result.message ?? "This invitation is no longer available."); setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null); return; }
       setDetails(result);
     } catch { setMessage("The invitation service is temporarily unavailable."); }
     finally { setLoading(false); }
@@ -39,14 +42,14 @@ export function InvitationAcceptance() {
     const password = String(data.get("password") ?? "");
     const confirmPassword = String(data.get("confirmPassword") ?? "");
     const clientErrors = validatePassword(password, confirmPassword);
-    setErrors(clientErrors); setMessage(null);
+    setErrors(clientErrors); setMessage(null); setReferenceId(null);
     if (Object.keys(clientErrors).length) return;
     setSubmitting(true);
     try {
       const response = await fetch("/api/admin-invitations/accept", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ token, password, confirmPassword }) });
       if (!response.ok) {
-        const result = await response.json() as { message?: string; errors?: FieldErrors };
-        setMessage(result.message ?? "The invitation could not be accepted."); setErrors(normalize(result.errors ?? {})); return;
+        const result = await response.json() as { message?: string; errors?: FieldErrors; referenceId?: string };
+        setMessage(result.message ?? "The invitation could not be accepted."); setErrors(normalize(result.errors ?? {})); setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null); return;
       }
       window.history.replaceState(null, "", window.location.pathname);
       setComplete(true);
@@ -56,11 +59,11 @@ export function InvitationAcceptance() {
 
   if (loading) return <div className="flex min-h-40 items-center justify-center" role="status"><LoaderCircle className="animate-spin text-track-red" /><span className="sr-only">Checking invitation</span></div>;
   if (complete) return <div className="py-4 text-center"><CheckCircle2 size={42} className="mx-auto text-emerald-600" /><h2 className="mt-4 text-xl font-black text-track-ink">Your Admin account is ready</h2><p className="mt-2 text-sm leading-6 text-slate-600">Sign in using the email address and password you just confirmed.</p><Link href="/admin/login" className="mt-6 inline-flex min-h-11 items-center bg-track-red px-5 text-sm font-bold text-white">Continue to sign in</Link></div>;
-  if (!details) return <div><p role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}</p><Link href="/contact" className="mt-5 inline-flex text-sm font-bold text-track-red">Contact the club</Link></div>;
+  if (!details) return <div><div role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}<SupportReference referenceId={referenceId}/></div><Link href="/contact" className="mt-5 inline-flex text-sm font-bold text-track-red">Contact the club</Link></div>;
 
   return <form onSubmit={submit} noValidate className="space-y-5">
     <div className="border-l-4 border-track-red bg-slate-100 px-4 py-3"><p className="text-sm font-bold text-track-ink">{details.firstName} {details.lastName}</p><p className="text-sm text-slate-600">{details.email} · {details.role}</p><p className="mt-1 text-xs text-slate-500">Expires {new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(details.expiresAtUtc))}</p></div>
-    {message && <p role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}</p>}
+    {message && <div role="alert" className="border-l-4 border-track-red bg-red-50 px-4 py-3 text-sm font-semibold text-red-900">{message}<SupportReference referenceId={referenceId}/></div>}
     <PasswordField name="password" label="Create password" error={errors.password?.[0]} autoComplete="new-password" />
     <PasswordField name="confirmPassword" label="Confirm password" error={errors.confirmPassword?.[0]} autoComplete="new-password" />
     <p className="text-xs leading-5 text-slate-500">Use at least 12 characters with uppercase, lowercase, number, and symbol characters.</p>

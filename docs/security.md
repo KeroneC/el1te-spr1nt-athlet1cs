@@ -49,6 +49,8 @@ Development CORS allows localhost origins for local Next.js work. Production COR
 
 Logs should not include passwords, password hashes, JWTs, refresh tokens, payment data, medical notes, emergency contact details, private document URLs, or raw request bodies containing sensitive data.
 
+Unexpected server failures expose only a safe support reference. API request telemetry uses route templates and clears user/session context; Next.js error instrumentation records a safe route template and production digest rather than the raw request. Browser analytics remain disabled. Raw telemetry and the support workbook stay behind Azure RBAC. See [Observability and support references](guides/observability-support.md).
+
 ## Administrative Audit
 
 Invitation creation, reissue, revocation, acceptance, and privileged role/active-status changes write append-only activity records. Only SuperAdmins may read the activity view. The application provides no update or delete endpoint for activity records.

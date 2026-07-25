@@ -112,6 +112,38 @@ describe("Phase 8 public CMS helpers", () => {
     expect(fetchMock.mock.calls[0][1]).not.toHaveProperty("headers.Authorization");
   });
 
+  it("preserves a valid API reference and rejects attacker-supplied values", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(
+        JSON.stringify({ referenceId: "ESA-0123456789ABCDEF" }),
+        { status: 503, headers: { "Content-Type": "application/problem+json", "X-Reference-Id": "ESA-0123456789ABCDEF" } }
+      ))
+      .mockResolvedValueOnce(new Response(
+        JSON.stringify({ referenceId: "<script>attacker</script>" }),
+        { status: 503, headers: { "Content-Type": "application/problem+json", "X-Reference-Id": "attacker" } }
+      ));
+
+    await expect(publicApiFetch("/site-settings")).rejects.toMatchObject({
+      referenceId: "ESA-0123456789ABCDEF"
+    });
+    await expect(publicApiFetch("/site-settings")).rejects.toMatchObject({
+      referenceId: expect.stringMatching(/^ESA-[0-9A-F]{16}$/)
+    });
+  });
+
+  it("generates a reference for an invalid successful API response", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(
+      "not json",
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    ));
+    await expect(publicApiFetch("/site-settings")).rejects.toMatchObject({
+      status: 502,
+      referenceId: expect.stringMatching(/^ESA-[0-9A-F]{16}$/)
+    });
+  });
+
   it("provides a complete safe settings fallback", () => {
     expect(fallbackSettings).toMatchObject({ clubName: expect.any(String), primaryCtaUrl: "/registration" });
     expect(fallbackSettings.logoUrl).toBeNull();
@@ -145,6 +177,9 @@ describe("Phase 8 contact flow", () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("connection internals"));
     const response = await submitContact(new Request("http://localhost/api/public/contact", { method: "POST", body: JSON.stringify({}) }));
     expect(response.status).toBe(503);
-    expect(await response.text()).not.toContain("internals");
+    const result = await response.json();
+    expect(JSON.stringify(result)).not.toContain("internals");
+    expect(result.referenceId).toMatch(/^ESA-[0-9A-F]{16}$/);
+    expect(response.headers.get("X-Reference-Id")).toBe(result.referenceId);
   });
 });

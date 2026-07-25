@@ -64,6 +64,9 @@ textarea {
 }
 
 .skip-link:focus { transform: translateY(0); }
+.support-reference { display: flex; flex-wrap: wrap; align-items: center; gap: 0.55rem; margin-top: 0.9rem; color: #475569; font-size: 0.8rem; }
+.support-reference code { user-select: all; color: #17202a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-weight: 800; }
+.support-reference button { border: 1px solid #cbd5e1; background: #fff; padding: 0.28rem 0.55rem; color: #17202a; cursor: pointer; font-size: 0.75rem; font-weight: 800; }
 .site-container { width: min(100% - 2.5rem, 76rem); margin-inline: auto; }
 .site-container.narrow { max-width: 52rem; }
 .site-header { position: sticky; top: 0; z-index: 50; border-bottom: 1px solid #e2e8f0; background: rgba(255,255,255,0.97); }

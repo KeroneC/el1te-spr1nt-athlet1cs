@@ -9,6 +9,8 @@ import { MAX_MEDIA_FILES, MEDIA_UPLOAD_CONCURRENCY, runWithConcurrency, titleFro
 import type { FieldErrors } from "@/lib/admin/validation";
 import { FormNotice } from "./form-controls";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
+import { validSupportReference } from "@/lib/observability/support-reference";
+import { SupportReference } from "@/components/shared/support-reference";
 
 type UploadStatus = "pending" | "uploading" | "success" | "error";
 type UploadItem = {
@@ -31,6 +33,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState(false);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
 
   useEffect(() => () => { previews.current.forEach(url => URL.revokeObjectURL(url)); }, []);
 
@@ -39,6 +42,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
     event.target.value = "";
     setMessage("");
     setSuccess(false);
+    setReferenceId(null);
     if (!selected.length) return;
 
     const availableSlots = MAX_MEDIA_FILES - items.length;
@@ -127,8 +131,9 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
           formData.set("caption", item.caption.trim());
           const response = await fetch("/api/admin/media", { method: "POST", body: formData });
           if (redirectForAdminResponse(response)) throw new Error("Session expired.");
-          const result = await response.json() as AdminMediaAsset & { message?: string; errors?: FieldErrors };
+          const result = await response.json() as AdminMediaAsset & { message?: string; errors?: FieldErrors; referenceId?: string };
           if (!response.ok) {
+            setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null);
             const fieldMessage = Object.values(result.errors ?? {}).flat()[0];
             throw new Error(fieldMessage ?? result.message ?? "Upload failed.");
           }
@@ -144,7 +149,8 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
           });
           if (redirectForAdminResponse(response)) throw new Error("Session expired.");
           if (!response.ok) {
-            const result = await response.json() as { message?: string };
+            const result = await response.json() as { message?: string; referenceId?: string };
+            setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null);
             throw new Error(result.message ?? "Uploaded, but could not be added to the album.");
           }
         }
@@ -168,7 +174,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
       <div><h2 className="text-lg font-black">Upload images</h2><p className="mt-1 text-sm text-slate-500">Queue up to {MAX_MEDIA_FILES} JPEG, PNG, or WebP images. Each image can be up to 10 MB.</p></div>
       {completedCount > 0 && <button type="button" onClick={clearCompleted} disabled={busy} className="inline-flex min-h-10 items-center gap-2 border border-slate-300 px-3 text-sm font-bold"><CheckCircle2 size={17} />Clear completed</button>}
     </div>
-    {message && <div className="mt-4"><FormNotice message={message} success={success} /></div>}
+    {message && <div className="mt-4"><FormNotice message={message} success={success} referenceId={referenceId} /></div>}
     <div className="mt-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_minmax(15rem,0.5fr)] md:items-end">
       <div><label htmlFor="media-files" className="mb-2 block text-sm font-bold text-track-ink">Images</label><input id="media-files" type="file" multiple accept="image/jpeg,image/png,image/webp" onChange={addFiles} disabled={busy || items.length >= MAX_MEDIA_FILES} className="min-h-11 w-full border border-slate-300 bg-white p-2 file:mr-3 file:border-0 file:bg-slate-100 file:px-3 file:py-1 file:font-bold" /><p className="mt-1 text-xs text-slate-500">{items.length} of {MAX_MEDIA_FILES} queued</p></div>
       <div><label htmlFor="upload-album" className="mb-2 block text-sm font-bold text-track-ink">Add uploads to album (optional)</label><select id="upload-album" value={albumId} onChange={event => setAlbumId(event.target.value)} disabled={busy} className="min-h-11 w-full border border-slate-300 bg-white px-3"><option value="">Media library only</option>{albums.map(album => <option key={album.id} value={album.id}>{album.title}</option>)}</select></div>
@@ -192,7 +198,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
 }
 
 export function MediaActions({asset}:{asset:AdminMediaAsset}) {
-  const router=useRouter(); const [busy,setBusy]=useState(false);
-  async function remove(){if(!confirm(`Delete ${asset.title}? This cannot be undone.`))return;setBusy(true);const r=await fetch(`/api/admin/media/${asset.id}`,{method:"DELETE"});setBusy(false);if(redirectForAdminResponse(r))return;if(r.ok)router.refresh();else alert((await r.json()).message??"Could not delete media.");}
-  return <button type="button" disabled={busy} onClick={remove} title="Delete media" aria-label={`Delete ${asset.title}`} className="h-9 w-9 border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button>;
+  const router=useRouter(); const [busy,setBusy]=useState(false); const [error,setError]=useState(""); const [referenceId,setReferenceId]=useState<string|null>(null);
+  async function remove(){if(!confirm(`Delete ${asset.title}? This cannot be undone.`))return;setBusy(true);setError("");setReferenceId(null);const r=await fetch(`/api/admin/media/${asset.id}`,{method:"DELETE"});setBusy(false);if(redirectForAdminResponse(r))return;if(r.ok){router.refresh();return;}const problem=await r.json() as {message?:string;referenceId?:string};setError(problem.message??"Could not delete media.");setReferenceId(r.status>=500?validSupportReference(problem.referenceId):null);}
+  return <div><button type="button" disabled={busy} onClick={remove} title="Delete media" aria-label={`Delete ${asset.title}`} className="h-9 w-9 border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button>{error&&<div role="alert" className="mt-2 max-w-xs text-sm font-semibold text-red-800">{error}<SupportReference referenceId={referenceId}/></div>}</div>;
 }

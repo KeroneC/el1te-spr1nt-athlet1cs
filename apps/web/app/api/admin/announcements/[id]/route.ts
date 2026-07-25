@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AdminApiError } from "@/lib/admin/api-error";
 import { adminApiFetch } from "@/lib/admin/server-api";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 import type { AdminAnnouncement, AnnouncementWriteRequest } from "@/lib/admin/types";
 
 type Context = { params: Promise<{ id: string }> };
@@ -24,6 +24,5 @@ export async function DELETE(_request: Request, context: Context) {
 }
 
 function apiError(error: unknown) {
-  if (error instanceof AdminApiError) return NextResponse.json({ message: error.message, errors: error.fieldErrors }, { status: error.status });
-  return NextResponse.json({ message: "The request could not be completed." }, { status: 500 });
+  return adminErrorResponse(error, "The request could not be completed.", "admin-announcement-mutation");
 }

@@ -134,6 +134,7 @@ export interface ContactCreatedResponse {
 export interface ValidationProblem {
   title?: string;
   errors?: Record<string, string[]>;
+  referenceId?: string;
 }
 export interface GalleryAlbumListItem {
   title: string; slug: string; description: string; coverImageUrl: string | null;

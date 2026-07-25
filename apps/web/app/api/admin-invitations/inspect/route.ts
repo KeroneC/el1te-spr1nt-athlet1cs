@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { AdminApiError } from "@/lib/admin/api-error";
 import { backendFetch } from "@/lib/admin/server-api";
+import { adminErrorResponse } from "@/lib/admin/error-response";
 import type { AdminInvitationDetails } from "@/lib/admin/types";
 
 export async function POST(request: Request) {
@@ -11,8 +11,7 @@ export async function POST(request: Request) {
       method: "POST", body: JSON.stringify({ token })
     }));
   } catch (error) {
-    if (error instanceof AdminApiError) return NextResponse.json({ message: error.message }, { status: error.status });
-    return NextResponse.json({ message: "The invitation service is temporarily unavailable." }, { status: 503 });
+    return adminErrorResponse(error, "The invitation service is temporarily unavailable.", "invitation-inspect");
   }
 }
 

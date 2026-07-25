@@ -31,7 +31,10 @@ ProductionConfigurationValidator.Validate(
 
 if (!string.IsNullOrWhiteSpace(builder.Configuration["APPLICATIONINSIGHTS_CONNECTION_STRING"]))
 {
-    builder.Services.AddApplicationInsightsTelemetry();
+    builder.Services.AddApplicationInsightsTelemetry(options =>
+    {
+        options.ApplicationVersion = builder.Configuration["RELEASE_SHA"];
+    });
 }
 
 builder.Host.UseSerilog((context, _, configuration) =>
@@ -55,6 +58,7 @@ builder.Services
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
     });
 builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
@@ -177,6 +181,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseSerilogRequestLogging();
+app.UseMiddleware<PrivacySafeRequestTelemetryMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
 
 if (app.Environment.IsDevelopment())

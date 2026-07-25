@@ -5,6 +5,8 @@ import { ChevronLeft, ChevronRight, Image as ImageIcon, Search } from "lucide-re
 import { useEffect, useState } from "react";
 import type { AdminMediaAsset, PagedResult } from "@/lib/admin/types";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
+import { validSupportReference } from "@/lib/observability/support-reference";
+import { SupportReference } from "@/components/shared/support-reference";
 
 const PAGE_SIZE = 24;
 
@@ -25,6 +27,7 @@ export function MediaOptionBrowser({
   const [result, setResult] = useState<PagedResult<AdminMediaAsset> | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [referenceId, setReferenceId] = useState<string | null>(null);
   const excluded = new Set(excludedIds);
 
   useEffect(() => {
@@ -41,10 +44,15 @@ export function MediaOptionBrowser({
     if (query) params.set("search", query);
     setLoading(true);
     setMessage("");
+    setReferenceId(null);
     void fetch(`/api/admin/media/options?${params}`, { signal: controller.signal })
       .then(async response => {
         if (redirectForAdminResponse(response)) throw new Error("Session expired.");
-        if (!response.ok) throw new Error("Media could not be loaded.");
+        if (!response.ok) {
+          const problem = await response.json() as { referenceId?: string };
+          setReferenceId(response.status >= 500 ? validSupportReference(problem.referenceId) : null);
+          throw new Error("Media could not be loaded.");
+        }
         return response.json() as Promise<PagedResult<AdminMediaAsset>>;
       })
       .then(setResult)
@@ -65,6 +73,7 @@ export function MediaOptionBrowser({
     </div>
     <div role="status" aria-live="polite" className="mt-2 min-h-5 text-xs text-slate-500">
       {loading ? "Loading media..." : message || `${result?.totalCount ?? 0} active image${result?.totalCount === 1 ? "" : "s"}`}
+      {message && <SupportReference referenceId={referenceId}/>}
     </div>
     {!loading && !message && assets.length > 0 && <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {assets.map(asset => <button key={asset.id} type="button" disabled={disabled} onClick={() => void onSelect(asset)} aria-label={`${selectLabel} ${asset.title}`} className="group min-w-0 border border-slate-200 bg-white p-2 text-left hover:border-track-red focus-visible:border-track-red disabled:cursor-wait disabled:opacity-50">

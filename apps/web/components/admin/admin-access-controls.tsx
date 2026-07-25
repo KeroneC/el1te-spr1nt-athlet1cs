@@ -8,6 +8,8 @@ import { useAdminMutation } from "@/lib/admin/use-admin-mutation";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
 import type { AdminInvitation, AdminInvitationCreated, AdminUser } from "@/lib/admin/types";
 import type { FieldErrors } from "@/lib/admin/validation";
+import { SupportReference } from "@/components/shared/support-reference";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 const roles = [["Admin", "Admin"], ["SuperAdmin", "SuperAdmin"]] as const;
 
@@ -39,7 +41,7 @@ export function InviteAdminForm() {
       <Field label="Email" name="email" type="email" required maxLength={256} error={fieldError(mutation.errors, "email")} />
       <SelectField label="Role" name="role" options={roles} error={fieldError(mutation.errors, "role")} />
     </div>
-    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><FormNotice message={mutation.message} success={mutation.success} /><button disabled={mutation.submitting} className="ml-auto inline-flex min-h-11 items-center gap-2 bg-track-red px-4 text-sm font-bold text-white disabled:opacity-60">{mutation.submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{mutation.submitting ? "Creating..." : "Create invitation"}</button></div>
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3"><FormNotice message={mutation.message} success={mutation.success} referenceId={mutation.referenceId} /><button disabled={mutation.submitting} className="ml-auto inline-flex min-h-11 items-center gap-2 bg-track-red px-4 text-sm font-bold text-white disabled:opacity-60">{mutation.submitting ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}{mutation.submitting ? "Creating..." : "Create invitation"}</button></div>
     {invitationUrl && <InviteLinkPanel url={invitationUrl} onClose={() => setInvitationUrl(null)} />}
   </form>;
 }
@@ -63,7 +65,7 @@ export function AdminUserControls({ user, currentUserId }: { user: AdminUser; cu
       <button disabled={self || mutation.submitting} className="inline-flex h-9 w-9 items-center justify-center bg-track-ink text-white disabled:opacity-40" aria-label={`Save access for ${user.firstName} ${user.lastName}`} title="Save access">{mutation.submitting ? <LoaderCircle size={16} className="animate-spin" /> : <Save size={16} />}</button>
     </div>
     {self && <p className="mt-1 text-right text-xs text-slate-500">Your own access is protected.</p>}
-    {mutation.message && <p role={mutation.success ? "status" : "alert"} className={`mt-1 text-right text-xs font-semibold ${mutation.success ? "text-emerald-700" : "text-red-700"}`}>{mutation.message}</p>}
+    {mutation.message && <div role={mutation.success ? "status" : "alert"} className={`mt-1 text-right text-xs font-semibold ${mutation.success ? "text-emerald-700" : "text-red-700"}`}>{mutation.message}<SupportReference referenceId={mutation.referenceId}/></div>}
   </form>;
 }
 
@@ -72,15 +74,16 @@ export function InvitationActions({ invitation }: { invitation: AdminInvitation 
   const [confirmingReissue, setConfirmingReissue] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [invitationUrl, setInvitationUrl] = useState<string | null>(null);
+  const [referenceId, setReferenceId] = useState<string | null>(null);
   const router = useRouter();
   if (invitation.status === "Accepted" || invitation.status === "Revoked") return null;
   async function act(action: "reissue" | "revoke") {
-    setBusy(action); setMessage(null);
+    setBusy(action); setMessage(null); setReferenceId(null);
     try {
       const response = await fetch(`/api/admin/invitations/${invitation.id}${action === "reissue" ? "/reissue" : ""}`, { method: action === "reissue" ? "POST" : "DELETE" });
       if (redirectForAdminResponse(response)) return;
-      const body = response.status === 204 ? null : await response.json() as AdminInvitationCreated & { message?: string };
-      if (!response.ok) { setMessage(body?.message ?? "The invitation could not be updated."); return; }
+      const body = response.status === 204 ? null : await response.json() as AdminInvitationCreated & { message?: string; referenceId?: string };
+      if (!response.ok) { setMessage(body?.message ?? "The invitation could not be updated."); setReferenceId(response.status >= 500 ? validSupportReference(body?.referenceId) : null); return; }
       if (body?.invitationUrl) setInvitationUrl(body.invitationUrl);
       setConfirmingReissue(false);
       setMessage(action === "reissue" ? "A replacement invitation link is ready. The previous link no longer works." : "Invitation revoked.");
@@ -91,7 +94,7 @@ export function InvitationActions({ invitation }: { invitation: AdminInvitation 
   return <div className="min-w-[280px]">
     <div className="flex flex-wrap justify-end gap-2"><button type="button" disabled={Boolean(busy) || confirmingReissue} aria-expanded={confirmingReissue} onClick={() => { setConfirmingReissue(true); setMessage(null); }} className="inline-flex min-h-9 items-center gap-2 border border-slate-300 px-3 text-xs font-bold disabled:opacity-60"><RefreshCw size={15} />Generate new link</button><button type="button" disabled={Boolean(busy) || confirmingReissue} onClick={() => act("revoke")} className="inline-flex min-h-9 items-center gap-2 border border-red-300 px-3 text-xs font-bold text-red-700 disabled:opacity-60"><XCircle size={15} />Revoke</button></div>
     {confirmingReissue && <div role="group" aria-label={`Confirm replacement link for ${invitation.email}`} className="mt-2 border border-amber-300 bg-amber-50 p-3 text-left"><p className="text-xs font-bold leading-5 text-amber-950">Generate a replacement link for {invitation.email}? The previous link will stop working, and the expiration resets to 72 hours.</p><div className="mt-2 flex flex-wrap justify-end gap-2"><button type="button" disabled={Boolean(busy)} onClick={() => act("reissue")} className="inline-flex min-h-9 items-center gap-2 bg-track-ink px-3 text-xs font-bold text-white disabled:opacity-60">{busy === "reissue" ? <LoaderCircle size={15} className="animate-spin" /> : <RefreshCw size={15} />}{busy === "reissue" ? "Generating..." : "Generate replacement link"}</button><button type="button" disabled={Boolean(busy)} onClick={() => setConfirmingReissue(false)} className="min-h-9 border border-slate-300 bg-white px-3 text-xs font-bold text-slate-700 disabled:opacity-60">Cancel</button></div></div>}
-    {message && <p role="status" className="mt-1 text-right text-xs text-slate-600">{message}</p>}
+    {message && <div role="status" className="mt-1 text-right text-xs text-slate-600">{message}<SupportReference referenceId={referenceId}/></div>}
     {invitationUrl && <InviteLinkPanel url={invitationUrl} onClose={() => setInvitationUrl(null)} compact />}
   </div>;
 }

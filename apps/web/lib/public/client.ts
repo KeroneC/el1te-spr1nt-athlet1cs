@@ -12,6 +12,8 @@ import type {
 } from "./types";
 import type { GalleryAlbum, GalleryAlbumListItem } from "./types";
 import { BRAND } from "./site";
+import { SUPPORT_REFERENCE_HEADER, validSupportReference } from "@/lib/observability/support-reference";
+import { createSupportReference, logUnexpectedWebFailure } from "@/lib/observability/support-reference.server";
 
 const apiBaseUrl = process.env.API_BASE_URL ?? "http://localhost:5000";
 const configuredRevalidateSeconds = Number(process.env.PUBLIC_REVALIDATE_SECONDS ?? 60);
@@ -20,7 +22,7 @@ export const PUBLIC_REVALIDATE_SECONDS = Number.isFinite(configuredRevalidateSec
   : 60;
 
 export class PublicApiError extends Error {
-  constructor(public readonly status: number) {
+  constructor(public readonly status: number, public readonly referenceId: string | null = null) {
     super(status === 404 ? "Public content was not found." : "Public content is temporarily unavailable.");
   }
 }
@@ -32,17 +34,32 @@ export async function publicApiFetch<T>(path: string): Promise<T> {
       next: { revalidate: PUBLIC_REVALIDATE_SECONDS }
     });
   } catch {
-    throw new PublicApiError(503);
+    const referenceId = createSupportReference();
+    logUnexpectedWebFailure({ referenceId, category: "public-api-unavailable", status: 503 });
+    throw new PublicApiError(503, referenceId);
   }
 
   if (!response.ok) {
-    throw new PublicApiError(response.status);
+    let referenceId = response.status >= 500
+      ? validSupportReference(response.headers.get(SUPPORT_REFERENCE_HEADER))
+      : null;
+    if (!referenceId && response.status >= 500) {
+      const problem = await response.clone().json().catch(() => null) as { referenceId?: unknown } | null;
+      referenceId = validSupportReference(problem?.referenceId);
+    }
+    if (!referenceId && response.status >= 500) {
+      referenceId = createSupportReference();
+      logUnexpectedWebFailure({ referenceId, category: "public-api-upstream-failure", status: response.status });
+    }
+    throw new PublicApiError(response.status, referenceId);
   }
 
   try {
     return (await response.json()) as T;
   } catch {
-    throw new PublicApiError(502);
+    const referenceId = createSupportReference();
+    logUnexpectedWebFailure({ referenceId, category: "public-api-invalid-response", status: 502 });
+    throw new PublicApiError(502, referenceId);
   }
 }
 

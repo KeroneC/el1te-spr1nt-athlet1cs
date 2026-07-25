@@ -53,7 +53,7 @@ export default async function RegistrationPage() {
       </section>
       <section className="cta-band"><div className="site-container"><div><p className="eyebrow light">No online registration yet</p><h2>Completed forms are reviewed by club staff.</h2><p>This site shares information and downloads only. It does not store athlete registrations, waivers, payments, or private documents.</p></div><Link className="button button-light" href="/contact">Contact the club</Link></div></section>
     </>;
-  } catch {
-    return <><PageHero title="Registration" /><div className="site-container content-section"><PublicErrorState /></div></>;
+  } catch (error) {
+    return <><PageHero title="Registration" /><div className="site-container content-section"><PublicErrorState error={error} /></div></>;
   }
 }

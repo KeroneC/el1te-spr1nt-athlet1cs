@@ -87,6 +87,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Glossary](guides/glossary.md)
 - [CI troubleshooting and branch protection](guides/ci-troubleshooting.md)
 - [Azure setup and release](guides/future-azure-setup.md)
+- [Observability and support references](guides/observability-support.md)
 - [AI project handoff](guides/ai-project-handoff.md)
 
 The older phase-level files at the root of `docs` are retained as short compatibility links. The documents above are the maintained references.

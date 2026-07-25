@@ -1,10 +1,12 @@
 import type { ApiProblem } from "./types";
+import { validSupportReference } from "@/lib/observability/support-reference";
 
 export class AdminApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
-    public readonly fieldErrors: Record<string, string[]> = {}
+    public readonly fieldErrors: Record<string, string[]> = {},
+    public readonly referenceId: string | null = null
   ) {
     super(message);
   }
@@ -20,7 +22,8 @@ export function safeProblem(status: number, value: unknown): AdminApiError {
     409: "This change conflicts with existing content."
   };
   const safeDetail = (status === 404 || status === 409) && typeof problem.detail === "string" ? problem.detail.trim() : "";
-  return new AdminApiError(status, safeDetail || messages[status] || "The service could not complete the request.", problem.errors ?? {});
+  const referenceId = status >= 500 ? validSupportReference(problem.referenceId) : null;
+  return new AdminApiError(status, safeDetail || messages[status] || "The service could not complete the request.", problem.errors ?? {}, referenceId);
 }
 
 function isProblem(value: unknown): value is ApiProblem {
