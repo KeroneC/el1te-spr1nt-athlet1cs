@@ -2676,7 +2676,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.Product", "Product")
                         .WithMany("OrderItems")
                         .HasForeignKey("ProductId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.ProductVariant", "ProductVariant")
                         .WithMany("OrderItems")

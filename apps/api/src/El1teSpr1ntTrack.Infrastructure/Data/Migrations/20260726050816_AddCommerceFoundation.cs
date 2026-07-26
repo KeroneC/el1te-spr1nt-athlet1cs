@@ -1058,7 +1058,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                 column: "ProductId",
                 principalTable: "Products",
                 principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
+                onDelete: ReferentialAction.NoAction);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Products_ProductCategories_CategoryId",

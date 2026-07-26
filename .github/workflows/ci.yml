@@ -188,6 +188,16 @@ jobs:
       - name: Restore backend
         run: dotnet restore apps/api/El1teSpr1ntTrack.sln --configfile NuGet.Config
 
+      - name: Apply migrations to a fresh SQL Server database
+        env:
+          E2E_MIGRATION_CONNECTION: Server=(localdb)\mssqllocaldb;Database=El1teSpr1ntTrack_Migration_${{ github.run_id }}_${{ github.run_attempt }};Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True
+        run: >
+          dotnet ef database update
+          --configuration E2E
+          --project apps/api/src/El1teSpr1ntTrack.Infrastructure/El1teSpr1ntTrack.Infrastructure.csproj
+          --startup-project apps/api/src/El1teSpr1ntTrack.Api/El1teSpr1ntTrack.Api.csproj
+          --connection "$env:E2E_MIGRATION_CONNECTION"
+
       - name: Install frontend dependencies
         working-directory: apps/web
         run: npm ci

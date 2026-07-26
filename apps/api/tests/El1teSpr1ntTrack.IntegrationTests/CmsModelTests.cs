@@ -53,6 +53,17 @@ public sealed class CmsModelTests
         Assert.Equal(expectedCount, seedData.Count());
     }
 
+    [Fact]
+    public void CommerceModel_PreservesOrderHistoryWhenProductsAreArchived()
+    {
+        var orderItemType = _dbContext.Model.FindEntityType(typeof(OrderItem))!;
+        var productRelationship = Assert.Single(
+            orderItemType.GetForeignKeys(),
+            foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(Product));
+
+        Assert.Equal(DeleteBehavior.NoAction, productRelationship.DeleteBehavior);
+    }
+
     private static El1teDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<El1teDbContext>()

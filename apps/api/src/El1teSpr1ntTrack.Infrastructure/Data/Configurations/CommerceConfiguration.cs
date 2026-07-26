@@ -190,7 +190,7 @@ public sealed class OrderItemConfiguration : IEntityTypeConfiguration<OrderItem>
         builder.Property(value => value.Sku).HasMaxLength(100).IsRequired();
         builder.Property(value => value.ConfigurationJson).HasMaxLength(8000).IsRequired();
         builder.HasOne(value => value.Product).WithMany(value => value.OrderItems)
-            .HasForeignKey(value => value.ProductId).OnDelete(DeleteBehavior.SetNull);
+            .HasForeignKey(value => value.ProductId).OnDelete(DeleteBehavior.NoAction);
         builder.HasOne(value => value.ProductVariant).WithMany(value => value.OrderItems)
             .HasForeignKey(value => value.ProductVariantId).OnDelete(DeleteBehavior.SetNull);
     }
