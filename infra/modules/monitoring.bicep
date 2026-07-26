@@ -42,7 +42,7 @@ var alertDefinitions = [
     displayName: 'Sustained request latency'
     description: 'Request p95 exceeded five seconds with sufficient traffic.'
     severity: 3
-    query: 'requests | where timestamp >= ago(15m) | summarize RequestCount=count(), AggregatedValue=percentile(duration, 95) | where RequestCount >= 10'
+    query: 'requests | where timestamp >= ago(15m) | summarize RequestCount=count(), AggregatedValue=percentile(duration, 95) | extend timestamp=now() | where RequestCount >= 10'
     threshold: 5000
     windowSize: 'PT15M'
     timeAggregation: 'Average'
