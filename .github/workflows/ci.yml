@@ -230,6 +230,10 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Test Azure artifact publishing retries
+        shell: bash
+        run: bash scripts/deployment/test-deploy-webapp-artifact.sh
+
       - name: Validate documentation links and paths
         shell: pwsh
         run: ./scripts/validation/validate-docs.ps1
