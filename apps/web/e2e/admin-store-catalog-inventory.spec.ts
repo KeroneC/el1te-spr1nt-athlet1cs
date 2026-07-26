@@ -12,7 +12,7 @@ test("Admin can create a draft SKU, receive it, and complete a physical count", 
     await page.getByRole("button", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/admin$/);
 
-    await page.getByRole("link", { name: "Merchandise" }).click();
+    await page.getByRole("link", { name: "Merchandise", exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Merchandise operations" })).toBeVisible();
     await page.getByRole("link", { name: "Add product" }).click();
     await page.getByLabel("Product name").fill(productName);
