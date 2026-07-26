@@ -71,7 +71,7 @@ Delivery status: the server-side support foundation is implemented. Next.js and 
 - Provide an Admin product wizard, inventory matrix, order workboard, production sheets, staff-entered sales, audited refunds, and integration health.
 - Defer shipping, customer accounts, discounts, loyalty, custom-artwork uploads, advanced reporting, and other unproven complexity.
 
-Delivery status: the disabled-by-default Square foundation is implemented first. It establishes the expanded commerce schema, minor-unit money snapshots, Square client boundary, raw-body signature validation, event idempotency, SQL outbox worker, commerce health check, Key Vault configuration path, and rollback flag. Catalog import/Admin inventory, the public configurator, checkout/fulfillment, and cutover remain sequentially gated work. The existing Square storefront stays live until final approval.
+Delivery status: the first two disabled-by-default phases are implemented. The foundation establishes the expanded commerce schema, minor-unit money snapshots, Square client boundary, raw-body signature validation, event idempotency, SQL outbox worker, commerce health check, Key Vault configuration path, and rollback flag. The private Admin phase adds a one-time idempotent Square draft import, category and product workflows, tracked variants, customizations, visualizer placement, append-only inventory adjustments, bulk receipts, and audited physical stocktakes. The public configurator, checkout/fulfillment, and cutover remain sequentially gated work. The existing Square storefront stays live until final approval.
 
 ## Stage 5: Full Launch
 

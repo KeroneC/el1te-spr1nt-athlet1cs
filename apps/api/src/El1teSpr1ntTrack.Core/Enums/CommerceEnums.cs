@@ -60,3 +60,10 @@ public enum CommerceEmailStatus
     Sent = 1,
     Failed = 2
 }
+
+public enum SquareCatalogImportStatus
+{
+    Running = 0,
+    Completed = 1,
+    Failed = 2
+}

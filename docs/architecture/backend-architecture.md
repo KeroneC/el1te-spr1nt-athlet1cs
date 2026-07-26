@@ -24,7 +24,9 @@ flowchart TD
 
 **API** translates HTTP into application calls. Controllers remain thin, `GlobalExceptionMiddleware` maps known CMS exceptions to Problem Details, `CmsAdminAuthorization` enforces role and active-user requirements, and `Program.cs` wires dependencies and middleware.
 
-The commerce foundation follows the same boundaries. Core owns the catalog, inventory, order, reservation, webhook, and outbox data concepts. Application owns the Square and outbox interfaces. Infrastructure implements the typed Square HTTP client, signature verifier, webhook persistence, and outbox processor. API exposes only the webhook and health routes in the foundation phase and hosts the always-on worker. Public commerce remains disabled.
+Commerce follows the same boundaries. Core owns catalog, inventory, stocktake, import, order, reservation, webhook, and outbox data concepts. Application owns the Admin store, Square, media-import, and outbox interfaces. Infrastructure implements `StoreAdminService`, the typed Square HTTP client, trusted-host image importer, signature verifier, webhook persistence, and outbox processor. API exposes protected catalog/inventory/import routes plus webhook and health routes and hosts the always-on worker. Public commerce remains disabled.
+
+Inventory writes use variant row versions and SQL constraints so on-hand cannot be negative or below reserved. Every successful quantity change creates an append-only `InventoryAdjustment`; a physical count additionally creates one `InventoryStocktake` and one immutable line per counted variant. Square catalog imports are transactionally persisted as Draft products and are idempotent through unique nullable source-object IDs.
 
 ## Dependency Injection
 

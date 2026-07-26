@@ -1,6 +1,6 @@
 # Store and Square Foundation
 
-The commerce foundation is the first delivery phase of the El1te merchandise replacement. It deliberately does not publish a shop, import Square products, accept payments, or change the existing external Square link. `Store:Enabled` remains `false` until the final cutover.
+The commerce foundation is the first delivery phase of the El1te merchandise replacement. The second phase now adds the private [catalog and inventory workspace](store-catalog-inventory.md), but it still does not publish a shop, accept payments, or change the existing external Square link. `Store:Enabled` remains `false` until the final cutover.
 
 ## Ownership Boundary
 
@@ -81,7 +81,7 @@ The immediate rollback is `Store__Enabled=false`. That stops the worker, hides w
 ## Delivery Sequence
 
 1. Foundation: schema, client, webhook security, outbox, health, and disabled flag.
-2. Admin catalog and inventory: one-time draft import, product wizard, variants, stocktake, and media.
+2. Admin catalog and inventory: one-time draft import, product wizard, variants, stocktake, and media. Implemented behind the disabled public flag.
 3. Public configurator: shop pages, deterministic preview, cart, and availability.
 4. Checkout and orders: reservations, hosted checkout, fulfillment, email, tracking, staff sales, refunds, and reconciliation.
 5. Cutover: production credentials, verified email domain, reviewed inventory, navigation switch, and rollback controls.

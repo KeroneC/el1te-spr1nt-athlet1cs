@@ -13,4 +13,6 @@ public sealed record AdminContactOptions(string? Search, ContactSubmissionStatus
 public sealed record AdminUserOptions(string? Search, UserRole? Role, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminInvitationOptions(string? Search, string? Status, int Page = 1, int PageSize = 20);
 public sealed record AdminActivityOptions(string? Search, string? Action, DateTimeOffset? FromDate, DateTimeOffset? ToDate, int Page = 1, int PageSize = 20);
+public sealed record AdminStoreProductOptions(string? Search, StoreProductStatus? Status, Guid? CategoryId, bool? LowStock, int Page = 1, int PageSize = 20);
+public sealed record AdminInventoryOptions(string? Search, Guid? ProductId, bool? LowStock, bool? IsActive, int Page = 1, int PageSize = 50);
 public sealed record AdminPage<T>(IReadOnlyList<T> Items, int TotalCount);

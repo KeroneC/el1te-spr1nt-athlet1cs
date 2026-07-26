@@ -64,6 +64,35 @@ public sealed class CmsModelTests
         Assert.Equal(DeleteBehavior.NoAction, productRelationship.DeleteBehavior);
     }
 
+    [Theory]
+    [InlineData(typeof(Product), nameof(Product.SquareCatalogObjectId))]
+    [InlineData(typeof(ProductVariant), nameof(ProductVariant.SquareCatalogObjectId))]
+    [InlineData(typeof(ProductCategory), nameof(ProductCategory.SquareCatalogObjectId))]
+    public void CommerceCatalogModel_ProtectsSquareImportIdempotency(Type entityType, string propertyName)
+    {
+        var modelType = _dbContext.Model.FindEntityType(entityType)!;
+        var index = Assert.Single(
+            modelType.GetIndexes(),
+            candidate => candidate.Properties.Count == 1 && candidate.Properties[0].Name == propertyName);
+        Assert.True(index.IsUnique);
+        Assert.NotNull(index.GetFilter());
+    }
+
+    [Fact]
+    public void InventoryStocktakeModel_PreservesAppendOnlyHistory()
+    {
+        var line = _dbContext.Model.FindEntityType(typeof(InventoryStocktakeLine))!;
+        var adjustmentRelationship = Assert.Single(
+            line.GetForeignKeys(),
+            foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(InventoryAdjustment));
+        var variantRelationship = Assert.Single(
+            line.GetForeignKeys(),
+            foreignKey => foreignKey.PrincipalEntityType.ClrType == typeof(ProductVariant));
+
+        Assert.Equal(DeleteBehavior.NoAction, adjustmentRelationship.DeleteBehavior);
+        Assert.Equal(DeleteBehavior.Restrict, variantRelationship.DeleteBehavior);
+    }
+
     private static El1teDbContext CreateContext()
     {
         var options = new DbContextOptionsBuilder<El1teDbContext>()

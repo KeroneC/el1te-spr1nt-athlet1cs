@@ -16,6 +16,41 @@ public sealed class InventoryAdjustment : EntityBase
     public string? Note { get; set; }
 }
 
+public sealed class InventoryStocktake : EntityBase
+{
+    public Guid ActorUserId { get; set; }
+    public User ActorUser { get; set; } = null!;
+    public string? Note { get; set; }
+    public int VariantCount { get; set; }
+    public int ChangedVariantCount { get; set; }
+    public ICollection<InventoryStocktakeLine> Lines { get; set; } = new List<InventoryStocktakeLine>();
+}
+
+public sealed class InventoryStocktakeLine : EntityBase
+{
+    public Guid InventoryStocktakeId { get; set; }
+    public InventoryStocktake InventoryStocktake { get; set; } = null!;
+    public Guid ProductVariantId { get; set; }
+    public ProductVariant ProductVariant { get; set; } = null!;
+    public int ExpectedOnHandQuantity { get; set; }
+    public int CountedOnHandQuantity { get; set; }
+    public Guid? InventoryAdjustmentId { get; set; }
+    public InventoryAdjustment? InventoryAdjustment { get; set; }
+}
+
+public sealed class SquareCatalogImportRun : EntityBase
+{
+    public Guid ActorUserId { get; set; }
+    public User ActorUser { get; set; } = null!;
+    public SquareCatalogImportStatus Status { get; set; } = SquareCatalogImportStatus.Running;
+    public int ProductsDiscovered { get; set; }
+    public int ProductsCreated { get; set; }
+    public int ProductsSkipped { get; set; }
+    public int ImagesImported { get; set; }
+    public string? SafeFailureCode { get; set; }
+    public DateTimeOffset? CompletedAtUtc { get; set; }
+}
+
 public sealed class InventoryReservation : EntityBase
 {
     public Guid OrderId { get; set; }

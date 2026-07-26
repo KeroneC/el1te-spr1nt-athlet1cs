@@ -8,6 +8,7 @@ public sealed class ProductCategory : EntityBase
     public string Slug { get; set; } = string.Empty;
     public int DisplayOrder { get; set; }
     public bool IsActive { get; set; } = true;
+    public string? SquareCatalogObjectId { get; set; }
     public ICollection<Product> Products { get; set; } = new List<Product>();
 }
 
@@ -29,6 +30,8 @@ public sealed class ProductOption : EntityBase
     public string Name { get; set; } = string.Empty;
     public bool IsTracked { get; set; } = true;
     public int DisplayOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+    public string? SquareCatalogObjectId { get; set; }
     public ICollection<ProductOptionValue> Values { get; set; } = new List<ProductOptionValue>();
 }
 
@@ -42,6 +45,8 @@ public sealed class ProductOptionValue : EntityBase
     public Guid? SwatchMediaAssetId { get; set; }
     public MediaAsset? SwatchMediaAsset { get; set; }
     public int DisplayOrder { get; set; }
+    public bool IsActive { get; set; } = true;
+    public string? SquareCatalogObjectId { get; set; }
     public ICollection<ProductVariantOptionValue> VariantValues { get; set; } = new List<ProductVariantOptionValue>();
 }
 
@@ -56,6 +61,8 @@ public sealed class ProductVariant : EntityBase
     public int ReservedQuantity { get; set; }
     public int LowStockThreshold { get; set; } = 3;
     public bool IsActive { get; set; } = true;
+    public string? SquareCatalogObjectId { get; set; }
+    public long? SquareCatalogVersion { get; set; }
     public byte[] RowVersion { get; set; } = [];
     public ICollection<ProductVariantOptionValue> OptionValues { get; set; } = new List<ProductVariantOptionValue>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
@@ -81,6 +88,7 @@ public sealed class ProductModifierGroup : EntityBase
     public int MinimumSelections { get; set; }
     public int MaximumSelections { get; set; } = 1;
     public int DisplayOrder { get; set; }
+    public bool IsActive { get; set; } = true;
     public ICollection<ProductModifierValue> Values { get; set; } = new List<ProductModifierValue>();
 }
 

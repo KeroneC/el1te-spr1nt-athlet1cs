@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isAllowedAdminMutation } from "../lib/admin/mutation-policy";
+import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 import { readAdminMutationBody } from "../lib/admin/mutation-request";
 import type { CoachWriteRequest, ContentBlockWriteRequest, EventWriteRequest, FaqWriteRequest, SiteSettingsWriteRequest, SponsorWriteRequest } from "../lib/admin/types";
 import { buildListQuery, validateCoach, validateContentBlock, validateEvent, validateFaq, validateSiteSettings, validateSponsor } from "../lib/admin/validation";
@@ -11,6 +11,9 @@ describe("Phase 7 mutation boundary", () => {
     [["events"], "POST"], [["coaches", id], "PUT"], [["content-blocks", id], "DELETE"],
     [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"],
     [["users", id], "PUT"], [["invitations"], "POST"], [["invitations", id, "reissue"], "POST"], [["invitations", id], "DELETE"]
+    , [["store", "products"], "POST"], [["store", "products", id], "PUT"], [["store", "products", id, "duplicate"], "POST"],
+    [["store", "inventory", "receipts"], "POST"], [["store", "inventory", "stocktakes"], "POST"],
+    [["store", "inventory", id, "adjustments"], "POST"], [["store", "square-import"], "POST"]
   ] as const)("allows supported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(true));
 
   it("allows deterministic seed GUIDs used by CMS records", () => {
@@ -26,6 +29,14 @@ describe("Phase 7 mutation boundary", () => {
     const request = new Request(`https://example.test/api/admin/invitations/${id}/reissue`, { method: "POST" });
 
     await expect(readAdminMutationBody(request, "POST")).resolves.toBeUndefined();
+  });
+
+  it("allows only safe store reads through the client proxy", () => {
+    expect(isAllowedAdminRead(["store", "inventory"])).toBe(true);
+    expect(isAllowedAdminRead(["store", "products", id])).toBe(true);
+    expect(isAllowedAdminRead(["store", "square-import", "preview"])).toBe(true);
+    expect(isAllowedAdminRead(["store", "products", "not-a-guid"])).toBe(false);
+    expect(isAllowedAdminRead(["users"])).toBe(false);
   });
 
   it("preserves JSON mutation bodies", async () => {

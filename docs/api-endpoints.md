@@ -17,7 +17,30 @@ Liveness is available at `/health`; database readiness is available at `/health/
 - Commerce integration health: `GET /health/commerce`
 - Square webhook receiver: `POST /api/webhooks/square`
 
-The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Public catalog, cart, checkout, tracking, and Admin store endpoints are intentionally deferred to their later delivery phases.
+The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Public catalog, cart, checkout, and tracking endpoints remain deferred.
+
+## Admin Store Catalog and Inventory
+
+The following routes require the `CmsAdmin` policy:
+
+- `GET /api/admin/store/dashboard`
+- `GET/POST /api/admin/store/products`
+- `GET/PUT/DELETE /api/admin/store/products/{id}` (`DELETE` archives)
+- `POST /api/admin/store/products/{id}/duplicate`
+- `GET/POST /api/admin/store/categories`
+- `PUT /api/admin/store/categories/{id}`
+- `GET /api/admin/store/inventory`
+- `POST /api/admin/store/inventory/{variantId}/adjustments`
+- `POST /api/admin/store/inventory/receipts`
+- `GET/POST /api/admin/store/inventory/stocktakes`
+- `GET /api/admin/store/inventory/adjustments`
+
+The following one-time import routes require the `SuperAdmin` policy:
+
+- `GET /api/admin/store/square-import/preview`
+- `POST /api/admin/store/square-import`
+
+The import creates unpublished local drafts, retains Square source IDs for idempotency, copies trusted Square-hosted images into El1te Media, and never imports customers, payments, or old orders. Exact inventory is private Admin data. Public store routes remain absent and `Store:Enabled=false`.
 
 ## Auth
 
