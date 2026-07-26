@@ -15,6 +15,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 ## Current Baseline
 
 - Public-site refinement and Phase 6B delivery work are merged into `main`.
+- The commerce replacement is being delivered in five guarded phases. The first branch adds the disabled-by-default Square foundation: expanded commerce entities, minor-unit money snapshots, a data-preserving migration, typed Square client, exact raw-body signature validation, idempotent webhook storage, SQL outbox worker, commerce health check, and optional Key Vault references. It does not publish `/shop`, import products, or replace the external Square storefront.
 - The reconciled product direction is maintained in `docs/product-roadmap.md`: operational UX, Azure-backed launch readiness, a Winter registration pilot, hybrid store, then full launch.
 - The monorepo contains the .NET 10 ASP.NET Core API in `apps/api`, Next.js 15/npm frontend in `apps/web`, documentation in `docs`, deployed Azure/Bicep infrastructure in `infra`, and validation tooling in `scripts`.
 - Authentication uses API JWTs and a server-only Next.js HttpOnly session cookie. Admin and SuperAdmin authorization remains API-authoritative.

@@ -65,10 +65,13 @@ Delivery status: the server-side support foundation is implemented. Next.js and 
 
 ## Stage 4: Hybrid Store
 
-- Manage products, variants, SKU values, inventory adjustments, and availability inside the platform.
-- Use Square-hosted checkout and payment processing after the catalog and inventory workflows are stable.
-- Reconcile Square webhooks idempotently into internal order and inventory records.
-- Defer fulfillment automation, promotions, and advanced commerce reporting until real usage establishes the need.
+- Manage products, categories, media, tracked size/color variants, untracked customizations, SKU values, inventory adjustments, reservations, and availability inside the platform.
+- Use a custom public catalog and deterministic garment configurator while Square-hosted Checkout keeps payment-card data outside El1te.
+- Keep payment and fulfillment states separate; process webhooks, reservation expiry, email, and reconciliation idempotently through a SQL outbox.
+- Provide an Admin product wizard, inventory matrix, order workboard, production sheets, staff-entered sales, audited refunds, and integration health.
+- Defer shipping, customer accounts, discounts, loyalty, custom-artwork uploads, advanced reporting, and other unproven complexity.
+
+Delivery status: the disabled-by-default Square foundation is implemented first. It establishes the expanded commerce schema, minor-unit money snapshots, Square client boundary, raw-body signature validation, event idempotency, SQL outbox worker, commerce health check, Key Vault configuration path, and rollback flag. Catalog import/Admin inventory, the public configurator, checkout/fulfillment, and cutover remain sequentially gated work. The existing Square storefront stays live until final approval.
 
 ## Stage 5: Full Launch
 

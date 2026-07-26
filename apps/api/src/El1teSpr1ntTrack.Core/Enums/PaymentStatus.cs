@@ -7,5 +7,7 @@ public enum PaymentStatus
     Paid = 2,
     Failed = 3,
     Refunded = 4,
-    Canceled = 5
+    Canceled = 5,
+    Refunding = 6,
+    PartiallyRefunded = 7
 }

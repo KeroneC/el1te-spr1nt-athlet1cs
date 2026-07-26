@@ -87,10 +87,66 @@ public static class ProductionConfigurationValidator
             errors.Add("AdminInvitations:ExpiresHours must be between 1 and 168.");
         }
 
+        if (configuration.GetValue<bool>("Store:Enabled"))
+        {
+            ValidateCommerce(configuration, errors);
+        }
+
         if (errors.Count > 0)
         {
             throw new InvalidOperationException(
                 "Production configuration is invalid: " + string.Join(" ", errors));
+        }
+    }
+
+    private static void ValidateCommerce(
+        IConfiguration configuration,
+        ICollection<string> errors)
+    {
+        if (!string.Equals(configuration["Store:Currency"], "USD", StringComparison.Ordinal))
+        {
+            errors.Add("Store:Currency must be USD.");
+        }
+
+        if (!int.TryParse(configuration["Store:ReservationMinutes"], out var reservationMinutes) ||
+            reservationMinutes is < 5 or > 120)
+        {
+            errors.Add("Store:ReservationMinutes must be between 5 and 120.");
+        }
+
+        if (!string.Equals(configuration["Square:Environment"], "Sandbox", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(configuration["Square:Environment"], "Production", StringComparison.OrdinalIgnoreCase))
+        {
+            errors.Add("Square:Environment must be Sandbox or Production.");
+        }
+
+        Required(configuration, "Square:AccessToken", errors);
+        Required(configuration, "Square:LocationId", errors);
+        Required(configuration, "Square:WebhookSignatureKey", errors);
+        RequiredHttpsUrl(configuration, "Square:WebhookNotificationUrl", errors);
+        RequiredHttpsUrl(configuration, "Square:CheckoutReturnUrl", errors);
+
+        if (!DateOnly.TryParseExact(
+                configuration["Square:ApiVersion"],
+                "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out _))
+        {
+            errors.Add("Square:ApiVersion must use yyyy-MM-dd format.");
+        }
+    }
+
+    private static void RequiredHttpsUrl(
+        IConfiguration configuration,
+        string key,
+        ICollection<string> errors)
+    {
+        if (!Uri.TryCreate(configuration[key], UriKind.Absolute, out var uri) ||
+            uri.Scheme != Uri.UriSchemeHttps ||
+            uri.IsLoopback)
+        {
+            errors.Add($"{key} must be an absolute HTTPS non-loopback URL.");
         }
     }
 

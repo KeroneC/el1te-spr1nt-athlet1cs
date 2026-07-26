@@ -4,6 +4,7 @@ using El1teSpr1ntTrack.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 {
     [DbContext(typeof(El1teDbContext))]
-    partial class El1teDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260726050816_AddCommerceFoundation")]
+    partial class AddCommerceFoundation
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -401,60 +404,6 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                             LastName = "Rivera",
                             Role = "Team Support Coach"
                         });
-                });
-
-            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.CommerceEmailMessage", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("ProviderMessageId")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<string>("RecipientEmail")
-                        .IsRequired()
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("SafeFailureCode")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTimeOffset?>("SentAtUtc")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)");
-
-                    b.Property<string>("TemplateName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("OrderId");
-
-                    b.HasIndex("ProviderMessageId")
-                        .IsUnique()
-                        .HasFilter("[ProviderMessageId] IS NOT NULL");
-
-                    b.HasIndex("Status", "CreatedAt");
-
-                    b.ToTable("CommerceEmailMessages");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.CommerceOutboxMessage", b =>
@@ -1513,38 +1462,6 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderInternalNote", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("ActorUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("Note")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<Guid>("OrderId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("datetimeoffset");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ActorUserId");
-
-                    b.HasIndex("OrderId", "CreatedAt");
-
-                    b.ToTable("OrderInternalNotes");
-                });
-
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2491,17 +2408,6 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("Athlete");
                 });
 
-            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.CommerceEmailMessage", b =>
-                {
-                    b.HasOne("El1teSpr1ntTrack.Core.Entities.Order", "Order")
-                        .WithMany("EmailHistory")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Order");
-                });
-
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.CommerceRefund", b =>
                 {
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "ActorUser")
@@ -2641,25 +2547,6 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.SetNull);
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderInternalNote", b =>
-                {
-                    b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "ActorUser")
-                        .WithMany()
-                        .HasForeignKey("ActorUserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("El1teSpr1ntTrack.Core.Entities.Order", "Order")
-                        .WithMany("InternalNotes")
-                        .HasForeignKey("OrderId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ActorUser");
-
-                    b.Navigation("Order");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.OrderItem", b =>
@@ -2881,10 +2768,6 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
                 {
-                    b.Navigation("EmailHistory");
-
-                    b.Navigation("InternalNotes");
-
                     b.Navigation("OrderItems");
 
                     b.Navigation("Refunds");

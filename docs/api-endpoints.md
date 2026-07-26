@@ -12,6 +12,13 @@ All Admin routes use the existing `CmsAdmin` policy. Upload is multipart form da
 
 Liveness is available at `/health`; database readiness is available at `/health/ready`. The legacy descriptive route remains at `/api/v1/health`. Authentication routes are implemented under `/api/auth`. Public CMS routes live under `/api/public`, and protected CMS routes live under `/api/admin`.
 
+## Commerce Foundation
+
+- Commerce integration health: `GET /health/commerce`
+- Square webhook receiver: `POST /api/webhooks/square`
+
+The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Public catalog, cart, checkout, tracking, and Admin store endpoints are intentionally deferred to their later delivery phases.
+
 ## Auth
 
 Implemented:

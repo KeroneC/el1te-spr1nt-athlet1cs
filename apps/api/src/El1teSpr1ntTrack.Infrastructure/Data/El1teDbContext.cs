@@ -29,9 +29,45 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<Product> Products => Set<Product>();
 
+    public DbSet<ProductCategory> ProductCategories => Set<ProductCategory>();
+
+    public DbSet<ProductMedia> ProductMedia => Set<ProductMedia>();
+
+    public DbSet<ProductOption> ProductOptions => Set<ProductOption>();
+
+    public DbSet<ProductOptionValue> ProductOptionValues => Set<ProductOptionValue>();
+
+    public DbSet<ProductVariant> ProductVariants => Set<ProductVariant>();
+
+    public DbSet<ProductVariantOptionValue> ProductVariantOptionValues => Set<ProductVariantOptionValue>();
+
+    public DbSet<ProductModifierGroup> ProductModifierGroups => Set<ProductModifierGroup>();
+
+    public DbSet<ProductModifierValue> ProductModifierValues => Set<ProductModifierValue>();
+
+    public DbSet<ProductVisualizerLayer> ProductVisualizerLayers => Set<ProductVisualizerLayer>();
+
     public DbSet<Order> Orders => Set<Order>();
 
     public DbSet<OrderItem> OrderItems => Set<OrderItem>();
+
+    public DbSet<OrderStatusHistory> OrderStatusHistory => Set<OrderStatusHistory>();
+
+    public DbSet<InventoryAdjustment> InventoryAdjustments => Set<InventoryAdjustment>();
+
+    public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
+
+    public DbSet<InventoryReservationItem> InventoryReservationItems => Set<InventoryReservationItem>();
+
+    public DbSet<CommerceRefund> CommerceRefunds => Set<CommerceRefund>();
+
+    public DbSet<OrderInternalNote> OrderInternalNotes => Set<OrderInternalNote>();
+
+    public DbSet<CommerceEmailMessage> CommerceEmailMessages => Set<CommerceEmailMessage>();
+
+    public DbSet<SquareWebhookEvent> SquareWebhookEvents => Set<SquareWebhookEvent>();
+
+    public DbSet<CommerceOutboxMessage> CommerceOutboxMessages => Set<CommerceOutboxMessage>();
 
     public DbSet<Donation> Donations => Set<Donation>();
 
@@ -89,18 +125,6 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
             .HasForeignKey(order => order.UserId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<Order>()
-            .HasMany(order => order.OrderItems)
-            .WithOne(orderItem => orderItem.Order)
-            .HasForeignKey(orderItem => orderItem.OrderId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Product>()
-            .HasMany(product => product.OrderItems)
-            .WithOne(orderItem => orderItem.Product)
-            .HasForeignKey(orderItem => orderItem.ProductId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<Athlete>()
             .HasMany(athlete => athlete.ConsentRecords)
             .WithOne(consent => consent.Athlete)
@@ -112,18 +136,6 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
             .WithOne(document => document.Athlete)
             .HasForeignKey(document => document.AthleteId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<Product>()
-            .Property(product => product.Price)
-            .HasPrecision(18, 2);
-
-        modelBuilder.Entity<Order>()
-            .Property(order => order.Total)
-            .HasPrecision(18, 2);
-
-        modelBuilder.Entity<OrderItem>()
-            .Property(orderItem => orderItem.UnitPrice)
-            .HasPrecision(18, 2);
 
         modelBuilder.Entity<Donation>()
             .Property(donation => donation.Amount)

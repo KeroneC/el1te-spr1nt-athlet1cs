@@ -24,6 +24,8 @@ flowchart TD
 
 **API** translates HTTP into application calls. Controllers remain thin, `GlobalExceptionMiddleware` maps known CMS exceptions to Problem Details, `CmsAdminAuthorization` enforces role and active-user requirements, and `Program.cs` wires dependencies and middleware.
 
+The commerce foundation follows the same boundaries. Core owns the catalog, inventory, order, reservation, webhook, and outbox data concepts. Application owns the Square and outbox interfaces. Infrastructure implements the typed Square HTTP client, signature verifier, webhook persistence, and outbox processor. API exposes only the webhook and health routes in the foundation phase and hosts the always-on worker. Public commerce remains disabled.
+
 ## Dependency Injection
 
 `apps/api/src/El1teSpr1ntTrack.Api/Program.cs` is the composition root. It maps service interfaces to implementations with scoped lifetimes, including `IPublicCmsService` to `PublicCmsService`, `IAdminCmsRepository` to `AdminCmsRepository`, and `IUserRepository` to `UserRepository`. Each HTTP request receives an appropriate dependency graph and EF Core context.
