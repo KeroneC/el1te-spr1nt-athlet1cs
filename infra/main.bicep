@@ -39,6 +39,31 @@ param mediaContainerName string = 'media'
 @description('Email recipient for Azure Monitor operational alerts.')
 param monitoringAlertEmail string
 
+@description('Keep false until the final store cutover.')
+param storeEnabled bool = false
+
+@allowed([
+  'Sandbox'
+  'Production'
+])
+@description('Square API environment used when the store is enabled.')
+param squareEnvironment string = 'Sandbox'
+
+@description('Square location identifier. Required only when the store is enabled.')
+param squareLocationId string = ''
+
+@description('Exact public Square webhook notification URL. Required only when the store is enabled.')
+param squareWebhookNotificationUrl string = ''
+
+@description('Public checkout return URL. Required only when the store is enabled.')
+param squareCheckoutReturnUrl string = ''
+
+@description('Optional Key Vault secret URI containing the Square access token.')
+param squareAccessTokenSecretUri string = ''
+
+@description('Optional Key Vault secret URI containing the Square webhook signature key.')
+param squareWebhookSignatureKeySecretUri string = ''
+
 @description('Immutable Git commit SHA promoted by the deployment workflow.')
 @minLength(7)
 @maxLength(40)
@@ -138,6 +163,13 @@ module api 'modules/api-app.bicep' = {
     applicationInsightsConnectionString: monitoring.outputs.connectionString
     publicBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     releaseSha: releaseSha
+    storeEnabled: storeEnabled
+    squareEnvironment: squareEnvironment
+    squareLocationId: squareLocationId
+    squareWebhookNotificationUrl: squareWebhookNotificationUrl
+    squareCheckoutReturnUrl: squareCheckoutReturnUrl
+    squareAccessTokenSecretUri: squareAccessTokenSecretUri
+    squareWebhookSignatureKeySecretUri: squareWebhookSignatureKeySecretUri
     location: location
     name: apiAppName
     sqlServerFqdn: sqlServer.outputs.fullyQualifiedDomainName

@@ -55,6 +55,32 @@ public sealed class DeploymentReadinessTests
         Assert.Contains("Database:UseManagedIdentity", exception.Message);
     }
 
+    [Fact]
+    public void ProductionConfiguration_RequiresSquareSecretsOnlyWhenStoreIsEnabled()
+    {
+        var values = SafeProductionValues(useManagedIdentity: true);
+        values["Store:Enabled"] = "true";
+        values["Store:Currency"] = "USD";
+        values["Store:ReservationMinutes"] = "30";
+        values["Square:Environment"] = "Production";
+        values["Square:ApiVersion"] = "2026-07-15";
+        var missingSquare = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            ProductionConfigurationValidator.Validate(missingSquare, new TestEnvironment("Production")));
+        Assert.Contains("Square:AccessToken", exception.Message);
+        Assert.Contains("Square:WebhookNotificationUrl", exception.Message);
+
+        values["Square:AccessToken"] = "secret-token";
+        values["Square:LocationId"] = "location";
+        values["Square:WebhookSignatureKey"] = "signature-secret";
+        values["Square:WebhookNotificationUrl"] = "https://api.example.invalid/api/webhooks/square";
+        values["Square:CheckoutReturnUrl"] = "https://web.example.invalid/shop/order-confirmation";
+        var configuredSquare = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+
+        ProductionConfigurationValidator.Validate(configuredSquare, new TestEnvironment("Production"));
+    }
+
     [Theory]
     [InlineData(HealthStatus.Healthy, "healthy")]
     [InlineData(HealthStatus.Unhealthy, "unhealthy")]
@@ -84,7 +110,14 @@ public sealed class DeploymentReadinessTests
 
     private static IConfiguration BuildSafeProductionConfiguration(bool useManagedIdentity)
     {
-        return new ConfigurationBuilder().AddInMemoryCollection(new Dictionary<string, string?>
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(SafeProductionValues(useManagedIdentity))
+            .Build();
+    }
+
+    private static Dictionary<string, string?> SafeProductionValues(bool useManagedIdentity)
+    {
+        return new Dictionary<string, string?>
         {
             ["ConnectionStrings:DefaultConnection"] = "Server=tcp:sql.example.invalid,1433;Initial Catalog=app;Encrypt=True;",
             ["Database:UseManagedIdentity"] = useManagedIdentity.ToString(),
@@ -100,7 +133,7 @@ public sealed class DeploymentReadinessTests
             ["MediaStorage:MaxFileSizeBytes"] = "10485760",
             ["AdminInvitations:SiteUrl"] = "https://web.example.invalid",
             ["AdminInvitations:ExpiresHours"] = "72"
-        }).Build();
+        };
     }
 
     private sealed class TestEnvironment(string environmentName) : IHostEnvironment

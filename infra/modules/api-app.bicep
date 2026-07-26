@@ -12,6 +12,13 @@ param applicationInsightsConnectionString string
 param publicBaseUrl string
 param allowedOrigins array
 param releaseSha string
+param storeEnabled bool = false
+param squareEnvironment string = 'Sandbox'
+param squareLocationId string = ''
+param squareWebhookNotificationUrl string = ''
+param squareCheckoutReturnUrl string = ''
+param squareAccessTokenSecretUri string = ''
+param squareWebhookSignatureKeySecretUri string = ''
 param tags object = {}
 
 var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
@@ -19,6 +26,19 @@ var corsAppSettings = map(allowedOrigins, (origin, index) => {
   name: 'Cors__AllowedOrigins__${index}'
   value: origin
 })
+var squareSecretAppSettings = concat(
+  empty(squareAccessTokenSecretUri) ? [] : [
+    {
+      name: 'Square__AccessToken'
+      value: '@Microsoft.KeyVault(SecretUri=${squareAccessTokenSecretUri})'
+    }
+  ],
+  empty(squareWebhookSignatureKeySecretUri) ? [] : [
+    {
+      name: 'Square__WebhookSignatureKey'
+      value: '@Microsoft.KeyVault(SecretUri=${squareWebhookSignatureKeySecretUri})'
+    }
+  ])
 
 resource api 'Microsoft.Web/sites@2023-12-01' = {
   name: name
@@ -100,6 +120,50 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: '72'
         }
         {
+          name: 'Store__Enabled'
+          value: string(storeEnabled)
+        }
+        {
+          name: 'Store__Currency'
+          value: 'USD'
+        }
+        {
+          name: 'Store__ReservationMinutes'
+          value: '30'
+        }
+        {
+          name: 'Store__DefaultLowStockThreshold'
+          value: '3'
+        }
+        {
+          name: 'Store__OutboxPollSeconds'
+          value: '5'
+        }
+        {
+          name: 'Square__Environment'
+          value: squareEnvironment
+        }
+        {
+          name: 'Square__ApiVersion'
+          value: '2026-07-15'
+        }
+        {
+          name: 'Square__LocationId'
+          value: squareLocationId
+        }
+        {
+          name: 'Square__WebhookNotificationUrl'
+          value: squareWebhookNotificationUrl
+        }
+        {
+          name: 'Square__CheckoutReturnUrl'
+          value: squareCheckoutReturnUrl
+        }
+        {
+          name: 'Square__RequestTimeoutSeconds'
+          value: '15'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
         }
@@ -119,7 +183,7 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITES_CONTAINER_START_TIME_LIMIT'
           value: '600'
         }
-      ], corsAppSettings)
+      ], corsAppSettings, squareSecretAppSettings)
     }
   }
 }

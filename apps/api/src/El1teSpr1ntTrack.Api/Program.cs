@@ -1,5 +1,6 @@
 using System.Text.Json.Serialization;
 using El1teSpr1ntTrack.Api.Authorization;
+using El1teSpr1ntTrack.Api.Background;
 using El1teSpr1ntTrack.Api.Configuration;
 using El1teSpr1ntTrack.Api.Extensions;
 using El1teSpr1ntTrack.Api.Health;
@@ -9,6 +10,7 @@ using El1teSpr1ntTrack.Application.Services;
 using El1teSpr1ntTrack.Application.Common;
 using El1teSpr1ntTrack.Core.Interfaces.Repositories;
 using El1teSpr1ntTrack.Infrastructure.Data;
+using El1teSpr1ntTrack.Infrastructure.Commerce;
 using El1teSpr1ntTrack.Infrastructure.Repositories;
 using El1teSpr1ntTrack.Infrastructure.Security;
 using El1teSpr1ntTrack.Infrastructure.Media;
@@ -81,7 +83,8 @@ builder.Services.AddSwaggerGen(options =>
 });
 builder.Services
     .AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"]);
+    .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
+    .AddCheck<SquareHealthCheck>("square", tags: ["commerce"]);
 builder.Services.AddApiCors(builder.Configuration);
 
 builder.Services.AddScoped<IClock, SystemClock>();
@@ -107,6 +110,24 @@ builder.Services.AddScoped<IAuthorizationHandler, ActiveCmsAdminHandler>();
 builder.Services.AddScoped<IAuthorizationHandler, ActiveSuperAdminHandler>();
 builder.Services.AddScoped<DevelopmentAdminSeeder>();
 builder.Services.AddScoped<ProductionAdminBootstrapper>();
+
+var storeSettings = builder.Configuration
+    .GetSection(StoreSettings.SectionName)
+    .Get<StoreSettings>() ?? new StoreSettings();
+var squareSettings = builder.Configuration
+    .GetSection(SquareSettings.SectionName)
+    .Get<SquareSettings>() ?? new SquareSettings();
+builder.Services.AddSingleton(storeSettings);
+builder.Services.AddSingleton(squareSettings);
+builder.Services.AddSingleton<ISquareSignatureVerifier, SquareSignatureVerifier>();
+builder.Services.AddScoped<ISquareWebhookService, SquareWebhookService>();
+builder.Services.AddScoped<ICommerceOutboxProcessor, CommerceOutboxProcessor>();
+builder.Services.AddHttpClient<ISquareClient, SquareClient>(client =>
+{
+    client.BaseAddress = new Uri(squareSettings.BaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(squareSettings.RequestTimeoutSeconds, 5, 60));
+});
+builder.Services.AddHostedService<CommerceOutboxWorker>();
 
 var adminInvitationSettings = builder.Configuration
     .GetSection(AdminInvitationSettings.SectionName)
@@ -203,6 +224,11 @@ app.MapHealthChecks("/health", new()
 app.MapHealthChecks("/health/ready", new()
 {
     Predicate = registration => registration.Tags.Contains("ready"),
+    ResponseWriter = SafeHealthResponseWriter.WriteAsync
+});
+app.MapHealthChecks("/health/commerce", new()
+{
+    Predicate = registration => registration.Tags.Contains("commerce"),
     ResponseWriter = SafeHealthResponseWriter.WriteAsync
 });
 app.MapControllers();
