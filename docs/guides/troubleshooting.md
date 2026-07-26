@@ -41,6 +41,7 @@ Work from the symptom to the boundary that failed. Do not disable security check
 | Phone still shows an old or broken image after a successful release | Browser/CDN cache, an unchanged asset URL, or a genuinely failing optimized request | Test the exact asset URL with a cache-busting query and inspect the page source before assuming it is only cache | Prefer a new fingerprint-like filename for emergency asset replacements, then verify both the new `200` response and old-path `404` responses |
 | Media upload says to check highlighted fields but none is highlighted | Client validation summary is not mapped to the specific queued file field | Submit one image with required alt text blank; inspect field error state, focus, and accessible error association | Mark the exact field invalid, render its message beside the field, and move focus to the first invalid control |
 | Azure deployment says the site failed to start, but health checks pass | Azure CLI Linux startup tracking retained stale container-timeout state after Kudu activated the new artifact | Compare `az webapp log deployment list`, `az webapp log startup show`, and the live readiness endpoint | Track the new active Kudu deployment ID, restart after activation, then run application smoke tests; do not accept an old-version health response as proof of promotion |
+| Azure artifact publishing returns `502`, `503`, or `504` | Transient Kudu publishing-endpoint availability during App Service updates or cold starts | Confirm infrastructure and migrations succeeded, then inspect the failed publishing step for an explicit gateway status | Let the deployment helper retry four times with exponential backoff; stop immediately for authentication, authorization, artifact, or other non-gateway failures |
 
 Additional clues:
 
@@ -65,3 +66,10 @@ Additional clues:
 - **Finding:** Kudu marked the new API ZIP deployment active and successful, the new invitation endpoint was live, and App Service logs showed the application listening on port 8080 with a successful platform startup probe. The CLI continued polling stale container-timeout state and eventually returned exit code 1.
 - **Resolution:** deployment now disables the unreliable Linux startup tracker, waits for a new active Kudu deployment ID with success status, explicitly restarts the app, and then runs the existing API or web smoke tests.
 - **Safety:** the temporary SQL firewall rule was removed by the workflow's unconditional cleanup even though the deployment step failed.
+
+### 2026-07-26: Kudu Publishing Endpoint Returned 502
+
+- **Symptom:** the commerce-foundation deployment completed infrastructure reconciliation and database migrations, then failed before API activation when `az webapp deploy` received `502 Bad Gateway` from the Kudu publishing endpoint.
+- **Finding:** the failure occurred during ZIP submission, before application startup; it was not caused by the commerce configuration or migration.
+- **Resolution:** ZIP submission now retries only explicit `502`, `503`, and `504` gateway failures up to four times with exponential backoff. Other errors remain fail-fast.
+- **Safety:** each retry submits the same verified immutable ZIP, deployment status still requires a new successful Kudu deployment ID, smoke tests remain authoritative, and the temporary SQL firewall rule is always removed.

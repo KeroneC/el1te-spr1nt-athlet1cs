@@ -29,7 +29,7 @@ The API system-assigned identity has Blob contributor access only on the media a
 | Application Insights / logs | `el1tesprint-demo-neauu2-insights` / `el1tesprint-demo-neauu2-logs` |
 | Support workbook / alerts | `El1te Platform Support` / email action group and four balanced alert rules |
 
-Both App Services allow up to 600 seconds for a B1 cold start. ZIP deployments are submitted asynchronously because Kudu can return a gateway timeout while a valid deployment continues; smoke tests are the release authority after submission.
+Both App Services allow up to 600 seconds for a B1 cold start. ZIP deployments are submitted asynchronously because Kudu can return transient `502`, `503`, or `504` responses or report a gateway timeout while a valid deployment continues. Submission retries those gateway responses up to four times with exponential backoff; non-gateway failures stop immediately. Smoke tests remain the release authority after submission.
 
 CI creates one immutable release bundle after every successful `main` push: API ZIP, standalone web ZIP, EF bundle, manifest, and SHA-256 checksums. The manual deployment accepts a CI run ID, verifies that it is a successful `main` push, checks out the matching SHA, and promotes those artifacts without rebuilding.
 

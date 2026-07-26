@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+test_root=$(mktemp -d)
+trap 'rm -rf "$test_root"' EXIT
+
+fake_bin="$test_root/bin"
+mkdir -p "$fake_bin"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'state_dir="${MOCK_AZ_STATE_DIR:?}"' \
+  'command_line="$*"' \
+  'if [[ "$command_line" == "webapp log deployment list "* ]]; then' \
+  '  if [[ -f "$state_dir/published" ]]; then printf "new-deployment\t4\n"; else echo "old-deployment"; fi' \
+  '  exit 0' \
+  'fi' \
+  'if [[ "$command_line" == "webapp deploy "* ]]; then' \
+  '  count_file="$state_dir/deploy-count"' \
+  '  count=0' \
+  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
+  '  count=$((count + 1))' \
+  '  printf "%s" "$count" > "$count_file"' \
+  '  if (( count <= MOCK_AZ_DEPLOY_FAILURES )); then' \
+  '    echo "ERROR: Publishing failed with status code '\''${MOCK_AZ_STATUS}'\''." >&2' \
+  '    exit 1' \
+  '  fi' \
+  '  touch "$state_dir/published"' \
+  '  exit 0' \
+  'fi' \
+  'if [[ "$command_line" == "webapp restart "* ]]; then exit 0; fi' \
+  'echo "Unexpected mock Azure CLI call: $command_line" >&2' \
+  'exit 99' \
+  > "$fake_bin/az"
+chmod +x "$fake_bin/az"
+
+run_deployment()
+{
+  local state_dir="$1"
+  local failures="$2"
+  local status="$3"
+
+  mkdir -p "$state_dir"
+  PATH="$fake_bin:$PATH" \
+    MOCK_AZ_STATE_DIR="$state_dir" \
+    MOCK_AZ_DEPLOY_FAILURES="$failures" \
+    MOCK_AZ_STATUS="$status" \
+    DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
+    bash "$script_dir/deploy-webapp-artifact.sh" test-resource-group test-app test-artifact.zip
+}
+
+retry_state="$test_root/retry"
+run_deployment "$retry_state" 2 502
+[[ "$(<"$retry_state/deploy-count")" == "3" ]]
+
+non_retry_state="$test_root/non-retry"
+set +e
+non_retry_output=$(run_deployment "$non_retry_state" 1 401 2>&1)
+non_retry_exit=$?
+set -e
+[[ "$non_retry_exit" -ne 0 ]]
+[[ "$(<"$non_retry_state/deploy-count")" == "1" ]]
+grep -q "non-retriable" <<< "$non_retry_output"
+
+exhausted_state="$test_root/exhausted"
+set +e
+exhausted_output=$(run_deployment "$exhausted_state" 10 503 2>&1)
+exhausted_exit=$?
+set -e
+[[ "$exhausted_exit" -ne 0 ]]
+[[ "$(<"$exhausted_state/deploy-count")" == "4" ]]
+grep -q "exhausted 4 attempts" <<< "$exhausted_output"
+
+echo "Deployment publishing retry tests passed."
