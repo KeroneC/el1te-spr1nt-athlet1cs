@@ -83,7 +83,8 @@ public sealed class AdminAuthorizationTests
             typeof(AdminAnnouncementsController), typeof(AdminEventsController),
             typeof(AdminCoachesController), typeof(AdminSponsorsController),
             typeof(AdminFaqsController), typeof(AdminContactSubmissionsController),
-            typeof(AdminMediaController), typeof(AdminGalleryAlbumsController)
+            typeof(AdminMediaController), typeof(AdminGalleryAlbumsController),
+            typeof(AdminStoreController)
         ];
 
         foreach (var type in controllerTypes)
@@ -102,6 +103,16 @@ public sealed class AdminAuthorizationTests
             var attribute = Assert.Single(type.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
             Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName, attribute.Policy);
         }
+    }
+
+    [Theory]
+    [InlineData(nameof(AdminStoreController.PreviewSquareImport))]
+    [InlineData(nameof(AdminStoreController.ImportSquareCatalog))]
+    public void SquareCatalogImport_RequiresSuperAdminPolicy(string methodName)
+    {
+        var method = typeof(AdminStoreController).GetMethod(methodName);
+        var attribute = Assert.Single(method!.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
+        Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName, attribute.Policy);
     }
 
     [Fact]

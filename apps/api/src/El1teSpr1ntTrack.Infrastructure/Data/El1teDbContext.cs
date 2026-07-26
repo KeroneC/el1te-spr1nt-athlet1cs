@@ -55,6 +55,10 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<InventoryAdjustment> InventoryAdjustments => Set<InventoryAdjustment>();
 
+    public DbSet<InventoryStocktake> InventoryStocktakes => Set<InventoryStocktake>();
+
+    public DbSet<InventoryStocktakeLine> InventoryStocktakeLines => Set<InventoryStocktakeLine>();
+
     public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
 
     public DbSet<InventoryReservationItem> InventoryReservationItems => Set<InventoryReservationItem>();
@@ -66,6 +70,8 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
     public DbSet<CommerceEmailMessage> CommerceEmailMessages => Set<CommerceEmailMessage>();
 
     public DbSet<SquareWebhookEvent> SquareWebhookEvents => Set<SquareWebhookEvent>();
+
+    public DbSet<SquareCatalogImportRun> SquareCatalogImportRuns => Set<SquareCatalogImportRun>();
 
     public DbSet<CommerceOutboxMessage> CommerceOutboxMessages => Set<CommerceOutboxMessage>();
 

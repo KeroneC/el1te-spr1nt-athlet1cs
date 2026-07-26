@@ -1,4 +1,5 @@
 using System.Net.Http.Json;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using El1teSpr1ntTrack.Application.Interfaces;
@@ -13,6 +14,147 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
         using var request = Request(HttpMethod.Get, $"v2/locations/{Uri.EscapeDataString(settings.LocationId!)}");
         using var response = await httpClient.SendAsync(request, cancellationToken);
         return response.IsSuccessStatusCode;
+    }
+
+    public async Task<SquareCatalogSnapshot> GetCatalogSnapshotAsync(CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+        var catalogObjects = new Dictionary<string, JsonElement>(StringComparer.Ordinal);
+        string? cursor = null;
+
+        do
+        {
+            using var request = Request(HttpMethod.Post, "v2/catalog/search");
+            request.Content = JsonContent.Create(new SearchCatalogRequest(
+                ["ITEM", "CATEGORY", "ITEM_OPTION", "IMAGE"],
+                false,
+                true,
+                cursor));
+            using var response = await httpClient.SendAsync(request, cancellationToken);
+            var payload = await ReadPayloadAsync<SearchCatalogResponse>(response, cancellationToken);
+
+            foreach (var catalogObject in (payload.Objects ?? []).Concat(payload.RelatedObjects ?? []))
+            {
+                var id = PropertyString(catalogObject, "id");
+                if (!string.IsNullOrWhiteSpace(id))
+                {
+                    catalogObjects[id] = catalogObject.Clone();
+                }
+            }
+
+            cursor = string.IsNullOrWhiteSpace(payload.Cursor) ? null : payload.Cursor;
+        }
+        while (cursor is not null);
+
+        var images = catalogObjects.Values
+            .Where(value => PropertyString(value, "type") == "IMAGE")
+            .Select(value => new
+            {
+                Id = PropertyString(value, "id"),
+                Url = NestedString(value, "image_data", "url"),
+                Caption = NestedString(value, "image_data", "caption") ??
+                          NestedString(value, "image_data", "name")
+            })
+            .Where(value => !string.IsNullOrWhiteSpace(value.Id) && !string.IsNullOrWhiteSpace(value.Url))
+            .ToDictionary(
+                value => value.Id!,
+                value => new SquareCatalogImage(value.Id!, value.Url!, value.Caption),
+                StringComparer.Ordinal);
+
+        var categories = catalogObjects.Values
+            .Where(value => PropertyString(value, "type") == "CATEGORY")
+            .Select(value => new
+            {
+                Id = PropertyString(value, "id"),
+                Name = NestedString(value, "category_data", "name")
+            })
+            .Where(value => !string.IsNullOrWhiteSpace(value.Id))
+            .ToDictionary(value => value.Id!, value => value.Name, StringComparer.Ordinal);
+
+        var optionDefinitions = catalogObjects.Values
+            .Where(value => PropertyString(value, "type") == "ITEM_OPTION")
+            .Select(ParseOption)
+            .Where(value => value is not null)
+            .Cast<SquareCatalogOption>()
+            .ToDictionary(value => value.CatalogObjectId, StringComparer.Ordinal);
+
+        var itemObjects = catalogObjects.Values
+            .Where(value => PropertyString(value, "type") == "ITEM")
+            .ToList();
+        var variationIds = itemObjects
+            .SelectMany(ItemVariations)
+            .Select(value => PropertyString(value, "id"))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Cast<string>()
+            .Distinct(StringComparer.Ordinal)
+            .ToList();
+        var inventory = await GetInventoryCountsAsync(variationIds, cancellationToken);
+
+        var products = new List<SquareCatalogProduct>();
+        foreach (var item in itemObjects)
+        {
+            var id = PropertyString(item, "id");
+            var name = NestedString(item, "item_data", "name");
+            if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name))
+            {
+                continue;
+            }
+
+            var itemData = item.GetProperty("item_data");
+            var categoryId = NestedString(item, "item_data", "category_id") ??
+                             FirstNestedId(itemData, "categories");
+            categories.TryGetValue(categoryId ?? string.Empty, out var categoryName);
+
+            var optionIds = NestedIds(itemData, "item_options", "item_option_id");
+            var variationElements = ItemVariations(item).ToList();
+            var referencedOptionIds = variationElements
+                .SelectMany(value => NestedObjects(value, "item_variation_data", "item_option_values"))
+                .Select(value => PropertyString(value, "item_option_id"))
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Cast<string>();
+            var productOptions = optionIds
+                .Concat(referencedOptionIds)
+                .Distinct(StringComparer.Ordinal)
+                .Select(optionId => optionDefinitions.GetValueOrDefault(optionId))
+                .Where(value => value is not null)
+                .Cast<SquareCatalogOption>()
+                .Select((value, index) => value with { DisplayOrder = index })
+                .ToList();
+
+            var imageIds = NestedStringArray(itemData, "image_ids")
+                .Concat(variationElements.SelectMany(value =>
+                    NestedStringArray(value.GetProperty("item_variation_data"), "image_ids")))
+                .Distinct(StringComparer.Ordinal);
+            var productImages = imageIds
+                .Select(imageId => images.GetValueOrDefault(imageId))
+                .Where(value => value is not null)
+                .Cast<SquareCatalogImage>()
+                .ToList();
+
+            var variants = variationElements
+                .Select((value, index) => ParseVariant(value, inventory, index))
+                .Where(value => value is not null)
+                .Cast<SquareCatalogVariant>()
+                .ToList();
+            if (variants.Count == 0)
+            {
+                continue;
+            }
+
+            products.Add(new SquareCatalogProduct(
+                id,
+                PropertyLong(item, "version"),
+                name.Trim(),
+                NestedString(item, "item_data", "description_plaintext") ??
+                NestedString(item, "item_data", "description"),
+                categoryId,
+                categoryName,
+                productImages,
+                productOptions,
+                variants));
+        }
+
+        return new SquareCatalogSnapshot(products.OrderBy(value => value.Name).ToList());
     }
 
     public async Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(
@@ -107,6 +249,195 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
             throw new SquareIntegrationException("NOT_CONFIGURED");
         }
     }
+
+    private async Task<Dictionary<string, int>> GetInventoryCountsAsync(
+        IReadOnlyList<string> variationIds,
+        CancellationToken cancellationToken)
+    {
+        var result = new Dictionary<string, int>(StringComparer.Ordinal);
+        foreach (var batch in variationIds.Chunk(1000))
+        {
+            string? cursor = null;
+            do
+            {
+                using var request = Request(HttpMethod.Post, "v2/inventory/counts/batch-retrieve");
+                request.Content = JsonContent.Create(new BatchInventoryRequest(
+                    batch,
+                    [settings.LocationId!],
+                    cursor));
+                using var response = await httpClient.SendAsync(request, cancellationToken);
+                var payload = await ReadPayloadAsync<BatchInventoryResponse>(response, cancellationToken);
+                foreach (var count in payload.Counts ?? [])
+                {
+                    var catalogObjectId = PropertyString(count, "catalog_object_id");
+                    var state = PropertyString(count, "state");
+                    var locationId = PropertyString(count, "location_id");
+                    if (string.IsNullOrWhiteSpace(catalogObjectId) ||
+                        state != "IN_STOCK" ||
+                        locationId != settings.LocationId)
+                    {
+                        continue;
+                    }
+
+                    var quantity = PropertyString(count, "quantity");
+                    if (decimal.TryParse(quantity, NumberStyles.Number, CultureInfo.InvariantCulture, out var parsed))
+                    {
+                        result[catalogObjectId] = Math.Max(0, (int)decimal.Truncate(parsed));
+                    }
+                }
+
+                cursor = string.IsNullOrWhiteSpace(payload.Cursor) ? null : payload.Cursor;
+            }
+            while (cursor is not null);
+        }
+
+        return result;
+    }
+
+    private static SquareCatalogOption? ParseOption(JsonElement catalogObject)
+    {
+        var id = PropertyString(catalogObject, "id");
+        var name = NestedString(catalogObject, "item_option_data", "name");
+        if (string.IsNullOrWhiteSpace(id) || string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        var values = NestedObjects(catalogObject, "item_option_data", "values")
+            .Select(value =>
+            {
+                var valueId = PropertyString(value, "id");
+                var data = value.TryGetProperty("item_option_value_data", out var nestedData)
+                    ? nestedData
+                    : value;
+                var valueName = PropertyString(data, "name");
+                return string.IsNullOrWhiteSpace(valueId) || string.IsNullOrWhiteSpace(valueName)
+                    ? null
+                    : new SquareCatalogOptionValue(
+                        valueId,
+                        valueName.Trim(),
+                        PropertyString(data, "color"),
+                        PropertyInt(data, "ordinal"));
+            })
+            .Where(value => value is not null)
+            .Cast<SquareCatalogOptionValue>()
+            .OrderBy(value => value.DisplayOrder)
+            .ToList();
+
+        return new SquareCatalogOption(id, name.Trim(), 0, values);
+    }
+
+    private static SquareCatalogVariant? ParseVariant(
+        JsonElement catalogObject,
+        IReadOnlyDictionary<string, int> inventory,
+        int displayOrder)
+    {
+        var id = PropertyString(catalogObject, "id");
+        if (string.IsNullOrWhiteSpace(id) ||
+            !catalogObject.TryGetProperty("item_variation_data", out var data))
+        {
+            return null;
+        }
+
+        var name = PropertyString(data, "name");
+        var amount = data.TryGetProperty("price_money", out var money)
+            ? PropertyLong(money, "amount")
+            : 0;
+        var currency = data.TryGetProperty("price_money", out money)
+            ? PropertyString(money, "currency") ?? "USD"
+            : "USD";
+        var optionValueIds = NestedObjects(data, "item_option_values")
+            .Select(value => PropertyString(value, "item_option_value_id"))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Cast<string>()
+            .ToList();
+
+        return new SquareCatalogVariant(
+            id,
+            PropertyLong(catalogObject, "version"),
+            string.IsNullOrWhiteSpace(name) ? $"Variation {displayOrder + 1}" : name.Trim(),
+            PropertyString(data, "sku"),
+            Math.Max(0, amount),
+            currency,
+            inventory.GetValueOrDefault(id),
+            optionValueIds);
+    }
+
+    private static IEnumerable<JsonElement> ItemVariations(JsonElement item) =>
+        NestedObjects(item, "item_data", "variations");
+
+    private static IEnumerable<JsonElement> NestedObjects(
+        JsonElement element,
+        string parentProperty,
+        string collectionProperty)
+    {
+        if (!element.TryGetProperty(parentProperty, out var parent))
+        {
+            return [];
+        }
+
+        return NestedObjects(parent, collectionProperty);
+    }
+
+    private static IEnumerable<JsonElement> NestedObjects(
+        JsonElement element,
+        string collectionProperty) =>
+        element.TryGetProperty(collectionProperty, out var collection) &&
+        collection.ValueKind == JsonValueKind.Array
+            ? collection.EnumerateArray()
+            : [];
+
+    private static IReadOnlyList<string> NestedIds(
+        JsonElement element,
+        string collectionProperty,
+        string idProperty) =>
+        NestedObjects(element, collectionProperty)
+            .Select(value => PropertyString(value, idProperty))
+            .Where(value => !string.IsNullOrWhiteSpace(value))
+            .Cast<string>()
+            .ToList();
+
+    private static IReadOnlyList<string> NestedStringArray(
+        JsonElement element,
+        string propertyName) =>
+        element.TryGetProperty(propertyName, out var collection) &&
+        collection.ValueKind == JsonValueKind.Array
+            ? collection.EnumerateArray()
+                .Select(value => value.GetString())
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Cast<string>()
+                .ToList()
+            : [];
+
+    private static string? FirstNestedId(JsonElement element, string collectionProperty) =>
+        NestedObjects(element, collectionProperty)
+            .Select(value => PropertyString(value, "id"))
+            .FirstOrDefault(value => !string.IsNullOrWhiteSpace(value));
+
+    private static string? NestedString(
+        JsonElement element,
+        string parentProperty,
+        string propertyName) =>
+        element.TryGetProperty(parentProperty, out var parent)
+            ? PropertyString(parent, propertyName)
+            : null;
+
+    private static string? PropertyString(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+
+    private static long PropertyLong(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value) &&
+        value.TryGetInt64(out var result)
+            ? result
+            : 0;
+
+    private static int PropertyInt(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value) &&
+        value.TryGetInt32(out var result)
+            ? result
+            : 0;
 
     private static async Task<T> ReadPayloadAsync<T>(
         HttpResponseMessage response,
@@ -208,6 +539,30 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
     private sealed record Refund(
         [property: JsonPropertyName("id")] string? Id,
         [property: JsonPropertyName("status")] string? Status);
+
+    private sealed record SearchCatalogRequest(
+        [property: JsonPropertyName("object_types")] IReadOnlyList<string> ObjectTypes,
+        [property: JsonPropertyName("include_deleted_objects")] bool IncludeDeletedObjects,
+        [property: JsonPropertyName("include_related_objects")] bool IncludeRelatedObjects,
+        [property: JsonPropertyName("cursor")]
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        string? Cursor);
+
+    private sealed record SearchCatalogResponse(
+        [property: JsonPropertyName("objects")] IReadOnlyList<JsonElement>? Objects,
+        [property: JsonPropertyName("related_objects")] IReadOnlyList<JsonElement>? RelatedObjects,
+        [property: JsonPropertyName("cursor")] string? Cursor);
+
+    private sealed record BatchInventoryRequest(
+        [property: JsonPropertyName("catalog_object_ids")] IReadOnlyList<string> CatalogObjectIds,
+        [property: JsonPropertyName("location_ids")] IReadOnlyList<string> LocationIds,
+        [property: JsonPropertyName("cursor")]
+        [property: JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        string? Cursor);
+
+    private sealed record BatchInventoryResponse(
+        [property: JsonPropertyName("counts")] IReadOnlyList<JsonElement>? Counts,
+        [property: JsonPropertyName("cursor")] string? Cursor);
 }
 
 public sealed class SquareIntegrationException(

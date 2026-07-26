@@ -102,6 +102,7 @@ builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
+builder.Services.AddScoped<IStoreAdminService, StoreAdminService>();
 builder.Services.AddSingleton<IImageInspector, SkiaImageInspector>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));
@@ -126,6 +127,13 @@ builder.Services.AddHttpClient<ISquareClient, SquareClient>(client =>
 {
     client.BaseAddress = new Uri(squareSettings.BaseUrl);
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(squareSettings.RequestTimeoutSeconds, 5, 60));
+});
+builder.Services.AddHttpClient<ISquareCatalogImageImporter, SquareCatalogImageImporter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false
 });
 builder.Services.AddHostedService<CommerceOutboxWorker>();
 

@@ -184,3 +184,79 @@ export interface AdminActivityLog {
 export interface AdminInvitationDetails {
   firstName: string; lastName: string; email: string; role: "Admin" | "SuperAdmin"; expiresAtUtc: string;
 }
+
+export type StoreProductStatus = "Draft" | "Published" | "Archived";
+export type ProductMediaRole = "Gallery" | "MockupBase" | "LogoOverlay";
+export type ProductModifierType = "Choice" | "Color" | "ShortText" | "Number";
+export type InventoryAdjustmentReason = "Receipt" | "Correction" | "Damage" | "ReturnRestock";
+
+export interface AdminStoreDashboard {
+  draftProducts: number; publishedProducts: number; activeVariants: number;
+  lowStockVariants: number; soldOutVariants: number; totalOnHand: number;
+}
+export interface AdminProductCategory {
+  id: string; name: string; slug: string; displayOrder: number; isActive: boolean;
+  productCount: number; squareCatalogObjectId: string | null;
+}
+export interface AdminStoreProductSummary {
+  id: string; name: string; slug: string; categoryName: string | null; basePriceMinor: number;
+  currency: string; status: StoreProductStatus; isFeatured: boolean; displayOrder: number;
+  variantCount: number; totalOnHand: number; totalAvailable: number; lowStockVariantCount: number;
+  primaryImageUrl: string | null; squareCatalogObjectId: string | null;
+  createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminProductMedia {
+  id: string; mediaAssetId: string; publicUrl: string; title: string; altText: string;
+  role: ProductMediaRole; altTextOverride: string | null; displayOrder: number;
+}
+export interface AdminProductOptionValue {
+  id: string; name: string; slug: string; colorHex: string | null; swatchMediaAssetId: string | null;
+  displayOrder: number; isActive: boolean; squareCatalogObjectId: string | null;
+}
+export interface AdminProductOption {
+  id: string; name: string; isTracked: boolean; displayOrder: number; isActive: boolean;
+  squareCatalogObjectId: string | null; values: AdminProductOptionValue[];
+}
+export interface AdminProductVariant {
+  id: string; name: string; sku: string; priceOverrideMinor: number | null; onHandQuantity: number;
+  reservedQuantity: number; availableQuantity: number; lowStockThreshold: number; isActive: boolean;
+  squareCatalogObjectId: string | null; squareCatalogVersion: number | null; rowVersion: string;
+  optionValueIds: string[];
+}
+export interface AdminProductModifierValue {
+  id: string; name: string; priceAdjustmentMinor: number; colorHex: string | null;
+  overlayMediaAssetId: string | null; displayOrder: number; isActive: boolean;
+}
+export interface AdminProductModifierGroup {
+  id: string; name: string; type: ProductModifierType; isRequired: boolean;
+  minimumSelections: number; maximumSelections: number; displayOrder: number;
+  isActive: boolean; values: AdminProductModifierValue[];
+}
+export interface AdminProductVisualizerLayer {
+  id: string; mediaAssetId: string; productOptionValueId: string | null;
+  productModifierValueId: string | null; xPercent: number; yPercent: number;
+  widthPercent: number; heightPercent: number; zIndex: number; blendMode: string;
+}
+export interface AdminStoreProduct {
+  id: string; categoryId: string | null; name: string; slug: string; shortDescription: string | null;
+  description: string | null; basePriceMinor: number; currency: string; status: StoreProductStatus;
+  isFeatured: boolean; displayOrder: number; allowsSpecialRequests: boolean;
+  squareCatalogObjectId: string | null; squareCatalogVersion: number | null; importedAtUtc: string | null;
+  media: AdminProductMedia[]; options: AdminProductOption[]; variants: AdminProductVariant[];
+  modifierGroups: AdminProductModifierGroup[]; visualizerLayers: AdminProductVisualizerLayer[];
+  createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminInventoryVariant {
+  productId: string; productName: string; variantId: string; variantName: string; sku: string;
+  onHandQuantity: number; reservedQuantity: number; availableQuantity: number; lowStockThreshold: number;
+  isLowStock: boolean; isSoldOut: boolean; isActive: boolean; rowVersion: string; updatedAtUtc: string | null;
+}
+export interface SquareCatalogImportPreviewProduct {
+  squareCatalogObjectId: string; name: string; variantCount: number; imageCount: number; alreadyImported: boolean;
+}
+export interface SquareCatalogImportPreview {
+  isConfigured: boolean; productCount: number; newProductCount: number; products: SquareCatalogImportPreviewProduct[];
+}
+export interface SquareCatalogImportResult {
+  importRunId: string; productsDiscovered: number; productsCreated: number; productsSkipped: number; imagesImported: number;
+}

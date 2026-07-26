@@ -14,7 +14,11 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(value => value.Description).HasMaxLength(5000);
         builder.Property(value => value.Currency).HasMaxLength(3).IsRequired();
         builder.Property(value => value.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
         builder.HasIndex(value => value.Slug).IsUnique();
+        builder.HasIndex(value => value.SquareCatalogObjectId)
+            .IsUnique()
+            .HasFilter("[SquareCatalogObjectId] IS NOT NULL");
         builder.HasIndex(value => new { value.Status, value.DisplayOrder });
         builder.HasOne(value => value.Category)
             .WithMany(value => value.Products)
@@ -29,7 +33,11 @@ public sealed class ProductCategoryConfiguration : IEntityTypeConfiguration<Prod
     {
         builder.Property(value => value.Name).HasMaxLength(120).IsRequired();
         builder.Property(value => value.Slug).HasMaxLength(140).IsRequired();
+        builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
         builder.HasIndex(value => value.Slug).IsUnique();
+        builder.HasIndex(value => value.SquareCatalogObjectId)
+            .IsUnique()
+            .HasFilter("[SquareCatalogObjectId] IS NOT NULL");
     }
 }
 
@@ -52,6 +60,7 @@ public sealed class ProductOptionConfiguration : IEntityTypeConfiguration<Produc
     public void Configure(EntityTypeBuilder<ProductOption> builder)
     {
         builder.Property(value => value.Name).HasMaxLength(100).IsRequired();
+        builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
         builder.HasIndex(value => new { value.ProductId, value.Name }).IsUnique();
         builder.HasOne(value => value.Product).WithMany(value => value.Options)
             .HasForeignKey(value => value.ProductId).OnDelete(DeleteBehavior.Cascade);
@@ -65,6 +74,7 @@ public sealed class ProductOptionValueConfiguration : IEntityTypeConfiguration<P
         builder.Property(value => value.Name).HasMaxLength(100).IsRequired();
         builder.Property(value => value.Slug).HasMaxLength(120).IsRequired();
         builder.Property(value => value.ColorHex).HasMaxLength(9);
+        builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
         builder.HasIndex(value => new { value.ProductOptionId, value.Slug }).IsUnique();
         builder.HasOne(value => value.ProductOption).WithMany(value => value.Values)
             .HasForeignKey(value => value.ProductOptionId).OnDelete(DeleteBehavior.Cascade);
@@ -88,8 +98,12 @@ public sealed class ProductVariantConfiguration : IEntityTypeConfiguration<Produ
         });
         builder.Property(value => value.Name).HasMaxLength(240).IsRequired();
         builder.Property(value => value.Sku).HasMaxLength(100).IsRequired();
+        builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
         builder.Property(value => value.RowVersion).IsRowVersion();
         builder.HasIndex(value => value.Sku).IsUnique();
+        builder.HasIndex(value => value.SquareCatalogObjectId)
+            .IsUnique()
+            .HasFilter("[SquareCatalogObjectId] IS NOT NULL");
         builder.HasOne(value => value.Product).WithMany(value => value.Variants)
             .HasForeignKey(value => value.ProductId).OnDelete(DeleteBehavior.Cascade);
     }
@@ -207,6 +221,43 @@ public sealed class InventoryAdjustmentConfiguration : IEntityTypeConfiguration<
             .HasForeignKey(value => value.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(value => value.Order).WithMany()
             .HasForeignKey(value => value.OrderId).OnDelete(DeleteBehavior.SetNull);
+        builder.HasOne(value => value.ActorUser).WithMany()
+            .HasForeignKey(value => value.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class InventoryStocktakeConfiguration : IEntityTypeConfiguration<InventoryStocktake>
+{
+    public void Configure(EntityTypeBuilder<InventoryStocktake> builder)
+    {
+        builder.Property(value => value.Note).HasMaxLength(1000);
+        builder.HasIndex(value => value.CreatedAt);
+        builder.HasOne(value => value.ActorUser).WithMany()
+            .HasForeignKey(value => value.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasMany(value => value.Lines).WithOne(value => value.InventoryStocktake)
+            .HasForeignKey(value => value.InventoryStocktakeId).OnDelete(DeleteBehavior.Cascade);
+    }
+}
+
+public sealed class InventoryStocktakeLineConfiguration : IEntityTypeConfiguration<InventoryStocktakeLine>
+{
+    public void Configure(EntityTypeBuilder<InventoryStocktakeLine> builder)
+    {
+        builder.HasIndex(value => new { value.InventoryStocktakeId, value.ProductVariantId }).IsUnique();
+        builder.HasOne(value => value.ProductVariant).WithMany()
+            .HasForeignKey(value => value.ProductVariantId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(value => value.InventoryAdjustment).WithMany()
+            .HasForeignKey(value => value.InventoryAdjustmentId).OnDelete(DeleteBehavior.NoAction);
+    }
+}
+
+public sealed class SquareCatalogImportRunConfiguration : IEntityTypeConfiguration<SquareCatalogImportRun>
+{
+    public void Configure(EntityTypeBuilder<SquareCatalogImportRun> builder)
+    {
+        builder.Property(value => value.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Property(value => value.SafeFailureCode).HasMaxLength(100);
+        builder.HasIndex(value => value.CreatedAt);
         builder.HasOne(value => value.ActorUser).WithMany()
             .HasForeignKey(value => value.ActorUserId).OnDelete(DeleteBehavior.Restrict);
     }

@@ -28,6 +28,12 @@ public sealed class Product : EntityBase
 
     public bool AllowsSpecialRequests { get; set; }
 
+    public string? SquareCatalogObjectId { get; set; }
+
+    public long? SquareCatalogVersion { get; set; }
+
+    public DateTimeOffset? ImportedAtUtc { get; set; }
+
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 
     public ICollection<ProductMedia> Media { get; set; } = new List<ProductMedia>();

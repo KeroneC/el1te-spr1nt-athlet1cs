@@ -3,6 +3,7 @@ namespace El1teSpr1ntTrack.Application.Interfaces;
 public interface ISquareClient
 {
     Task<bool> CheckConnectionAsync(CancellationToken cancellationToken);
+    Task<SquareCatalogSnapshot> GetCatalogSnapshotAsync(CancellationToken cancellationToken);
     Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(
         SquarePaymentLinkCommand command,
         CancellationToken cancellationToken);
