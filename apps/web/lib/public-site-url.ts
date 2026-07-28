@@ -3,7 +3,7 @@ const webProtocols = new Set(["http:", "https:"]);
 export function publicSiteUrl(
   path: string,
   requestUrl: URL,
-  configuredSiteUrl = process.env.SITE_URL
+  configuredSiteUrl: string | undefined
 ): URL {
   let origin = requestUrl.origin;
 

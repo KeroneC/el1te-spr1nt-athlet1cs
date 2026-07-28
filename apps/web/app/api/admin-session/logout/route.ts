@@ -9,7 +9,8 @@ function clearSession(request: NextRequest) {
   const reason = request.nextUrl.searchParams.get("reason");
   const destination = publicSiteUrl(
     reason === "expired" ? "/admin/login?reason=expired" : "/admin/login",
-    request.nextUrl
+    request.nextUrl,
+    process.env.SITE_URL
   );
   const response = NextResponse.redirect(destination, { status: 303 });
   response.cookies.set(ADMIN_SESSION_COOKIE, "", {
