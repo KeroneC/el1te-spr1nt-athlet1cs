@@ -33,7 +33,7 @@ printf '%s\n' \
   '  count=$((count + 1))' \
   '  printf "%s" "$count" > "$count_file"' \
   '  if (( count <= MOCK_AZ_DEPLOY_FAILURES )); then' \
-  '    echo "ERROR: Publishing failed with status code '\''${MOCK_AZ_STATUS}'\''." >&2' \
+  '    if [[ -n "$MOCK_AZ_DEPLOY_ERROR" ]]; then echo "$MOCK_AZ_DEPLOY_ERROR" >&2; else echo "ERROR: Publishing failed with status code '\''${MOCK_AZ_STATUS}'\''." >&2; fi' \
   '    exit 1' \
   '  fi' \
   '  touch "$state_dir/published"' \
@@ -52,12 +52,14 @@ run_deployment()
   local status="$3"
   local list_failures="${4:-0}"
   local list_status="${5:-502}"
+  local deploy_error="${6:-}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
     MOCK_AZ_STATE_DIR="$state_dir" \
     MOCK_AZ_DEPLOY_FAILURES="$failures" \
     MOCK_AZ_STATUS="$status" \
+    MOCK_AZ_DEPLOY_ERROR="$deploy_error" \
     MOCK_AZ_LIST_FAILURES="$list_failures" \
     MOCK_AZ_LIST_STATUS="$list_status" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
@@ -72,6 +74,11 @@ grep -q "deployment status returned a transient gateway response" <<< "$status_r
 retry_state="$test_root/retry"
 run_deployment "$retry_state" 2 502
 [[ "$(<"$retry_state/deploy-count")" == "3" ]]
+
+scm_restart_state="$test_root/scm-restart"
+scm_restart_output=$(run_deployment "$scm_restart_state" 1 500 0 502 "Deployment has been stopped due to SCM container restart.")
+[[ "$(<"$scm_restart_state/deploy-count")" == "2" ]]
+grep -q "Azure publishing returned a transient response" <<< "$scm_restart_output"
 
 non_retry_state="$test_root/non-retry"
 set +e
