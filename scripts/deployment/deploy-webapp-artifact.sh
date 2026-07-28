@@ -18,9 +18,9 @@ if [[ ! "$publish_retry_base_seconds" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
-is_transient_gateway_response()
+is_transient_azure_deployment_response()
 {
-  grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout"
+  grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout|Deployment has been stopped due to SCM container restart"
 }
 
 publish_attempts=4
@@ -40,7 +40,7 @@ for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++))
     break
   fi
 
-  if ! is_transient_gateway_response <<< "$previous_id_output"; then
+  if ! is_transient_azure_deployment_response <<< "$previous_id_output"; then
     printf '%s\n' "$previous_id_output" >&2
     echo "Deployment status lookup failed with a non-retriable error for $app_name."
     exit "$previous_id_exit_code"
@@ -77,7 +77,7 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
     break
   fi
 
-  if ! is_transient_gateway_response <<< "$publish_output"; then
+  if ! is_transient_azure_deployment_response <<< "$publish_output"; then
     printf '%s\n' "$publish_output" >&2
     echo "Artifact publishing failed with a non-retriable error for $app_name."
     exit "$publish_exit_code"
@@ -90,7 +90,7 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
   fi
 
   retry_delay=$((publish_retry_base_seconds * (2 ** (publish_attempt - 1))))
-  echo "Azure publishing returned a transient gateway response for $app_name; retrying in ${retry_delay}s (attempt $((publish_attempt + 1))/$publish_attempts)."
+  echo "Azure publishing returned a transient response for $app_name; retrying in ${retry_delay}s (attempt $((publish_attempt + 1))/$publish_attempts)."
   sleep "$retry_delay"
 done
 

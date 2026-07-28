@@ -183,6 +183,13 @@ jobs:
         if: ${{ ! inputs.infrastructure_only }}
         run: release/efbundle --connection "$DATABASE_MIGRATION_CONNECTION_STRING"
 
+      - name: Let App Service management operations settle
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          echo "Waiting 60 seconds to avoid an SCM restart overlapping artifact deployment."
+          sleep 60
+
       - name: Deploy and verify API
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
