@@ -217,7 +217,19 @@ export function StoreProductWizard({
         <Heading title="Visualizer placement" text="Position approved transparent layers as percentages so previews remain deterministic on every screen size."/>
         <div className="mt-5 grid gap-4 lg:grid-cols-[minmax(240px,.65fr)_1.35fr]">
           <div><h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Available overlay media</h3><div className="mt-3 grid grid-cols-2 gap-3">{draft.media.filter(media => media.role === "LogoOverlay").map(media => <button key={media.id} type="button" disabled={draft.visualizerLayers.some(layer => layer.mediaAssetId === media.mediaAssetId)} onClick={() => addVisualizerLayer(media)} className="border border-slate-200 p-2 text-left disabled:opacity-40"><img src={media.publicUrl} alt="" className="aspect-square w-full bg-slate-100 object-contain"/><span className="mt-2 block truncate text-xs font-black">{media.title}</span><span className="text-xs text-track-red">Add layer</span></button>)}</div>{!draft.media.some(media => media.role === "LogoOverlay") && <p className="mt-3 border border-dashed p-4 text-sm text-slate-500">Assign an image the “Logo overlay” role in Media to position it here.</p>}</div>
-          <div><h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Placed layers</h3><div className="mt-3 space-y-3">{draft.visualizerLayers.map(layer => { const media = draft.media.find(value => value.mediaAssetId === layer.mediaAssetId); return <article key={layer.id} className="grid gap-3 border-l-4 border-track-field bg-slate-50 p-4 sm:grid-cols-5"><p className="font-black sm:col-span-5">{media?.title ?? "Visualizer layer"}</p><NumberField label="X %" value={layer.xPercent} onChange={xPercent => updateLayer(layer.id, { xPercent })}/><NumberField label="Y %" value={layer.yPercent} onChange={yPercent => updateLayer(layer.id, { yPercent })}/><NumberField label="Width %" value={layer.widthPercent} min={1} onChange={widthPercent => updateLayer(layer.id, { widthPercent })}/><NumberField label="Height %" value={layer.heightPercent} min={1} onChange={heightPercent => updateLayer(layer.id, { heightPercent })}/><NumberField label="Layer order" value={layer.zIndex} min={0} max={1000} onChange={zIndex => updateLayer(layer.id, { zIndex })}/><button type="button" onClick={() => patch({ visualizerLayers: draft.visualizerLayers.filter(value => value.id !== layer.id) })} className="inline-flex items-center gap-2 text-sm font-bold text-red-700 sm:col-span-5"><Trash2 size={16}/>Remove layer</button></article>; })}</div>{!draft.visualizerLayers.length && <p className="mt-3 border border-dashed p-5 text-sm text-slate-500">No interactive overlay placement is configured yet.</p>}</div>
+          <div>
+            <h3 className="text-sm font-black uppercase tracking-wide text-slate-500">Placed layers</h3>
+            <div className="mt-3 space-y-3">{draft.visualizerLayers.map(layer => <VisualizerLayerEditor
+              key={layer.id}
+              layer={layer}
+              mediaTitle={draft.media.find(value => value.mediaAssetId === layer.mediaAssetId)?.title}
+              options={draft.options}
+              modifierGroups={draft.modifierGroups}
+              onChange={value => updateLayer(layer.id, value)}
+              onRemove={() => patch({ visualizerLayers: draft.visualizerLayers.filter(value => value.id !== layer.id) })}
+            />)}</div>
+            {!draft.visualizerLayers.length && <p className="mt-3 border border-dashed p-5 text-sm text-slate-500">No interactive overlay placement is configured yet.</p>}
+          </div>
         </div>
       </section>
     </div>}
@@ -258,7 +270,8 @@ function toRequest(draft: StoreProductDraft) {
     media: draft.media.map(({ id, mediaAssetId, role, altTextOverride, displayOrder }) => ({ id, mediaAssetId, role, altTextOverride, displayOrder })),
     options: draft.options.map(option => ({ id: option.id, name: option.name, isTracked: option.isTracked, displayOrder: option.displayOrder, isActive: option.isActive, values: option.values.map(value => ({ id: value.id, name: value.name, colorHex: value.colorHex, swatchMediaAssetId: value.swatchMediaAssetId, displayOrder: value.displayOrder, isActive: value.isActive })) })),
     variants: draft.variants.map(({ id, name, sku, priceOverrideMinor, lowStockThreshold, isActive, rowVersion, optionValueIds }) => ({ id, name, sku, priceOverrideMinor, lowStockThreshold, isActive, rowVersion: rowVersion || null, optionValueIds })),
-    modifierGroups: draft.modifierGroups.map(group => ({ id: group.id, name: group.name, type: group.type, isRequired: group.isRequired, minimumSelections: group.minimumSelections, maximumSelections: group.maximumSelections, displayOrder: group.displayOrder, isActive: group.isActive, values: group.values.map(value => ({ id: value.id, name: value.name, priceAdjustmentMinor: value.priceAdjustmentMinor, colorHex: value.colorHex, overlayMediaAssetId: value.overlayMediaAssetId, displayOrder: value.displayOrder, isActive: value.isActive })) }))
+    modifierGroups: draft.modifierGroups.map(group => ({ id: group.id, name: group.name, type: group.type, isRequired: group.isRequired, minimumSelections: group.minimumSelections, maximumSelections: group.maximumSelections, displayOrder: group.displayOrder, isActive: group.isActive, values: group.values.map(value => ({ id: value.id, name: value.name, priceAdjustmentMinor: value.priceAdjustmentMinor, colorHex: value.colorHex, overlayMediaAssetId: value.overlayMediaAssetId, displayOrder: value.displayOrder, isActive: value.isActive })) })),
+    visualizerLayers: draft.visualizerLayers.map(({ id, mediaAssetId, productOptionValueId, productModifierValueId, xPercent, yPercent, widthPercent, heightPercent, zIndex, blendMode }) => ({ id, mediaAssetId, productOptionValueId, productModifierValueId, xPercent, yPercent, widthPercent, heightPercent, zIndex, blendMode }))
   };
 }
 export function validateStoreProductDraft(draft: StoreProductDraft) {
@@ -276,6 +289,66 @@ function Field({ label, value, onChange, required, className = "" }: { label: st
 function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) { return <label className="flex min-h-11 items-center gap-3 text-sm font-bold"><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} className="h-5 w-5 accent-track-red"/>{label}</label>; }
 function Summary({ label, value }: { label: string; value: string }) { return <div><dt className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-1 text-lg font-black">{value}</dd></div>; }
 function NumberField({ label, value, onChange, min = 0, max = 100 }: { label: string; value: number; onChange: (value:number)=>void; min?:number; max?:number }) { return <label className="text-xs font-black uppercase text-slate-500">{label}<input type="number" min={min} max={max} value={value} onChange={event => onChange(Math.min(max, Math.max(min, Number(event.target.value))))} className={`${input} mt-1`}/></label>; }
+function VisualizerLayerEditor({
+  layer,
+  mediaTitle,
+  options,
+  modifierGroups,
+  onChange,
+  onRemove
+}: {
+  layer: AdminProductVisualizerLayer;
+  mediaTitle?: string;
+  options: AdminProductOption[];
+  modifierGroups: AdminProductModifierGroup[];
+  onChange: (value: Partial<AdminProductVisualizerLayer>) => void;
+  onRemove: () => void;
+}) {
+  const optionValues = options
+    .filter(option => option.isActive)
+    .flatMap(option => option.values.filter(value => value.isActive).map(value => ({
+      id: value.id,
+      label: `${option.name}: ${value.name}`
+    })));
+  const modifierValues = modifierGroups
+    .filter(group => group.isActive)
+    .flatMap(group => group.values.filter(value => value.isActive).map(value => ({
+      id: value.id,
+      label: `${group.name}: ${value.name}`
+    })));
+
+  return <article className="grid gap-3 border-l-4 border-track-field bg-slate-50 p-4 sm:grid-cols-5">
+    <p className="font-black sm:col-span-5">{mediaTitle ?? "Visualizer layer"}</p>
+    <label className="text-xs font-black uppercase text-slate-500 sm:col-span-2">
+      Show for tracked option
+      <select
+        value={layer.productOptionValueId ?? ""}
+        onChange={event => onChange({ productOptionValueId: event.target.value || null })}
+        className={`${input} mt-1 normal-case`}
+      >
+        <option value="">Always show</option>
+        {optionValues.map(value => <option key={value.id} value={value.id}>{value.label}</option>)}
+      </select>
+    </label>
+    <label className="text-xs font-black uppercase text-slate-500 sm:col-span-3">
+      Show for customization
+      <select
+        value={layer.productModifierValueId ?? ""}
+        onChange={event => onChange({ productModifierValueId: event.target.value || null })}
+        className={`${input} mt-1 normal-case`}
+      >
+        <option value="">Always show</option>
+        {modifierValues.map(value => <option key={value.id} value={value.id}>{value.label}</option>)}
+      </select>
+    </label>
+    <NumberField label="X %" value={layer.xPercent} onChange={xPercent => onChange({ xPercent })}/>
+    <NumberField label="Y %" value={layer.yPercent} onChange={yPercent => onChange({ yPercent })}/>
+    <NumberField label="Width %" value={layer.widthPercent} min={1} onChange={widthPercent => onChange({ widthPercent })}/>
+    <NumberField label="Height %" value={layer.heightPercent} min={1} onChange={heightPercent => onChange({ heightPercent })}/>
+    <NumberField label="Layer order" value={layer.zIndex} min={0} max={1000} onChange={zIndex => onChange({ zIndex })}/>
+    <button type="button" onClick={onRemove} className="inline-flex items-center gap-2 text-sm font-bold text-red-700 sm:col-span-5"><Trash2 size={16}/>Remove layer</button>
+  </article>;
+}
 const input = "mt-2 min-h-11 w-full border border-slate-300 bg-white px-3 font-normal outline-none focus:border-track-red focus:ring-2 focus:ring-track-red/20";
 const primary = "inline-flex min-h-11 items-center justify-center gap-2 bg-track-red px-4 text-sm font-black text-white hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50";
 const secondary = "inline-flex min-h-11 items-center justify-center gap-2 border border-slate-300 bg-white px-4 text-sm font-black hover:border-track-red hover:text-track-red";

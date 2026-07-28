@@ -136,6 +136,123 @@ export interface ValidationProblem {
   errors?: Record<string, string[]>;
   referenceId?: string;
 }
+
+export type PublicStockStatus = "InStock" | "LowStock" | "SoldOut";
+export type ProductModifierType = "Choice" | "Color" | "ShortText" | "Number";
+export type ProductMediaRole = "Gallery" | "MockupBase" | "LogoOverlay";
+
+export interface StoreCategory {
+  name: string;
+  slug: string;
+  productCount: number;
+}
+
+export interface StoreProductSummary {
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  categoryName: string | null;
+  categorySlug: string | null;
+  minimumPriceMinor: number;
+  maximumPriceMinor: number;
+  currency: string;
+  isFeatured: boolean;
+  primaryImageUrl: string | null;
+  primaryImageAltText: string | null;
+  availability: PublicStockStatus;
+}
+
+export interface StoreCatalog {
+  items: StoreProductSummary[];
+  categories: StoreCategory[];
+  page: number;
+  pageSize: number;
+  totalCount: number;
+  totalPages: number;
+}
+
+export interface StoreProductMedia {
+  mediaAssetId: string;
+  publicUrl: string;
+  altText: string;
+  role: ProductMediaRole;
+  displayOrder: number;
+}
+
+export interface StoreProductOptionValue {
+  id: string;
+  name: string;
+  slug: string;
+  colorHex: string | null;
+  swatchImageUrl: string | null;
+  displayOrder: number;
+}
+
+export interface StoreProductOption {
+  id: string;
+  name: string;
+  displayOrder: number;
+  values: StoreProductOptionValue[];
+}
+
+export interface StoreProductVariant {
+  id: string;
+  name: string;
+  priceMinor: number;
+  availability: PublicStockStatus;
+  optionValueIds: string[];
+}
+
+export interface StoreProductModifierValue {
+  id: string;
+  name: string;
+  priceAdjustmentMinor: number;
+  colorHex: string | null;
+  overlayImageUrl: string | null;
+  displayOrder: number;
+}
+
+export interface StoreProductModifierGroup {
+  id: string;
+  name: string;
+  type: ProductModifierType;
+  isRequired: boolean;
+  minimumSelections: number;
+  maximumSelections: number;
+  displayOrder: number;
+  values: StoreProductModifierValue[];
+}
+
+export interface StoreProductVisualizerLayer {
+  mediaAssetId: string;
+  publicUrl: string;
+  productOptionValueId: string | null;
+  productModifierValueId: string | null;
+  xPercent: number;
+  yPercent: number;
+  widthPercent: number;
+  heightPercent: number;
+  zIndex: number;
+  blendMode: "normal" | "multiply" | "screen" | "overlay";
+}
+
+export interface StoreProduct {
+  name: string;
+  slug: string;
+  shortDescription: string | null;
+  description: string | null;
+  categoryName: string | null;
+  basePriceMinor: number;
+  currency: string;
+  allowsSpecialRequests: boolean;
+  availability: PublicStockStatus;
+  media: StoreProductMedia[];
+  options: StoreProductOption[];
+  variants: StoreProductVariant[];
+  modifierGroups: StoreProductModifierGroup[];
+  visualizerLayers: StoreProductVisualizerLayer[];
+}
+
 export interface GalleryAlbumListItem {
   title: string; slug: string; description: string; coverImageUrl: string | null;
   coverAltText: string | null; eventDateUtc: string | null; imageCount: number;

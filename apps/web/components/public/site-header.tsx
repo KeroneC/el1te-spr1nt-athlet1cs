@@ -1,13 +1,13 @@
 "use client";
 
-import { ChevronDown, ClipboardCheck, ExternalLink, Menu, X } from "lucide-react";
+import { ChevronDown, ClipboardCheck, ExternalLink, Menu, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BRAND, HEADER_NAV_ITEMS } from "@/lib/public/site";
 import type { SiteSettings } from "@/lib/public/types";
 
-export function SiteHeader({ settings }: { settings: SiteSettings }) {
+export function SiteHeader({ settings, storeEnabled = false }: { settings: SiteSettings; storeEnabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const pathname = usePathname();
@@ -100,7 +100,10 @@ export function SiteHeader({ settings }: { settings: SiteSettings }) {
             ) : (
               <li key={item.href}><Link className={isCurrentRoute(item.href) ? "is-active" : undefined} href={item.href} onClick={closeNavigation}><span>{item.label}</span></Link></li>
             ))}
-            <li><a className="nav-shop-link" href={BRAND.shopUrl} target="_blank" rel="noreferrer noopener" onClick={() => setOpen(false)}><span>Shop</span><ExternalLink size={14} aria-hidden="true" /></a></li>
+            <li>{storeEnabled
+              ? <Link className={isCurrentRoute("/shop") ? "nav-shop-link is-active" : "nav-shop-link"} href="/shop" onClick={closeNavigation}><span>Shop</span><ShoppingBag size={14} aria-hidden="true" /></Link>
+              : <a className="nav-shop-link" href={BRAND.shopUrl} target="_blank" rel="noreferrer noopener" onClick={() => setOpen(false)}><span>Shop</span><ExternalLink size={14} aria-hidden="true" /></a>}
+            </li>
           </ul>
           <Link className="button button-primary nav-cta" href="/registration" onClick={closeNavigation}>
             <ClipboardCheck size={16} aria-hidden="true" />Registration

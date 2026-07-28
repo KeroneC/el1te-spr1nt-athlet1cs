@@ -40,6 +40,7 @@ export default defineConfig({
         SeedAdmin__LastName: "Admin",
         AdminInvitations__SiteUrl: webUrl,
         AdminInvitations__ExpiresHours: "72",
+        Store__Enabled: "true",
         MediaStorage__LocalRoot: "../../../../artifacts/e2e/uploads",
         MediaStorage__PublicBaseUrl: apiUrl,
       },
