@@ -47,6 +47,13 @@ public enum ProductMediaRole
     LogoOverlay = 2
 }
 
+public enum PublicStockStatus
+{
+    InStock = 0,
+    LowStock = 1,
+    SoldOut = 2
+}
+
 public enum CommerceRefundStatus
 {
     Pending = 0,

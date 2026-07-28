@@ -17,7 +17,14 @@ Liveness is available at `/health`; database readiness is available at `/health/
 - Commerce integration health: `GET /health/commerce`
 - Square webhook receiver: `POST /api/webhooks/square`
 
-The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Public catalog, cart, checkout, and tracking endpoints remain deferred.
+The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Checkout and tracking endpoints remain deferred.
+
+## Public Store
+
+- `GET /api/public/store/products`
+- `GET /api/public/store/products/{slug}`
+
+Both routes return `404 Not Found` while `Store:Enabled` is false. The list accepts `search`, `category`, `availability`, `page`, and `pageSize`. Public DTOs expose only published products, active options/variants/media, minor-unit prices, and `InStock`, `LowStock`, or `SoldOut`; exact quantities and SKUs remain private. Cart state is currently browser-local and non-personal, so there is no cart API in this phase.
 
 ## Admin Store Catalog and Inventory
 
@@ -40,7 +47,7 @@ The following one-time import routes require the `SuperAdmin` policy:
 - `GET /api/admin/store/square-import/preview`
 - `POST /api/admin/store/square-import`
 
-The import creates unpublished local drafts, retains Square source IDs for idempotency, copies trusted Square-hosted images into El1te Media, and never imports customers, payments, or old orders. Exact inventory is private Admin data. Public store routes remain absent and `Store:Enabled=false`.
+The import creates unpublished local drafts, retains Square source IDs for idempotency, copies trusted Square-hosted images into El1te Media, and never imports customers, payments, or old orders. Exact inventory is private Admin data. Public store routes are feature-gated and `Store:Enabled=false` remains required until cutover.
 
 ## Auth
 

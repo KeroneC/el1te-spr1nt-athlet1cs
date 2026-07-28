@@ -8,7 +8,9 @@ import type {
   Faq,
   PagedResult,
   SiteSettings,
-  Sponsor
+  Sponsor,
+  StoreCatalog,
+  StoreProduct
 } from "./types";
 import type { GalleryAlbum, GalleryAlbumListItem } from "./types";
 import { BRAND } from "./site";
@@ -27,11 +29,11 @@ export class PublicApiError extends Error {
   }
 }
 
-export async function publicApiFetch<T>(path: string): Promise<T> {
+export async function publicApiFetch<T>(path: string, revalidateSeconds = PUBLIC_REVALIDATE_SECONDS): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${apiBaseUrl}/api/public${path}`, {
-      next: { revalidate: PUBLIC_REVALIDATE_SECONDS }
+      next: { revalidate: revalidateSeconds }
     });
   } catch {
     const referenceId = createSupportReference();
@@ -80,6 +82,20 @@ export const getGalleryAlbums = (query = "") =>
   publicApiFetch<PagedResult<GalleryAlbumListItem>>(`/gallery-albums${query ? `?${query}` : ""}`);
 export const getGalleryAlbum = (slug: string) =>
   publicApiFetch<GalleryAlbum>(`/gallery-albums/${encodeURIComponent(slug)}`);
+export const getStoreProducts = (query = "") =>
+  publicApiFetch<StoreCatalog>(`/store/products${query ? `?${query}` : ""}`, 15);
+export const getStoreProduct = (slug: string) =>
+  publicApiFetch<StoreProduct>(`/store/products/${encodeURIComponent(slug)}`, 15);
+export const isStoreEnabled = async () => {
+  try {
+    const response = await fetch(`${apiBaseUrl}/api/public/store/products?page=1&pageSize=1`, {
+      next: { revalidate: 15 }
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
 
 export const fallbackSettings: SiteSettings = {
   clubName: BRAND.name,

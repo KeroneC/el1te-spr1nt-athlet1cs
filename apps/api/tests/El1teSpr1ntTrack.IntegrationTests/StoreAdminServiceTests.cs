@@ -141,6 +141,41 @@ public sealed class StoreAdminServiceTests
         Assert.Single(await db.InventoryAdjustments.ToListAsync());
     }
 
+    [Fact]
+    public async Task CreateProduct_RejectsVisualizerConditionsOutsideTheProductConfiguration()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var optionId = Guid.NewGuid();
+        var valueId = Guid.NewGuid();
+        var request = ProductRequest(optionId, valueId);
+        request = new StoreProductWriteDto
+        {
+            Name = request.Name,
+            BasePriceMinor = request.BasePriceMinor,
+            Status = request.Status,
+            Options = request.Options,
+            Variants = request.Variants,
+            VisualizerLayers = [new(
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                Guid.NewGuid(),
+                null,
+                25,
+                25,
+                50,
+                50,
+                1,
+                "normal")]
+        };
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() =>
+            Service(db).CreateProductAsync(request, actor.Id, CancellationToken.None));
+
+        Assert.Contains("VisualizerLayers", exception.Errors);
+        Assert.Empty(await db.Products.ToListAsync());
+    }
+
     private static StoreProductWriteDto ProductRequest(Guid optionId, Guid valueId) => new()
     {
         Name = "Team hoodie",

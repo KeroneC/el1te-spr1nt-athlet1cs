@@ -1,6 +1,6 @@
 # El1te Spr1nt Athlet1cs Documentation
 
-This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js 15 public CMS website, a protected administration workspace, local and Azure Blob media providers, a public gallery, a polished public website, a manually promoted Azure demo, and disabled-by-default Square foundation plus Admin catalog/inventory operations. Public shop, checkout, fulfillment UI, online registration, private documents, parent and athlete portals, automatic production promotion, and mobile clients are not implemented.
+This is the learning and operating reference for the El1te Spr1nt Athlet1cs platform. The repository currently contains a .NET 10 CMS and authentication API, a Next.js public CMS website, a protected administration workspace, local and Azure Blob media providers, a public gallery, a manually promoted Azure demo, and a disabled-by-default commerce foundation with Admin catalog/inventory operations plus a feature-gated public storefront/configurator/cart. Square checkout, order/fulfillment operations, online registration, private documents, parent and athlete portals, automatic production promotion, and mobile clients are not implemented.
 
 ## Suggested Reading Order
 
@@ -91,6 +91,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Observability and support references](guides/observability-support.md)
 - [Store and Square foundation](guides/store-square-foundation.md)
 - [Store catalog and inventory administration](guides/store-catalog-inventory.md)
+- [Public storefront and configurator](guides/store-public-configurator.md)
 - [AI project handoff](guides/ai-project-handoff.md)
 
 The older phase-level files at the root of `docs` are retained as short compatibility links. The documents above are the maintained references.

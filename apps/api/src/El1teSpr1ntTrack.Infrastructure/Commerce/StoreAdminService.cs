@@ -764,10 +764,17 @@ public sealed class StoreAdminService(
                 string.IsNullOrWhiteSpace(value.Name) || value.MinimumSelections < 0 ||
                 value.MaximumSelections < value.MinimumSelections))
             errors["ModifierGroups"] = ["Modifier selection rules are invalid."];
+        var allowedModifierValueIds = request.ModifierGroups
+            .SelectMany(value => value.Values)
+            .Select(value => value.Id)
+            .ToHashSet();
         if (request.VisualizerLayers.Any(value =>
                 value.XPercent is < 0 or > 100 || value.YPercent is < 0 or > 100 ||
-                value.WidthPercent is <= 0 or > 100 || value.HeightPercent is <= 0 or > 100))
-            errors["VisualizerLayers"] = ["Visualizer placement values must fit within the 0–100 percent canvas."];
+                value.WidthPercent is <= 0 or > 100 || value.HeightPercent is <= 0 or > 100 ||
+                value.ProductOptionValueId.HasValue && !allowedValueIds.Contains(value.ProductOptionValueId.Value) ||
+                value.ProductModifierValueId.HasValue && !allowedModifierValueIds.Contains(value.ProductModifierValueId.Value)) ||
+            request.VisualizerLayers.Select(value => value.Id).Distinct().Count() != request.VisualizerLayers.Count)
+            errors["VisualizerLayers"] = ["Visualizer layers need unique identifiers, valid conditions, and placement values within the 0–100 percent canvas."];
         foreach (var sku in request.Variants.Select(value => value.Sku.Trim()).Where(value => value.Length > 0))
             if (await dbContext.ProductVariants.AnyAsync(value => value.Sku == sku && value.ProductId != productId, token))
                 errors["Variants"] = [$"SKU '{sku}' is already in use."];
