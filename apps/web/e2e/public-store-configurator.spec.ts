@@ -87,7 +87,7 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     });
     expect(receipt.status()).toBe(201);
 
-    await page.goto("/shop");
+    await page.goto(`/shop?search=${encodeURIComponent(productName)}`);
     await expect(page.getByRole("heading", { level: 1, name: "Wear the work." })).toBeVisible();
     await expect(page.getByRole("heading", { name: productName })).toBeVisible();
     await page.getByRole("link", { name: new RegExp(productName) }).click();
@@ -106,12 +106,13 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     await page.getByRole("link", { name: "View cart" }).last().click();
 
     await expect(page.getByRole("heading", { name: "1 configured item" })).toBeVisible();
-    await expect(page.getByRole("heading", { name: productName })).toBeVisible();
-    await expect(page.getByText("Size", { exact: true })).toBeVisible();
-    await expect(page.getByText("Medium", { exact: true })).toBeVisible();
-    await expect(page.getByText("Logo treatment", { exact: true })).toBeVisible();
-    await expect(page.getByText("Track red logo", { exact: true })).toBeVisible();
-    await expect(page.getByText("Low stock — checkout soon.")).toBeVisible();
+    const cartLine = page.locator("article.store-cart-line").filter({ hasText: productName });
+    await expect(cartLine.getByRole("heading", { name: productName })).toBeVisible();
+    await expect(cartLine.locator("dt").filter({ hasText: "Size" })).toBeVisible();
+    await expect(cartLine.locator("dd").filter({ hasText: "Medium" })).toHaveCount(2);
+    await expect(cartLine.locator("dt").filter({ hasText: "Logo treatment" })).toBeVisible();
+    await expect(cartLine.locator("dd").filter({ hasText: "Track red logo" })).toBeVisible();
+    await expect(cartLine.getByText("Low stock — checkout soon.")).toBeVisible();
     await expect(page.getByRole("button", { name: "Secure Square checkout" })).toBeDisabled();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
