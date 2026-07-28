@@ -10,12 +10,6 @@ if [[ -z "$resource_group" || -z "$app_name" || -z "$artifact_path" ]]; then
   exit 2
 fi
 
-previous_id=$(az webapp log deployment list \
-  --resource-group "$resource_group" \
-  --name "$app_name" \
-  --query '[?active].id | [0]' \
-  --output tsv)
-
 # Linux startup tracking can retain a stale container timeout even after the new
 # worker is healthy. Track the immutable Kudu deployment, then restart and probe.
 publish_retry_base_seconds="${DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS:-10}"
@@ -24,7 +18,45 @@ if [[ ! "$publish_retry_base_seconds" =~ ^[0-9]+$ ]]; then
   exit 2
 fi
 
+is_transient_gateway_response()
+{
+  grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout"
+}
+
 publish_attempts=4
+previous_id=""
+for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++)); do
+  set +e
+  previous_id_output=$(az webapp log deployment list \
+    --resource-group "$resource_group" \
+    --name "$app_name" \
+    --query '[?active].id | [0]' \
+    --output tsv 2>&1)
+  previous_id_exit_code=$?
+  set -e
+
+  if [[ "$previous_id_exit_code" -eq 0 ]]; then
+    previous_id="$previous_id_output"
+    break
+  fi
+
+  if ! is_transient_gateway_response <<< "$previous_id_output"; then
+    printf '%s\n' "$previous_id_output" >&2
+    echo "Deployment status lookup failed with a non-retriable error for $app_name."
+    exit "$previous_id_exit_code"
+  fi
+
+  if [[ "$status_attempt" -eq "$publish_attempts" ]]; then
+    printf '%s\n' "$previous_id_output" >&2
+    echo "Deployment status lookup exhausted $publish_attempts attempts for $app_name."
+    exit "$previous_id_exit_code"
+  fi
+
+  retry_delay=$((publish_retry_base_seconds * (2 ** (status_attempt - 1))))
+  echo "Azure deployment status returned a transient gateway response for $app_name; retrying in ${retry_delay}s (attempt $((status_attempt + 1))/$publish_attempts)."
+  sleep "$retry_delay"
+done
+
 publish_succeeded=false
 for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt++)); do
   set +e
@@ -45,7 +77,7 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
     break
   fi
 
-  if ! grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout" <<< "$publish_output"; then
+  if ! is_transient_gateway_response <<< "$publish_output"; then
     printf '%s\n' "$publish_output" >&2
     echo "Artifact publishing failed with a non-retriable error for $app_name."
     exit "$publish_exit_code"

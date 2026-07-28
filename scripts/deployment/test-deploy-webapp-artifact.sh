@@ -14,6 +14,15 @@ printf '%s\n' \
   'state_dir="${MOCK_AZ_STATE_DIR:?}"' \
   'command_line="$*"' \
   'if [[ "$command_line" == "webapp log deployment list "* ]]; then' \
+  '  count_file="$state_dir/list-count"' \
+  '  count=0' \
+  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
+  '  count=$((count + 1))' \
+  '  printf "%s" "$count" > "$count_file"' \
+  '  if (( count <= MOCK_AZ_LIST_FAILURES )); then' \
+  '    echo "ERROR: Status lookup failed with status code '\''${MOCK_AZ_LIST_STATUS}'\''." >&2' \
+  '    exit 1' \
+  '  fi' \
   '  if [[ -f "$state_dir/published" ]]; then printf "new-deployment\t4\n"; else echo "old-deployment"; fi' \
   '  exit 0' \
   'fi' \
@@ -41,15 +50,24 @@ run_deployment()
   local state_dir="$1"
   local failures="$2"
   local status="$3"
+  local list_failures="${4:-0}"
+  local list_status="${5:-502}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
     MOCK_AZ_STATE_DIR="$state_dir" \
     MOCK_AZ_DEPLOY_FAILURES="$failures" \
     MOCK_AZ_STATUS="$status" \
+    MOCK_AZ_LIST_FAILURES="$list_failures" \
+    MOCK_AZ_LIST_STATUS="$list_status" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
     bash "$script_dir/deploy-webapp-artifact.sh" test-resource-group test-app test-artifact.zip
 }
+
+status_retry_state="$test_root/status-retry"
+status_retry_output=$(run_deployment "$status_retry_state" 0 502 2 504)
+[[ "$(<"$status_retry_state/list-count")" == "4" ]]
+grep -q "deployment status returned a transient gateway response" <<< "$status_retry_output"
 
 retry_state="$test_root/retry"
 run_deployment "$retry_state" 2 502
