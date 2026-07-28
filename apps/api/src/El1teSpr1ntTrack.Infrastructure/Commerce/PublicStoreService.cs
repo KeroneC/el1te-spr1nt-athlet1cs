@@ -55,14 +55,14 @@ public sealed class PublicStoreService(El1teDbContext db) : IPublicStoreService
 
         var categories = await db.ProductCategories
             .AsNoTracking()
-            .Where(value => value.IsActive)
+            .Where(value => value.IsActive &&
+                value.Products.Any(product => product.Status == StoreProductStatus.Published))
             .OrderBy(value => value.DisplayOrder)
             .ThenBy(value => value.Name)
             .Select(value => new PublicStoreCategoryDto(
                 value.Name,
                 value.Slug,
                 value.Products.Count(product => product.Status == StoreProductStatus.Published)))
-            .Where(value => value.ProductCount > 0)
             .ToListAsync(cancellationToken);
 
         var totalCount = summaries.Count;

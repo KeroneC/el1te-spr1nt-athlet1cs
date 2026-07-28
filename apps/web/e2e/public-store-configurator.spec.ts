@@ -4,7 +4,6 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const productName = `E2E team crewneck ${suffix}`;
   let productId: string | undefined;
-  let mediaId: string | undefined;
 
   try {
     await page.goto("/admin/login");
@@ -22,7 +21,7 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     await page.getByRole("button", { name: "Upload queue" }).click();
     const uploaded = await uploadResponse;
     expect(uploaded.status()).toBe(201);
-    mediaId = (await uploaded.json() as { id: string }).id;
+    const mediaId = (await uploaded.json() as { id: string }).id;
 
     const optionId = crypto.randomUUID();
     const valueId = crypto.randomUUID();
@@ -128,6 +127,5 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   } finally {
     if (productId) await page.request.delete(`/api/admin/store/products/${productId}`);
-    if (mediaId) await page.request.delete(`/api/admin/media/${mediaId}`);
   }
 });
