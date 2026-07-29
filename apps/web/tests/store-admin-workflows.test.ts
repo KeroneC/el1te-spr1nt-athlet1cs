@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateInventoryOperation } from "../components/admin/store-inventory-workspace";
-import { validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
+import { parseMoneyInput, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
 import type { AdminInventoryVariant } from "../lib/admin/types";
 
 const draft = (overrides: Partial<StoreProductDraft> = {}): StoreProductDraft => ({
@@ -17,6 +17,20 @@ const inventory: AdminInventoryVariant = {
 };
 
 describe("store product wizard", () => {
+  it("accepts typed dollar amounts without relying on number-field steppers", () => {
+    expect(parseMoneyInput("25")).toBe(2500);
+    expect(parseMoneyInput("25.5")).toBe(2550);
+    expect(parseMoneyInput("25.50")).toBe(2550);
+    expect(parseMoneyInput("0.99")).toBe(99);
+  });
+
+  it("rejects invalid prices and more than two decimal places", () => {
+    expect(parseMoneyInput("")).toBeNull();
+    expect(parseMoneyInput("-1")).toBeNull();
+    expect(parseMoneyInput("12.345")).toBeNull();
+    expect(parseMoneyInput("not a price")).toBeNull();
+  });
+
   it("allows an incomplete draft to be saved for later", () => {
     expect(validateStoreProductDraft(draft())).toEqual([]);
   });
