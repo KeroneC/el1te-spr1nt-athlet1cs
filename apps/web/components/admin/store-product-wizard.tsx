@@ -4,7 +4,7 @@
 import { ArrowLeft, ArrowRight, Check, ImagePlus, LoaderCircle, Plus, Save, Trash2, WandSparkles } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MediaOptionBrowser } from "./media-option-browser";
 import { FormNotice } from "./form-controls";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
@@ -161,7 +161,7 @@ export function StoreProductWizard({
       <Heading title="Product basics" text="Name, price, publishing, and where the item appears."/>
       <Field label="Product name" value={draft.name} onChange={name => patch({ name })} required/>
       <label className="text-sm font-bold">Category<select value={draft.categoryId ?? ""} onChange={event => patch({ categoryId: event.target.value || null })} className={input}><option value="">Uncategorized</option>{categories.filter(value => value.isActive).map(value => <option key={value.id} value={value.id}>{value.name}</option>)}</select></label>
-      <label className="text-sm font-bold">Base price (USD)<input type="number" min="0" step="0.01" value={(draft.basePriceMinor / 100).toFixed(2)} onChange={event => patch({ basePriceMinor: Math.max(0, Math.round(Number(event.target.value) * 100)) })} className={input}/></label>
+      <MoneyInput label="Base price (USD)" valueMinor={draft.basePriceMinor} onChange={basePriceMinor => patch({ basePriceMinor: basePriceMinor ?? 0 })}/>
       <label className="text-sm font-bold">Status<select value={draft.status} onChange={event => patch({ status: event.target.value as StoreProductStatus })} className={input}><option>Draft</option><option>Published</option><option>Archived</option></select></label>
       <Field label="Short description" value={draft.shortDescription} onChange={shortDescription => patch({ shortDescription })} className="sm:col-span-2"/>
       <label className="text-sm font-bold sm:col-span-2">Full description<textarea rows={6} value={draft.description} onChange={event => patch({ description: event.target.value })} className={`${input} py-3`}/></label>
@@ -199,7 +199,7 @@ export function StoreProductWizard({
       </div>
       <div className="overflow-x-auto border border-slate-200 bg-white p-5 sm:p-6"><Heading title="Variant matrix" text="SKU and threshold changes apply here. Stock quantity changes belong in Inventory."/>
         <table className="mt-5 w-full min-w-[760px] text-left"><thead className="border-b text-xs uppercase text-slate-500"><tr><th className="p-3">Variant</th><th className="p-3">SKU</th><th className="p-3">Price override</th><th className="p-3">Low stock at</th><th className="p-3">Available</th><th className="p-3">Active</th></tr></thead>
-          <tbody className="divide-y">{draft.variants.map(variant => <tr key={variant.id}><td className="p-3"><input aria-label="Variant name" value={variant.name} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, name: event.target.value } : value) })} className={`${input} mt-0`}/></td><td className="p-3"><input aria-label={`SKU for ${variant.name}`} value={variant.sku} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, sku: event.target.value } : value) })} className={`${input} mt-0`}/></td><td className="p-3"><input aria-label={`Price override for ${variant.name}`} type="number" min="0" step=".01" value={variant.priceOverrideMinor == null ? "" : (variant.priceOverrideMinor / 100).toFixed(2)} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, priceOverrideMinor: event.target.value === "" ? null : Math.round(Number(event.target.value) * 100) } : value) })} className={`${input} mt-0 w-32`}/></td><td className="p-3"><input aria-label={`Low stock threshold for ${variant.name}`} type="number" min="0" value={variant.lowStockThreshold} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, lowStockThreshold: Math.max(0, Number(event.target.value)) } : value) })} className={`${input} mt-0 w-24`}/></td><td className="p-3 font-black">{variant.availableQuantity}</td><td className="p-3"><input aria-label={`${variant.name} active`} type="checkbox" checked={variant.isActive} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, isActive: event.target.checked } : value) })} className="h-5 w-5 accent-track-red"/></td></tr>)}</tbody>
+          <tbody className="divide-y">{draft.variants.map(variant => <tr key={variant.id}><td className="p-3"><input aria-label="Variant name" value={variant.name} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, name: event.target.value } : value) })} className={`${input} mt-0`}/></td><td className="p-3"><input aria-label={`SKU for ${variant.name}`} value={variant.sku} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, sku: event.target.value } : value) })} className={`${input} mt-0`}/></td><td className="p-3"><MoneyInput ariaLabel={`Price override for ${variant.name}`} valueMinor={variant.priceOverrideMinor} allowEmpty onChange={priceOverrideMinor => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, priceOverrideMinor } : value) })} className="mt-0 w-32"/></td><td className="p-3"><input aria-label={`Low stock threshold for ${variant.name}`} type="number" min="0" value={variant.lowStockThreshold} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, lowStockThreshold: Math.max(0, Number(event.target.value)) } : value) })} className={`${input} mt-0 w-24`}/></td><td className="p-3 font-black">{variant.availableQuantity}</td><td className="p-3"><input aria-label={`${variant.name} active`} type="checkbox" checked={variant.isActive} onChange={event => patch({ variants: draft.variants.map(value => value.id === variant.id ? { ...value, isActive: event.target.checked } : value) })} className="h-5 w-5 accent-track-red"/></td></tr>)}</tbody>
         </table>{!draft.variants.length && <p className="mt-5 border border-dashed p-6 text-center text-sm text-slate-500">Add option values, then generate the variant matrix.</p>}
       </div>
     </section>}
@@ -208,7 +208,7 @@ export function StoreProductWizard({
       <Heading title="Untracked customizations" text="Logo treatments and optional name/number choices change configuration and price without splitting inventory."/>
       <div className="mt-5 space-y-4">{draft.modifierGroups.map(group => <article key={group.id} className="border-l-4 border-track-red bg-slate-50 p-4">
         <div className="grid gap-3 sm:grid-cols-3"><Field label="Group name" value={group.name} onChange={name => updateModifier(group.id, { name })}/><label className="text-sm font-bold">Type<select value={group.type} onChange={event => updateModifier(group.id, { type: event.target.value as ProductModifierType })} className={input}><option>Choice</option><option>Color</option><option>ShortText</option><option>Number</option></select></label><CheckField label="Required" checked={group.isRequired} onChange={isRequired => updateModifier(group.id, { isRequired, minimumSelections: isRequired ? 1 : 0 })}/></div>
-        {group.type === "Choice" || group.type === "Color" ? <div className="mt-4 space-y-2">{group.values.map(value => <div key={value.id} className="grid gap-2 sm:grid-cols-[1fr_160px_44px]"><input aria-label="Customization choice" value={value.name} onChange={event => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, name: event.target.value } : item) })} className={`${input} mt-0`}/><input aria-label={`Surcharge for ${value.name}`} type="number" min="0" step=".01" value={(value.priceAdjustmentMinor / 100).toFixed(2)} onChange={event => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, priceAdjustmentMinor: Math.max(0, Math.round(Number(event.target.value) * 100)) } : item) })} className={`${input} mt-0`}/><button type="button" onClick={() => updateModifier(group.id, { values: group.values.filter(item => item.id !== value.id) })} className="border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button></div>)}<button type="button" onClick={() => addModifierValue(group.id)} className="inline-flex items-center gap-2 text-sm font-bold text-track-red"><Plus size={16}/>Add choice</button></div> : <p className="mt-4 text-sm text-slate-600">Customer input will be reviewed before production. Surcharge configuration is finalized in checkout phase.</p>}
+        {group.type === "Choice" || group.type === "Color" ? <div className="mt-4 space-y-2">{group.values.map(value => <div key={value.id} className="grid gap-2 sm:grid-cols-[1fr_160px_44px]"><input aria-label="Customization choice" value={value.name} onChange={event => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, name: event.target.value } : item) })} className={`${input} mt-0`}/><MoneyInput ariaLabel={`Surcharge for ${value.name}`} valueMinor={value.priceAdjustmentMinor} onChange={priceAdjustmentMinor => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, priceAdjustmentMinor: priceAdjustmentMinor ?? 0 } : item) })} className="mt-0"/><button type="button" onClick={() => updateModifier(group.id, { values: group.values.filter(item => item.id !== value.id) })} className="border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button></div>)}<button type="button" onClick={() => addModifierValue(group.id)} className="inline-flex items-center gap-2 text-sm font-bold text-track-red"><Plus size={16}/>Add choice</button></div> : <p className="mt-4 text-sm text-slate-600">Customer input will be reviewed before production. Surcharge configuration is finalized in checkout phase.</p>}
         <button type="button" onClick={() => patch({ modifierGroups: draft.modifierGroups.filter(value => value.id !== group.id) })} className="mt-4 inline-flex items-center gap-2 text-sm font-bold text-red-700"><Trash2 size={16}/>Remove group</button>
       </article>)}</div>
       <button type="button" onClick={addModifier} className={`${secondary} mt-4`}><Plus size={17}/>Add customization</button>
@@ -289,6 +289,76 @@ function Field({ label, value, onChange, required, className = "" }: { label: st
 function CheckField({ label, checked, onChange }: { label: string; checked: boolean; onChange: (value: boolean) => void }) { return <label className="flex min-h-11 items-center gap-3 text-sm font-bold"><input type="checkbox" checked={checked} onChange={event => onChange(event.target.checked)} className="h-5 w-5 accent-track-red"/>{label}</label>; }
 function Summary({ label, value }: { label: string; value: string }) { return <div><dt className="text-xs font-black uppercase tracking-wider text-slate-500">{label}</dt><dd className="mt-1 text-lg font-black">{value}</dd></div>; }
 function NumberField({ label, value, onChange, min = 0, max = 100 }: { label: string; value: number; onChange: (value:number)=>void; min?:number; max?:number }) { return <label className="text-xs font-black uppercase text-slate-500">{label}<input type="number" min={min} max={max} value={value} onChange={event => onChange(Math.min(max, Math.max(min, Number(event.target.value))))} className={`${input} mt-1`}/></label>; }
+function MoneyInput({
+  label,
+  ariaLabel,
+  valueMinor,
+  onChange,
+  allowEmpty = false,
+  className = ""
+}: {
+  label?: string;
+  ariaLabel?: string;
+  valueMinor: number | null;
+  onChange: (valueMinor: number | null) => void;
+  allowEmpty?: boolean;
+  className?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [text, setText] = useState(() => formatMoneyInput(valueMinor));
+
+  useEffect(() => {
+    if (!editing) setText(formatMoneyInput(valueMinor));
+  }, [editing, valueMinor]);
+
+  function commit() {
+    const parsed = parseMoneyInput(text);
+    if (text.trim() === "" && allowEmpty) {
+      onChange(null);
+      setText("");
+    } else if (parsed == null) {
+      setText(formatMoneyInput(valueMinor));
+    } else {
+      onChange(parsed);
+      setText(formatMoneyInput(parsed));
+    }
+    setEditing(false);
+  }
+
+  const field = <input
+    aria-label={ariaLabel}
+    type="text"
+    inputMode="decimal"
+    autoComplete="off"
+    value={text}
+    onFocus={event => {
+      setEditing(true);
+      event.currentTarget.select();
+    }}
+    onChange={event => {
+      const next = event.target.value;
+      if (/^\d*(?:\.\d{0,2})?$/.test(next)) setText(next);
+    }}
+    onBlur={commit}
+    onKeyDown={event => {
+      if (event.key === "Enter") event.currentTarget.blur();
+    }}
+    className={`${input} ${className}`}
+  />;
+
+  return label ? <label className="text-sm font-bold">{label}{field}</label> : field;
+}
+function formatMoneyInput(valueMinor: number | null) {
+  return valueMinor == null ? "" : (valueMinor / 100).toFixed(2);
+}
+export function parseMoneyInput(value: string) {
+  const normalized = value.trim();
+  if (!/^\d+(?:\.\d{0,2})?$/.test(normalized)) return null;
+  const amount = Number(normalized);
+  if (!Number.isFinite(amount) || amount < 0) return null;
+  const minor = Math.round(amount * 100);
+  return Number.isSafeInteger(minor) ? minor : null;
+}
 function VisualizerLayerEditor({
   layer,
   mediaTitle,
