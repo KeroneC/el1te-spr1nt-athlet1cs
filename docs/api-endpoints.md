@@ -24,7 +24,7 @@ The webhook route returns `404 Not Found` while `Store:Enabled` is false. When e
 - `GET /api/public/store/products`
 - `GET /api/public/store/products/{slug}`
 
-Both routes return `404 Not Found` while `Store:Enabled` is false. The list accepts `search`, `category`, `availability`, `page`, and `pageSize`. Public DTOs expose only published products, active options/variants/media, minor-unit prices, and `InStock`, `LowStock`, or `SoldOut`; exact quantities and SKUs remain private. Cart state is currently browser-local and non-personal, so there is no cart API in this phase.
+Both routes return `404 Not Found` while both `Store:Enabled` and `Store:PublicPreviewEnabled` are false. The preview flag exposes only catalog/configurator reads; it does not enable Square, orders, reservations, webhooks, or commerce workers. The list accepts `search`, `category`, `availability`, `page`, and `pageSize`. Public DTOs expose only published products, active options/variants/media, minor-unit prices, and `InStock`, `LowStock`, or `SoldOut`; exact quantities and SKUs remain private. Cart state is currently browser-local and non-personal, so there is no cart API in this phase.
 
 ## Admin Store Catalog and Inventory
 

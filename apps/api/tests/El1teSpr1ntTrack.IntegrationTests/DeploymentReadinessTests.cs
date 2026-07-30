@@ -1,6 +1,7 @@
 using System.Text.Json;
 using El1teSpr1ntTrack.Api.Configuration;
 using El1teSpr1ntTrack.Api.Health;
+using El1teSpr1ntTrack.Infrastructure.Commerce;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
@@ -79,6 +80,35 @@ public sealed class DeploymentReadinessTests
         var configuredSquare = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
 
         ProductionConfigurationValidator.Validate(configuredSquare, new TestEnvironment("Production"));
+    }
+
+    [Fact]
+    public void ProductionConfiguration_AllowsPublicStorePreviewWithoutSquareSecrets()
+    {
+        var values = SafeProductionValues(useManagedIdentity: true);
+        values["Store:Enabled"] = "false";
+        values["Store:PublicPreviewEnabled"] = "true";
+        var configuration = new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+
+        ProductionConfigurationValidator.Validate(configuration, new TestEnvironment("Production"));
+    }
+
+    [Theory]
+    [InlineData(false, false, false)]
+    [InlineData(false, true, true)]
+    [InlineData(true, false, true)]
+    public void StoreSettings_PublicCatalogEnabled_SeparatesPreviewFromFullCommerce(
+        bool enabled,
+        bool publicPreviewEnabled,
+        bool expected)
+    {
+        var settings = new StoreSettings
+        {
+            Enabled = enabled,
+            PublicPreviewEnabled = publicPreviewEnabled
+        };
+
+        Assert.Equal(expected, settings.PublicCatalogEnabled);
     }
 
     [Theory]

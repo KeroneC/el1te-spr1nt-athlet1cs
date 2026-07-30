@@ -1,6 +1,6 @@
 # Store Catalog and Inventory Administration
 
-This is the second guarded delivery phase of the El1te merchandise replacement. It adds a private Admin commerce workspace and a one-time Square catalog copy while keeping `Store:Enabled=false`. The existing Square storefront remains the only public sales path.
+This is the second guarded delivery phase of the El1te merchandise replacement. It adds a private Admin commerce workspace and a one-time Square catalog copy while keeping full commerce (`Store:Enabled=false`) disabled. A later demo-only preview may expose catalog reads, but the existing Square storefront remains the only active sales path.
 
 ## What Staff Can Do
 
@@ -52,7 +52,7 @@ The import needs `Square__AccessToken` and `Square__LocationId` even while `Stor
 8. Add approved overlay media to the visualizer and set X, Y, width, height, and layer order as percentages.
 9. Preview and save.
 
-Drafts may be incomplete and saved for later. Publishing requires at least one image and one active variant. The public store flag still prevents a published catalog record from becoming a public shop in this phase.
+Drafts may be incomplete and saved for later. Publishing requires at least one image and one active variant. A published record appears in the non-transactional storefront only when `Store:PublicPreviewEnabled` or full commerce is enabled.
 
 Omitting an existing variant while editing deactivates it rather than deleting it. This preserves inventory, reservation, and order references. Modifier and visualizer configuration can be replaced because paid order items will retain immutable configuration snapshots.
 
@@ -100,7 +100,7 @@ Before the configurator or checkout phases use this data:
 
 ## Rollback
 
-The phase does not change public navigation or checkout. Immediate rollback is still `Store__Enabled=false`. Imported products stay as reversible drafts and source IDs make a repeated import safe. Archive an unwanted product; do not delete inventory adjustments, stocktakes, import runs, or media that may be referenced.
+The phase does not enable checkout. Full-commerce rollback is `Store__Enabled=false`; hide the catalog/configurator as well with `Store__PublicPreviewEnabled=false`. Imported products stay as reversible drafts and source IDs make a repeated import safe. Archive an unwanted product; do not delete inventory adjustments, stocktakes, import runs, or media that may be referenced.
 
 ## Validation
 
