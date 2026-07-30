@@ -42,6 +42,9 @@ param monitoringAlertEmail string
 @description('Keep false until the final store cutover.')
 param storeEnabled bool = false
 
+@description('Expose the read-only catalog/configurator preview without enabling Square, orders, or workers.')
+param storePublicPreviewEnabled bool = false
+
 @allowed([
   'Sandbox'
   'Production'
@@ -164,6 +167,7 @@ module api 'modules/api-app.bicep' = {
     publicBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     releaseSha: releaseSha
     storeEnabled: storeEnabled
+    storePublicPreviewEnabled: storePublicPreviewEnabled
     squareEnvironment: squareEnvironment
     squareLocationId: squareLocationId
     squareWebhookNotificationUrl: squareWebhookNotificationUrl

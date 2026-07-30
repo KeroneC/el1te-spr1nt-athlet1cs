@@ -1,6 +1,6 @@
 # Store and Square Foundation
 
-The commerce foundation is the first delivery phase of the El1te merchandise replacement. The second phase now adds the private [catalog and inventory workspace](store-catalog-inventory.md), but it still does not publish a shop, accept payments, or change the existing external Square link. `Store:Enabled` remains `false` until the final cutover.
+The commerce foundation is the first delivery phase of the El1te merchandise replacement. Later phases add the [catalog and inventory workspace](store-catalog-inventory.md) and a separately gated storefront preview, but they still do not accept payments or replace Square as the active sales path. `Store:Enabled` remains `false` until the final cutover.
 
 ## Ownership Boundary
 
@@ -29,6 +29,7 @@ Safe non-secret defaults are version controlled:
 
 ```text
 Store__Enabled=false
+Store__PublicPreviewEnabled=false
 Store__Currency=USD
 Store__ReservationMinutes=30
 Store__DefaultLowStockThreshold=3
@@ -76,7 +77,7 @@ Before enabling Sandbox:
 
 Provider failures retain only a stable safe code. Unexpected application failures continue to use the privacy-safe `ESA-` support reference system.
 
-The immediate rollback is `Store__Enabled=false`. That stops the worker, hides webhook intake, and prevents Square calls without deleting catalog, inventory, event, or order history. Never delete outbox or webhook rows as a rollback mechanism.
+The immediate full-commerce rollback is `Store__Enabled=false`. That stops the worker, hides webhook intake, and prevents Square calls without deleting catalog, inventory, event, or order history. Set `Store__PublicPreviewEnabled=false` separately when the catalog/configurator preview must also be hidden. Never delete outbox or webhook rows as a rollback mechanism.
 
 ## Delivery Sequence
 
@@ -86,7 +87,7 @@ The immediate rollback is `Store__Enabled=false`. That stops the worker, hides w
 4. Checkout and orders: reservations, hosted checkout, fulfillment, email, tracking, staff sales, refunds, and reconciliation.
 5. Cutover: production credentials, verified email domain, reviewed inventory, navigation switch, and rollback controls.
 
-Each phase branches from the newly updated `origin/main`, passes its own pull request checks, and is deployed with public commerce disabled until cutover.
+Each phase branches from the newly updated `origin/main`, passes its own pull request checks, and is deployed with transactional commerce disabled until cutover. The demo may expose the non-transactional catalog/configurator through its separate preview flag.
 
 ## Official References
 

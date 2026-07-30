@@ -1,16 +1,16 @@
 # Public Storefront and Configurator
 
-This is the third guarded commerce phase. It adds the custom public catalog, deterministic product configurator, and non-personal cart while keeping `Store__Enabled=false` in the Azure demo. The existing Square storefront remains the live sales path until checkout, order operations, and cutover are approved.
+This is the third guarded commerce phase. It adds the custom public catalog, deterministic product configurator, and non-personal cart while keeping full commerce (`Store__Enabled=false`) disabled. The Azure demo uses the separate `Store__PublicPreviewEnabled=true` review flag. The existing Square storefront remains the live sales path until checkout, order operations, and cutover are approved.
 
 ## Feature Gate
 
-The ASP.NET Core public store endpoints return `404 Not Found` when `Store:Enabled` is false. Next.js uses that same response to:
+The ASP.NET Core public store endpoints return `404 Not Found` when both `Store:Enabled` and `Store:PublicPreviewEnabled` are false. Next.js uses that same response to:
 
 - keep `/shop`, `/shop/{slug}`, and `/shop/cart` unavailable;
 - retain the external Square storefront link in the header and footer;
 - avoid exposing draft storefront work during staged deployments.
 
-For local review, set `Store__Enabled=true` on the API process. Do not enable the setting in demo or production yet. When the flag is enabled, the navigation automatically points to the internal `/shop`.
+For local or demo review, set `Store__PublicPreviewEnabled=true` on the API process. This exposes browsing, configuration, and the non-personal cart without starting Square-dependent workers or accepting payment. Keep `Store__Enabled=false` until the checkout and order release is approved. When either flag exposes the catalog, navigation automatically points to the internal `/shop`.
 
 ## Public Routes and Data
 
@@ -61,4 +61,4 @@ Cross-stack Playwright enables the store only in its isolated E2E API process. I
 
 ## Rollback
 
-Set `Store__Enabled=false`. Public endpoints return 404 and the public header/footer return to the external Square link. Catalog, media, variants, visualizer settings, and inventory history remain intact. Do not delete products, inventory adjustments, or media as a rollback mechanism.
+Set both `Store__PublicPreviewEnabled=false` and `Store__Enabled=false`. Public endpoints return 404 and the public header/footer return to the external Square link. Catalog, media, variants, visualizer settings, and inventory history remain intact. Do not delete products, inventory adjustments, or media as a rollback mechanism.

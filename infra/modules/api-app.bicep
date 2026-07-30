@@ -13,6 +13,7 @@ param publicBaseUrl string
 param allowedOrigins array
 param releaseSha string
 param storeEnabled bool = false
+param storePublicPreviewEnabled bool = false
 param squareEnvironment string = 'Sandbox'
 param squareLocationId string = ''
 param squareWebhookNotificationUrl string = ''
@@ -122,6 +123,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'Store__Enabled'
           value: string(storeEnabled)
+        }
+        {
+          name: 'Store__PublicPreviewEnabled'
+          value: string(storePublicPreviewEnabled)
         }
         {
           name: 'Store__Currency'

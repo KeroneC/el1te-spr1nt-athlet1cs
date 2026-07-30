@@ -26,7 +26,7 @@ public sealed class PublicStoreController(
         [FromQuery] int pageSize = 12,
         CancellationToken cancellationToken = default)
     {
-        if (!storeSettings.Enabled) return NotFound();
+        if (!storeSettings.PublicCatalogEnabled) return NotFound();
         return Ok(await storeService.GetProductsAsync(
             new PublicStoreQueryOptions(search, category, availability, page, pageSize),
             cancellationToken));
@@ -37,7 +37,7 @@ public sealed class PublicStoreController(
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProduct(string slug, CancellationToken cancellationToken)
     {
-        if (!storeSettings.Enabled) return NotFound();
+        if (!storeSettings.PublicCatalogEnabled) return NotFound();
         var product = await storeService.GetProductAsync(slug, cancellationToken);
         return product is null ? NotFound() : Ok(product);
     }
