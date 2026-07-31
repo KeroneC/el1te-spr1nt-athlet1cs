@@ -1,4 +1,4 @@
-const resources = new Set(["events", "coaches", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store"]);
+const resources = new Set(["events", "coaches", "hall-of-fame-inductees", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store"]);
 const idPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | "DELETE"): boolean {

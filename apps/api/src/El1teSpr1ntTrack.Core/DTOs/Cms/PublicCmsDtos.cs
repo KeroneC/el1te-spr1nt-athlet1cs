@@ -81,6 +81,16 @@ public sealed record PublicCoachDto(
     string? Email,
     int DisplayOrder);
 
+public sealed record PublicHallOfFameInducteeDto(
+    string Name,
+    string Slug,
+    string Affiliation,
+    string Summary,
+    string PhotoUrl,
+    string PhotoAlt,
+    int? InductionYear,
+    int DisplayOrder);
+
 public sealed record PublicSponsorDto(
     string Name,
     string Slug,

@@ -128,6 +128,25 @@ public sealed class PublicCmsRepository(El1teDbContext dbContext) : IPublicCmsRe
             .Select(PublicCmsVisibility.PublicCoach)
             .ToListAsync(cancellationToken);
 
+    public async Task<PagedResultDto<PublicHallOfFameInducteeDto>> GetHallOfFameInducteesAsync(
+        HallOfFameInducteeQueryOptions options,
+        CancellationToken cancellationToken)
+    {
+        var query = dbContext.HallOfFameInductees.AsNoTracking()
+            .Where(PublicCmsVisibility.ActiveHallOfFameInductee);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .OrderBy(item => item.DisplayOrder)
+            .ThenBy(item => item.Name)
+            .Skip((options.Page - 1) * options.PageSize)
+            .Take(options.PageSize)
+            .Select(item => new PublicHallOfFameInducteeDto(
+                item.Name, item.Slug, item.Affiliation, item.Summary,
+                item.PhotoUrl!, item.PhotoAlt!, item.InductionYear, item.DisplayOrder))
+            .ToListAsync(cancellationToken);
+        return new PagedResultDto<PublicHallOfFameInducteeDto>(items, options.Page, options.PageSize, totalCount);
+    }
+
     public async Task<IReadOnlyList<PublicSponsorDto>> GetSponsorsAsync(CancellationToken cancellationToken) =>
         await dbContext.Sponsors.AsNoTracking()
             .Where(PublicCmsVisibility.ActiveSponsor)

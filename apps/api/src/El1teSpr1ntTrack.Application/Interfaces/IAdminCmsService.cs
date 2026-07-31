@@ -27,6 +27,11 @@ public interface IAdminCmsService
     Task<AdminCoachDto> CreateCoachAsync(CoachWriteDto request, CancellationToken cancellationToken);
     Task<AdminCoachDto> UpdateCoachAsync(Guid id, CoachWriteDto request, CancellationToken cancellationToken);
     Task DeactivateCoachAsync(Guid id, CancellationToken cancellationToken);
+    Task<PagedResultDto<AdminHallOfFameInducteeDto>> GetHallOfFameInducteesAsync(AdminHallOfFameInducteeOptions options, CancellationToken cancellationToken);
+    Task<AdminHallOfFameInducteeDto> GetHallOfFameInducteeAsync(Guid id, CancellationToken cancellationToken);
+    Task<AdminHallOfFameInducteeDto> CreateHallOfFameInducteeAsync(HallOfFameInducteeWriteDto request, CancellationToken cancellationToken);
+    Task<AdminHallOfFameInducteeDto> UpdateHallOfFameInducteeAsync(Guid id, HallOfFameInducteeWriteDto request, CancellationToken cancellationToken);
+    Task DeactivateHallOfFameInducteeAsync(Guid id, CancellationToken cancellationToken);
     Task<PagedResultDto<AdminSponsorDto>> GetSponsorsAsync(AdminSponsorOptions options, CancellationToken cancellationToken);
     Task<AdminSponsorDto> GetSponsorAsync(Guid id, CancellationToken cancellationToken);
     Task<AdminSponsorDto> CreateSponsorAsync(SponsorWriteDto request, CancellationToken cancellationToken);

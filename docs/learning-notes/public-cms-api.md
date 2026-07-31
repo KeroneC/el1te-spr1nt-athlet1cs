@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-Anonymous routes under `/api/public` expose site settings, published content blocks, current announcements, published events, active coaches/sponsors/FAQs, and write-only contact submission creation. Announcement/event collections paginate; resource-specific filters are supported.
+Anonymous routes under `/api/public` expose site settings, published content blocks, current announcements, published events, active coaches/Hall of Fame inductees/sponsors/FAQs, and write-only contact submission creation. Announcement/event/Hall of Fame collections paginate; resource-specific filters are supported.
 
 ## Why It Exists
 
@@ -18,7 +18,7 @@ Public clients need useful content without receiving drafts, internal state, or 
 
 ## How It Works
 
-Collections default to page 1 and 10 items, capped at 50. Current announcements must be published, past any publish date, and before expiration. Events must be published; optional queries can restrict type, featured state, or future schedule. Coaches, sponsors, and FAQs must be active. Coach projection omits email unless `IsEmailPublic` is true.
+Collections default to page 1 and a resource-specific page size, capped at 50. Current announcements must be published, past any publish date, and before expiration. Events must be published; optional queries can restrict type, featured state, or future schedule. Coaches, Hall of Fame inductees, sponsors, and FAQs must be active. Hall of Fame results use eight-item pages ordered by display order then name. Coach projection omits email unless `IsEmailPublic` is true.
 
 Contact submissions accept a validated write DTO, force status to New, return only an identifier and confirmation, and have no public read endpoint.
 

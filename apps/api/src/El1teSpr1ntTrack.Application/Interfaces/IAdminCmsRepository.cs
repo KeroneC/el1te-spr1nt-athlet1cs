@@ -11,6 +11,7 @@ public interface IAdminCmsRepository
     Task<AdminPage<Announcement>> GetAnnouncementsAsync(AdminAnnouncementOptions options, DateTimeOffset now, CancellationToken cancellationToken);
     Task<AdminPage<Event>> GetEventsAsync(AdminEventOptions options, CancellationToken cancellationToken);
     Task<AdminPage<Coach>> GetCoachesAsync(AdminCoachOptions options, CancellationToken cancellationToken);
+    Task<AdminPage<HallOfFameInductee>> GetHallOfFameInducteesAsync(AdminHallOfFameInducteeOptions options, CancellationToken cancellationToken);
     Task<AdminPage<Sponsor>> GetSponsorsAsync(AdminSponsorOptions options, CancellationToken cancellationToken);
     Task<AdminPage<Faq>> GetFaqsAsync(AdminFaqOptions options, CancellationToken cancellationToken);
     Task<AdminPage<ContactSubmission>> GetContactSubmissionsAsync(AdminContactOptions options, CancellationToken cancellationToken);

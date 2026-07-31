@@ -166,6 +166,32 @@ public sealed class CoachWriteDto
     public bool IsActive { get; init; } = true;
 }
 
+public sealed class HallOfFameInducteeWriteDto
+{
+    [Required, MaxLength(200)]
+    public string Name { get; init; } = string.Empty;
+
+    [Required, MaxLength(200)]
+    public string Affiliation { get; init; } = string.Empty;
+
+    [Required, MaxLength(2000)]
+    public string Summary { get; init; } = string.Empty;
+
+    [MaxLength(500)]
+    public string? PhotoUrl { get; init; }
+
+    [MaxLength(500)]
+    public string? PhotoAlt { get; init; }
+
+    [Range(1900, 2100)]
+    public int? InductionYear { get; init; }
+
+    [Range(0, int.MaxValue)]
+    public int DisplayOrder { get; init; }
+
+    public bool IsActive { get; init; } = true;
+}
+
 public sealed class SponsorWriteDto
 {
     [Required, MaxLength(200)]

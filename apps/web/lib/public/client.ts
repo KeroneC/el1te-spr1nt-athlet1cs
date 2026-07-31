@@ -6,6 +6,7 @@ import type {
   EventDetail,
   EventListItem,
   Faq,
+  HallOfFameInductee,
   PagedResult,
   SiteSettings,
   Sponsor,
@@ -76,6 +77,8 @@ export const getEvents = (query = "") =>
 export const getEvent = (slug: string) =>
   publicApiFetch<EventDetail>(`/events/${encodeURIComponent(slug)}`);
 export const getCoaches = () => publicApiFetch<Coach[]>("/coaches");
+export const getHallOfFameInductees = (query = "") =>
+  publicApiFetch<PagedResult<HallOfFameInductee>>(`/hall-of-fame-inductees${query ? `?${query}` : ""}`);
 export const getSponsors = () => publicApiFetch<Sponsor[]>("/sponsors");
 export const getFaqs = () => publicApiFetch<Faq[]>("/faqs");
 export const getGalleryAlbums = (query = "") =>

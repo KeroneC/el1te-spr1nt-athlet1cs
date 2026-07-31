@@ -10,7 +10,7 @@ The `(public)` route group owns the shared public header, footer, loading, error
 
 Browser interaction includes the mobile menu, contact form, feature-gated store configurator, and non-personal cart. The contact form posts to the same-origin `app/api/public/contact/route.ts` handler. The cart refreshes product availability through a narrow same-origin store product handler, while server-rendered store pages use anonymous public DTOs. Browser storage never contains buyer contact or payment information.
 
-Content Block keys are centralized in `lib/public/content.ts`. Pages omit missing unpublished blocks and do not expose raw keys. Public list/detail DTOs preserve API publication, expiration, active-state, ordering, and coach-email privacy rules.
+Content Block keys are centralized in `lib/public/content.ts`. Pages omit missing unpublished blocks and do not expose raw keys. Public list/detail DTOs preserve API publication, expiration, active-state, ordering, and coach-email privacy rules. The Hall of Fame is a paged Server Component backed by active public CMS records; its memorial hero and dedication remain page-owned content.
 
 Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, `/forms`, `/scholarship`, `/hall-of-fame`, `/rgnhof` redirect, `/team`, `/contact`, `/gallery`, `/gallery/[slug]`, and feature-gated `/shop`, `/shop/[slug]`, and `/shop/cart`.
 
@@ -29,7 +29,8 @@ All list pages are server-rendered and preserve supported search, filter, date, 
 Lifecycle behavior follows the API:
 
 - Events, Announcements, Content Blocks, and Contact Submissions support permanent deletion with confirmation.
-- Coaches, Sponsors, and FAQs use the API's delete endpoint to deactivate records; their forms can reactivate them.
+- Coaches, Hall of Fame inductees, Sponsors, and FAQs use the API's delete endpoint to deactivate records; their forms can reactivate them.
+- Hall of Fame drafts may omit photography, while activation requires a valid image URL and meaningful alt text.
 - Site Settings updates one existing singleton record and never exposes a create route.
 - Contact Submissions are private, support New/Read/Resolved/Archived status changes, and are never fetched by a public page.
 - Merchandise adds a dashboard, categories, product list, five-step product wizard, visualizer placement, inventory matrix, and SuperAdmin-only Square import. Published products feed the feature-gated public catalog and deterministic configurator; the live Azure flag remains off.
@@ -43,6 +44,7 @@ Shared primitives in `components/admin` cover form controls, notices, list filte
 /admin/announcements                       list/new/{id}/edit
 /admin/events                              list/new/{id}/edit
 /admin/coaches                             list/new/{id}/edit
+/admin/hall-of-fame                        list/new/{id}/edit
 /admin/sponsors                            list/new/{id}/edit
 /admin/faqs                                list/new/{id}/edit
 /admin/content                             list/new/{id}/edit

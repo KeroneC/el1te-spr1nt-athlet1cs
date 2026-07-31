@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 import { readAdminMutationBody } from "../lib/admin/mutation-request";
-import type { CoachWriteRequest, ContentBlockWriteRequest, EventWriteRequest, FaqWriteRequest, SiteSettingsWriteRequest, SponsorWriteRequest } from "../lib/admin/types";
-import { buildListQuery, validateCoach, validateContentBlock, validateEvent, validateFaq, validateSiteSettings, validateSponsor } from "../lib/admin/validation";
+import type { CoachWriteRequest, ContentBlockWriteRequest, EventWriteRequest, FaqWriteRequest, HallOfFameInducteeWriteRequest, SiteSettingsWriteRequest, SponsorWriteRequest } from "../lib/admin/types";
+import { buildListQuery, validateCoach, validateContentBlock, validateEvent, validateFaq, validateHallOfFameInductee, validateSiteSettings, validateSponsor } from "../lib/admin/validation";
 
 const id = "c6ca4e2a-0244-4f9d-9af6-95bbc65ca612";
 
 describe("Phase 7 mutation boundary", () => {
   it.each([
-    [["events"], "POST"], [["coaches", id], "PUT"], [["content-blocks", id], "DELETE"],
+    [["events"], "POST"], [["coaches", id], "PUT"], [["hall-of-fame-inductees"], "POST"], [["hall-of-fame-inductees", id], "PUT"], [["hall-of-fame-inductees", id], "DELETE"], [["content-blocks", id], "DELETE"],
     [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"],
     [["users", id], "PUT"], [["invitations"], "POST"], [["invitations", id, "reissue"], "POST"], [["invitations", id], "DELETE"]
     , [["store", "products"], "POST"], [["store", "products", id], "PUT"], [["store", "products", id, "duplicate"], "POST"],
@@ -55,6 +55,15 @@ describe("Phase 7 filters and validation", () => {
   it("rejects an event ending before it starts", () => { const input: EventWriteRequest = { title:"Meet",eventType:"Meet",startDateTimeUtc:"2026-07-02T14:00:00Z",endDateTimeUtc:"2026-07-02T13:00:00Z",locationName:"Track",address:null,description:"Race",registrationUrl:null,imageUrl:null,isFeatured:false,isPublished:false }; expect(validateEvent(input).endDateTimeUtc).toBeDefined(); });
 
   it("requires a valid email before publishing coach email", () => { const input: CoachWriteRequest = { firstName:"A",lastName:"Coach",role:"Head coach",bio:"Bio",imageUrl:null,email:null,isEmailPublic:true,displayOrder:0,isActive:true }; expect(validateCoach(input).email).toBeDefined(); input.email="invalid"; expect(validateCoach(input).email).toBeDefined(); });
+
+  it("allows incomplete Hall of Fame drafts but requires accessible media for activation", () => {
+    const input: HallOfFameInducteeWriteRequest = { name:"Athlete",affiliation:"University",summary:"Summary",photoUrl:null,photoAlt:null,inductionYear:null,displayOrder:0,isActive:false };
+    expect(validateHallOfFameInductee(input)).toEqual({});
+    input.isActive = true;
+    expect(validateHallOfFameInductee(input)).toMatchObject({ photoUrl: expect.any(Array), photoAlt: expect.any(Array) });
+    input.photoUrl = "/images/athlete.jpg"; input.photoAlt = "Athlete standing on the track"; input.inductionYear = 2101;
+    expect(validateHallOfFameInductee(input).inductionYear).toBeDefined();
+  });
 
   it("validates sponsor URLs and display order", () => { const input: SponsorWriteRequest = { name:"Partner",tier:"Gold",logoUrl:null,websiteUrl:"javascript:bad",description:null,displayOrder:-1,isActive:true }; const errors=validateSponsor(input); expect(errors.websiteUrl).toBeDefined(); expect(errors.displayOrder).toBeDefined(); });
 

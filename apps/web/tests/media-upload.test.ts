@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { MAX_MEDIA_FILE_SIZE, runWithConcurrency, titleFromFileName, validateMediaFile } from "../lib/admin/media-upload";
+import { MAX_MEDIA_FILE_SIZE, MEDIA_UPLOAD_CONCURRENCY, runWithConcurrency, titleFromFileName, validateMediaFile } from "../lib/admin/media-upload";
 
 describe("media upload queue helpers", () => {
+  it("serializes Media API writes for Azure reliability", () => {
+    expect(MEDIA_UPLOAD_CONCURRENCY).toBe(1);
+  });
+
   it("turns common file names into editable titles", () => {
     expect(titleFromFileName("regional-meet_finish-line.webp")).toBe("regional meet finish line");
     expect(titleFromFileName("photo.jpg")).toBe("photo");

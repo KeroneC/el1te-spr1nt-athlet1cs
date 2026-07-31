@@ -103,6 +103,13 @@ export interface AdminCoach {
 }
 export type CoachWriteRequest = Omit<AdminCoach, "id" | "createdAtUtc" | "updatedAtUtc">;
 
+export interface AdminHallOfFameInductee {
+  id: string; name: string; slug: string; affiliation: string; summary: string;
+  photoUrl: string | null; photoAlt: string | null; inductionYear: number | null;
+  displayOrder: number; isActive: boolean; createdAtUtc: string; updatedAtUtc: string | null;
+}
+export type HallOfFameInducteeWriteRequest = Omit<AdminHallOfFameInductee, "id" | "slug" | "createdAtUtc" | "updatedAtUtc">;
+
 export interface AdminSponsor {
   id: string; name: string; slug: string; tier: SponsorTier; logoUrl: string | null;
   websiteUrl: string | null; description: string | null; displayOrder: number; isActive: boolean;
@@ -140,6 +147,7 @@ export interface AdminContactSubmission {
 export interface ListFilters { search?: string; page?: string; }
 export interface EventFilters extends ListFilters { eventType?: string; isPublished?: string; isFeatured?: string; fromDate?: string; toDate?: string; }
 export interface ActiveFilters extends ListFilters { isActive?: string; }
+export interface HallOfFameFilters extends ActiveFilters { inductionYear?: string; }
 export interface SponsorFilters extends ActiveFilters { tier?: string; }
 export interface FaqFilters extends ActiveFilters { category?: string; }
 export interface ContentFilters extends ListFilters { isPublished?: string; }

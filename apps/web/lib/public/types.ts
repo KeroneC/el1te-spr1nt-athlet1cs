@@ -93,6 +93,17 @@ export interface Coach {
   displayOrder: number;
 }
 
+export interface HallOfFameInductee {
+  name: string;
+  slug: string;
+  affiliation: string;
+  summary: string;
+  photoUrl: string;
+  photoAlt: string;
+  inductionYear: number | null;
+  displayOrder: number;
+}
+
 export interface Sponsor {
   name: string;
   slug: string;

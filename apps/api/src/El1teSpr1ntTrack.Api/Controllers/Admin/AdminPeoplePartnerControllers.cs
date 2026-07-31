@@ -19,6 +19,17 @@ public sealed class AdminCoachesController(IAdminCmsService service) : Controlle
     [HttpDelete("{id:guid}")] public async Task<IActionResult> Deactivate(Guid id, CancellationToken token) { await service.DeactivateCoachAsync(id, token); return NoContent(); }
 }
 
+[ApiController, Authorize(Policy = CmsAdminAuthorization.PolicyName), Route("api/admin/hall-of-fame-inductees"), Tags("Admin - Hall of Fame")]
+[ProducesResponseType(StatusCodes.Status401Unauthorized), ProducesResponseType(StatusCodes.Status403Forbidden)]
+public sealed class AdminHallOfFameInducteesController(IAdminCmsService service) : ControllerBase
+{
+    [HttpGet] public async Task<IActionResult> List(string? search, bool? isActive, int? inductionYear, int page = 1, int pageSize = 20, CancellationToken token = default) => Ok(await service.GetHallOfFameInducteesAsync(new AdminHallOfFameInducteeOptions(search, isActive, inductionYear, page, pageSize), token));
+    [HttpGet("{id:guid}")] public async Task<IActionResult> Get(Guid id, CancellationToken token) => Ok(await service.GetHallOfFameInducteeAsync(id, token));
+    [HttpPost] public async Task<IActionResult> Create(HallOfFameInducteeWriteDto request, CancellationToken token) => StatusCode(201, await service.CreateHallOfFameInducteeAsync(request, token));
+    [HttpPut("{id:guid}")] public async Task<IActionResult> Update(Guid id, HallOfFameInducteeWriteDto request, CancellationToken token) => Ok(await service.UpdateHallOfFameInducteeAsync(id, request, token));
+    [HttpDelete("{id:guid}")] public async Task<IActionResult> Deactivate(Guid id, CancellationToken token) { await service.DeactivateHallOfFameInducteeAsync(id, token); return NoContent(); }
+}
+
 [ApiController, Authorize(Policy = CmsAdminAuthorization.PolicyName), Route("api/admin/sponsors"), Tags("Admin - Sponsors")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized), ProducesResponseType(StatusCodes.Status403Forbidden)]
 public sealed class AdminSponsorsController(IAdminCmsService service) : ControllerBase

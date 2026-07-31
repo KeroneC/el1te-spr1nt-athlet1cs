@@ -15,6 +15,7 @@ public sealed class CmsModelTests
     [InlineData(typeof(Announcement), nameof(Announcement.Slug))]
     [InlineData(typeof(Event), nameof(Event.Slug))]
     [InlineData(typeof(Sponsor), nameof(Sponsor.Slug))]
+    [InlineData(typeof(HallOfFameInductee), nameof(HallOfFameInductee.Slug))]
     public void CmsModel_DefinesRequiredUniqueIndexes(Type entityType, string propertyName)
     {
         var modelType = _dbContext.Model.FindEntityType(entityType);
@@ -43,6 +44,7 @@ public sealed class CmsModelTests
     [InlineData(typeof(Announcement), 3)]
     [InlineData(typeof(Event), 4)]
     [InlineData(typeof(Coach), 3)]
+    [InlineData(typeof(HallOfFameInductee), 2)]
     [InlineData(typeof(Sponsor), 4)]
     [InlineData(typeof(Faq), 6)]
     public void CmsModel_ContainsRequiredSeedData(Type entityType, int expectedCount)

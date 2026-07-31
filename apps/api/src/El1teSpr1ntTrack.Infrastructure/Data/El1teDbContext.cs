@@ -23,6 +23,8 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<Coach> Coaches => Set<Coach>();
 
+    public DbSet<HallOfFameInductee> HallOfFameInductees => Set<HallOfFameInductee>();
+
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
 
     public DbSet<Faq> Faqs => Set<Faq>();

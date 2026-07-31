@@ -144,6 +144,36 @@ public static class CmsSeedData
         Coach("50000000-0000-0000-0000-000000000003", "Casey", "Rivera", "Team Support Coach", "A team support coach committed to safe practices, encouragement, and athlete growth.", 3)
     ];
 
+    public static readonly HallOfFameInductee[] HallOfFameInductees =
+    [
+        new()
+        {
+            Id = Guid.Parse("58000000-0000-0000-0000-000000000001"),
+            Name = "Dani Prunzik",
+            Slug = "dani-prunzik",
+            Affiliation = "Penn State University",
+            Summary = "Upper St. Clair High School class of 2023 graduate, Penn State student, and talented sprinter with a 60m indoor PR of 7.57.",
+            PhotoUrl = "/images/hall-of-fame/dani-prunzik.jpeg",
+            PhotoAlt = "Dani Prunzik holding an American flag in her Penn State track uniform",
+            DisplayOrder = 1,
+            IsActive = true,
+            CreatedAtUtc = CreatedAtUtc
+        },
+        new()
+        {
+            Id = Guid.Parse("58000000-0000-0000-0000-000000000002"),
+            Name = "Kaitlyn Eger",
+            Slug = "kaitlyn-eger",
+            Affiliation = "Youngstown State University",
+            Summary = "Youngstown State University student-athlete studying Exercise Science (Pre-PT). A multi-time top-5 Horizon League finisher and Meet MVP who helped lead back-to-back conference championships in 2024 and 2025.",
+            PhotoUrl = "/images/hall-of-fame/kaitlyn-eger.jpg",
+            PhotoAlt = "Kaitlyn Eger posing with a pole vault pole in her Youngstown State uniform",
+            DisplayOrder = 2,
+            IsActive = true,
+            CreatedAtUtc = CreatedAtUtc
+        }
+    ];
+
     public static readonly Sponsor[] Sponsors =
     [
         Sponsor("60000000-0000-0000-0000-000000000001", "Community Health Partners", "community-health-partners", SponsorTier.Platinum, 1),

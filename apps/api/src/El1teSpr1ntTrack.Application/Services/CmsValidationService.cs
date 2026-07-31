@@ -60,6 +60,12 @@ public sealed class CmsValidationService : ICmsValidationService
                 Required(errors, nameof(coach.Bio), coach.Bio);
                 Email(errors, nameof(coach.Email), coach.Email, coach.IsEmailPublic);
                 break;
+            case HallOfFameInductee inductee:
+                Required(errors, nameof(inductee.Name), inductee.Name);
+                Required(errors, nameof(inductee.Slug), inductee.Slug);
+                Required(errors, nameof(inductee.Affiliation), inductee.Affiliation);
+                Required(errors, nameof(inductee.Summary), inductee.Summary);
+                break;
             case Sponsor sponsor:
                 Required(errors, nameof(sponsor.Name), sponsor.Name);
                 Required(errors, nameof(sponsor.Slug), sponsor.Slug);

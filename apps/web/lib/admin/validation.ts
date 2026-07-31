@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   EventWriteRequest,
   CoachWriteRequest,
+  HallOfFameInducteeWriteRequest,
   SponsorWriteRequest,
   FaqWriteRequest,
   ContentBlockWriteRequest,
@@ -75,6 +76,18 @@ export function validateCoach(input: CoachWriteRequest): FieldErrors {
   if (input.email && !isEmail(input.email)) errors.email = ["Enter a valid email address."];
   if (input.isEmailPublic && !input.email) errors.email = ["An email is required before it can be public."];
   orderError(errors, input.displayOrder); urlError(errors, "imageUrl", input.imageUrl);
+  return errors;
+}
+
+export function validateHallOfFameInductee(input: HallOfFameInducteeWriteRequest): FieldErrors {
+  const errors = required({ name: input.name, affiliation: input.affiliation, summary: input.summary });
+  orderError(errors, input.displayOrder);
+  urlError(errors, "photoUrl", input.photoUrl);
+  if (input.inductionYear !== null && (input.inductionYear < 1900 || input.inductionYear > 2100)) {
+    errors.inductionYear = ["Induction year must be between 1900 and 2100."];
+  }
+  if (input.isActive && !input.photoUrl) errors.photoUrl = ["A photo is required before an inductee can be active."];
+  if (input.isActive && (!input.photoAlt?.trim() || input.photoAlt.trim().length < 10)) errors.photoAlt = ["Meaningful photo alt text is required before an inductee can be active."];
   return errors;
 }
 

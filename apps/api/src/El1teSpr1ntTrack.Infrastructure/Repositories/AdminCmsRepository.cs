@@ -54,6 +54,16 @@ public sealed class AdminCmsRepository(El1teDbContext dbContext) : IAdminCmsRepo
         return await PageAsync(query.OrderBy(item => item.DisplayOrder).ThenBy(item => item.LastName), options.Page, options.PageSize, cancellationToken);
     }
 
+    public async Task<AdminPage<HallOfFameInductee>> GetHallOfFameInducteesAsync(AdminHallOfFameInducteeOptions options, CancellationToken cancellationToken)
+    {
+        var query = dbContext.HallOfFameInductees.AsNoTracking().AsQueryable();
+        if (!string.IsNullOrWhiteSpace(options.Search))
+            query = query.Where(item => item.Name.Contains(options.Search) || item.Affiliation.Contains(options.Search));
+        if (options.IsActive.HasValue) query = query.Where(item => item.IsActive == options.IsActive.Value);
+        if (options.InductionYear.HasValue) query = query.Where(item => item.InductionYear == options.InductionYear.Value);
+        return await PageAsync(query.OrderBy(item => item.DisplayOrder).ThenBy(item => item.Name), options.Page, options.PageSize, cancellationToken);
+    }
+
     public async Task<AdminPage<Sponsor>> GetSponsorsAsync(AdminSponsorOptions options, CancellationToken cancellationToken)
     {
         var query = dbContext.Sponsors.AsNoTracking().AsQueryable();

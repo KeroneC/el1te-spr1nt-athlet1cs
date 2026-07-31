@@ -135,27 +135,6 @@ export const TEAM_VALUES = [
   "Family support"
 ] as const;
 
-export const HALL_OF_FAME_INDUCTEES = [
-  {
-    slug: "dani-prunzik",
-    name: "Dani Prunzik",
-    affiliation: "Penn State University",
-    imageSrc: "/images/hall-of-fame/dani-prunzik.jpeg",
-    imageAlt: "Dani Prunzik holding an American flag in her Penn State track uniform",
-    summary:
-      "Upper St. Clair High School class of 2023 graduate, Penn State student, and talented sprinter with a 60m indoor PR of 7.57."
-  },
-  {
-    slug: "kaitlyn-eger",
-    name: "Kaitlyn Eger",
-    affiliation: "Youngstown State University",
-    imageSrc: "/images/hall-of-fame/kaitlyn-eger.jpg",
-    imageAlt: "Kaitlyn Eger posing with a pole vault pole in her Youngstown State uniform",
-    summary:
-      "Youngstown State University student-athlete studying Exercise Science (Pre-PT). A multi-time top-5 Horizon League finisher and Meet MVP who helped lead back-to-back conference championships in 2024 and 2025."
-  }
-] as const;
-
 export const QUICK_STEPS = [
   {
     title: "Review the packet",
