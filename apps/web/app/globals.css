@@ -514,12 +514,23 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .hall-inductee-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: clamp(1.5rem,4vw,3rem); }
 .hall-inductee { min-width: 0; border-top: 4px solid #b58b33; background: #fbf7ef; box-shadow: 0 14px 30px rgba(73,55,23,0.09); }
 .hall-inductee-photo { position: relative; aspect-ratio: 4/5; overflow: hidden; background: var(--figma-black); }
-.hall-inductee-photo img { object-fit: cover; object-position: center top; transition: transform 500ms ease; }
+.hall-inductee-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center top; transition: transform 500ms ease; }
 .hall-inductee:hover .hall-inductee-photo img { transform: scale(1.025); }
 .hall-inductee-body { padding: clamp(1.5rem,4vw,2.25rem); }
 .hall-inductee-body .eyebrow { color: #8a661d; }
 .hall-inductee-body h3 { margin: 0 0 1rem; color: #2f281d; font-size: clamp(2rem,4vw,3rem); }
 .hall-inductee-body p:last-child { margin: 0; color: #5f513d; line-height: 1.7; }
+.hall-inductees .skeleton-block { min-height: 34rem; animation: hallSkeleton 1.4s ease-in-out infinite alternate; }
+.hall-hero .skeleton-block { aspect-ratio: 1; border-radius: 50%; background: rgba(255,255,255,0.08); }
+
+@keyframes hallSkeleton {
+  from { opacity: 0.45; }
+  to { opacity: 0.75; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hall-inductees .skeleton-block { animation: none; }
+}
 
 @keyframes heroReveal {
   from { opacity: 1; transform: translateY(0.65rem); }

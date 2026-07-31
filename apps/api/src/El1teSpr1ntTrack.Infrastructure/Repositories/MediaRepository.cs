@@ -37,6 +37,7 @@ public sealed class MediaRepository(El1teDbContext dbContext) : IMediaRepository
         await dbContext.Announcements.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
         await dbContext.Events.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
         await dbContext.Coaches.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
+        await dbContext.HallOfFameInductees.AnyAsync(item => item.PhotoUrl == publicUrl, cancellationToken) ||
         await dbContext.Sponsors.AnyAsync(item => item.LogoUrl == publicUrl, cancellationToken) ||
         await dbContext.ContentBlocks.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
         await dbContext.SiteSettings.AnyAsync(item => item.LogoUrl == publicUrl, cancellationToken);

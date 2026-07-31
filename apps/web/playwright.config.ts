@@ -3,7 +3,8 @@ import { defineConfig, devices } from "@playwright/test";
 const repositoryRoot = "../..";
 const apiUrl = "http://127.0.0.1:5127";
 const webUrl = "http://127.0.0.1:3100";
-const connectionString = String.raw`Server=(localdb)\mssqllocaldb;Database=El1teSpr1ntTrack_E2E;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True`;
+const connectionString = process.env.E2E_CONNECTION_STRING ?? String.raw`Server=(localdb)\mssqllocaldb;Database=El1teSpr1ntTrack_E2E;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True`;
+const npmCommand = process.platform === "win32" ? "npm.cmd" : "npm";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -46,7 +47,7 @@ export default defineConfig({
       },
     },
     {
-      command: "npm.cmd run dev -- --hostname 127.0.0.1 --port 3100",
+      command: `${npmCommand} run dev -- --hostname 127.0.0.1 --port 3100`,
       cwd: ".",
       url: webUrl,
       timeout: 120_000,

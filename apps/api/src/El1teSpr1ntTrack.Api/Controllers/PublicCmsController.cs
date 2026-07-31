@@ -81,6 +81,14 @@ public sealed class PublicCmsController(IPublicCmsService cmsService) : Controll
     public async Task<IActionResult> GetCoaches(CancellationToken cancellationToken) =>
         Ok(await cmsService.GetCoachesAsync(cancellationToken));
 
+    [HttpGet("hall-of-fame-inductees")]
+    [ProducesResponseType(typeof(PagedResultDto<PublicHallOfFameInducteeDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetHallOfFameInductees(
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 8,
+        CancellationToken cancellationToken = default) =>
+        Ok(await cmsService.GetHallOfFameInducteesAsync(new HallOfFameInducteeQueryOptions(page, pageSize), cancellationToken));
+
     [HttpGet("sponsors")]
     [ProducesResponseType(typeof(IReadOnlyList<PublicSponsorDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSponsors(CancellationToken cancellationToken) =>

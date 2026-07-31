@@ -3,6 +3,7 @@ using El1teSpr1ntTrack.Core.Enums;
 namespace El1teSpr1ntTrack.Application.Common;
 
 public sealed record AnnouncementQueryOptions(bool? Featured, int Page, int PageSize);
+public sealed record HallOfFameInducteeQueryOptions(int Page, int PageSize);
 
 public sealed record EventQueryOptions(
     EventType? EventType,

@@ -14,6 +14,7 @@ The Infrastructure project uses EF Core 10 with SQL Server. `El1teDbContext` exp
 | `Announcement` | Time-sensitive club news | Unique slug, draft/published, featured, publish and expiration dates |
 | `Event` | Meets, practices, deadlines, and fundraisers | Unique slug, event type, schedule, published/featured flags |
 | `Coach` | Public coaching profile | Active flag and explicit email-public consent |
+| `HallOfFameInductee` | Public inductee profile | Stable slug, optional induction year, order, and reversible active state |
 | `Sponsor` | Partner profile | Unique slug, tier, active flag |
 | `Faq` | Categorized public answer | Active flag and display order |
 | `ContactSubmission` | Private inbound inquiry | Status and inquiry type; no public read route |
@@ -26,7 +27,7 @@ CMS entities inherit GUID `Id`, `CreatedAtUtc`, and optional `UpdatedAtUtc` from
 
 `El1teDbContext.OnModelCreating` applies every `IEntityTypeConfiguration` in the Infrastructure assembly. Files under `Data/Configurations` define table names, required fields, lengths, defaults, indexes, and enum conversions. CMS enums such as sponsor tier and contact status are stored as strings for readable data and stable meaning when enum ordering changes.
 
-Unique indexes protect user email, invitation token hash, content-block key, and announcement/event/sponsor slugs. Application validation provides friendly errors, while constraints protect against races and invalid direct writes. Invitation acceptance and privileged-user guardrails run in serializable transactions so concurrent requests cannot consume one invitation twice or remove the final active SuperAdmin.
+Unique indexes protect user email, invitation token hash, content-block key, and announcement/event/sponsor/Hall of Fame slugs. Application validation provides friendly errors, while constraints protect against races and invalid direct writes. Invitation acceptance and privileged-user guardrails run in serializable transactions so concurrent requests cannot consume one invitation twice or remove the final active SuperAdmin.
 
 ## Visibility and Privacy
 
@@ -42,6 +43,6 @@ Published and active are different ideas. Publication controls content readiness
 
 Migrations live in `Infrastructure/Data/Migrations`. The current history includes the authentication, CMS, media/gallery, Azure delivery, grouped navigation, and administrative identity foundations. `AddAdminIdentityManagement` introduces the invitation and append-only activity tables. `El1teDbContextFactory` supplies a design-time connection, while the running Development API uses the configured `DefaultConnection`; use an explicit connection when applying migrations locally to avoid updating the tooling database by mistake.
 
-`AddCmsFoundation` includes generic CMS sample rows. Separately, `DevelopmentAdminSeeder` runs only when the API environment is Development and all `SeedAdmin` User Secrets are configured. It never stores credentials in source control and does not modify an existing account.
+`AddCmsFoundation` includes generic CMS sample rows. `AddHallOfFameCms` creates the dedicated inductee table and seeds the two canonical existing profiles without inferring induction years. Separately, `DevelopmentAdminSeeder` runs only when the API environment is Development and all `SeedAdmin` User Secrets are configured. It never stores credentials in source control and does not modify an existing account.
 
 See [EF Core migrations](../guides/ef-core-migrations.md) for commands and review practice.

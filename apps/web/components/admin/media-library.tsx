@@ -193,7 +193,7 @@ export function MediaUploadForm({ albums = [] }: { albums?: AdminGalleryAlbumLis
       </article>)}
     </div>}
 
-    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5"><p className="text-sm text-slate-500"><ImagePlus className="mr-1 inline" size={17} />Uploads run three at a time and keep successful images when another fails.</p><button disabled={busy || !items.some(item => item.status !== "success")} className="inline-flex min-h-11 items-center justify-center gap-2 bg-track-red px-5 font-bold text-white disabled:opacity-50">{busy ? <LoaderCircle className="animate-spin" size={18} /> : <Upload size={18} />}{busy ? "Uploading queue..." : "Upload queue"}</button></div>
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-slate-200 pt-5"><p className="text-sm text-slate-500"><ImagePlus className="mr-1 inline" size={17} />Uploads run one at a time and keep successful images when another fails.</p><button disabled={busy || !items.some(item => item.status !== "success")} className="inline-flex min-h-11 items-center justify-center gap-2 bg-track-red px-5 font-bold text-white disabled:opacity-50">{busy ? <LoaderCircle className="animate-spin" size={18} /> : <Upload size={18} />}{busy ? "Uploading queue..." : "Upload queue"}</button></div>
   </form>;
 }
 

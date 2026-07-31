@@ -12,6 +12,14 @@ All Admin routes use the existing `CmsAdmin` policy. Upload is multipart form da
 
 Liveness is available at `/health`; database readiness is available at `/health/ready`. The legacy descriptive route remains at `/api/v1/health`. Authentication routes are implemented under `/api/auth`. Public CMS routes live under `/api/public`, and protected CMS routes live under `/api/admin`.
 
+## Hall of Fame CMS
+
+- Public inductees: `GET /api/public/hall-of-fame-inductees?page=1&pageSize=8`
+- Admin list/create: `GET/POST /api/admin/hall-of-fame-inductees`
+- Admin detail/update/deactivate: `GET/PUT/DELETE /api/admin/hall-of-fame-inductees/{id}`
+
+The public route returns only active records, ordered by display order and then name. Admin listing accepts `search`, `isActive`, `inductionYear`, `page`, and `pageSize`. Delete is reversible deactivation. Active records require an accessible photo; names can be edited without changing the generated slug.
+
 ## Commerce Foundation
 
 - Commerce integration health: `GET /health/commerce`

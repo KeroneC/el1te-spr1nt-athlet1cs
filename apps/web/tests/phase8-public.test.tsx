@@ -4,10 +4,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { POST as submitContact } from "../app/api/public/contact/route";
 import { hasUsableSponsorLogo, SponsorLogoTile } from "../components/public/sponsor-logo-tile";
 import { SponsorTierSection } from "../components/public/sponsor-tier-section";
-import { PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
+import { getHallOfFameInductees, PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
 import { robotsForEnvironment } from "../lib/public/deployment";
-import { HEADER_NAV_ITEMS, HALL_OF_FAME_INDUCTEES, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
+import { HEADER_NAV_ITEMS, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import { SCHOLARSHIP_COPY } from "../lib/public/scholarship";
 import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
@@ -78,9 +78,10 @@ describe("Phase 8 public CMS helpers", () => {
     expect(markup).toContain("--sponsor-reveal-index:1");
   });
 
-  it("keeps Hall of Fame records ready for future profile routes", () => {
-    expect(HALL_OF_FAME_INDUCTEES).toHaveLength(2);
-    expect(HALL_OF_FAME_INDUCTEES.every((inductee) => inductee.slug && inductee.imageSrc.startsWith("/images/hall-of-fame/"))).toBe(true);
+  it("loads paged Hall of Fame records from the public CMS", async () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(json({ items: [], page: 2, pageSize: 8, totalCount: 0, totalPages: 0 }));
+    await getHallOfFameInductees("page=2&pageSize=8");
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining("/api/public/hall-of-fame-inductees?page=2&pageSize=8"), expect.any(Object));
   });
 
   it("preserves the approved BVN memorial wording", () => {

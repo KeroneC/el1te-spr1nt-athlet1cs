@@ -9,6 +9,7 @@ public static class PublicCmsVisibility
     public static readonly Expression<Func<ContentBlock, bool>> PublishedContentBlock = block => block.IsPublished;
     public static readonly Expression<Func<Event, bool>> PublishedEvent = item => item.IsPublished;
     public static readonly Expression<Func<Coach, bool>> ActiveCoach = coach => coach.IsActive;
+    public static readonly Expression<Func<HallOfFameInductee, bool>> ActiveHallOfFameInductee = item => item.IsActive;
     public static readonly Expression<Func<Sponsor, bool>> ActiveSponsor = sponsor => sponsor.IsActive;
     public static readonly Expression<Func<Faq, bool>> ActiveFaq = faq => faq.IsActive;
     public static readonly Expression<Func<Coach, PublicCoachDto>> PublicCoach = coach =>

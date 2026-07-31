@@ -40,6 +40,11 @@ public sealed class PublicCmsService(
     public Task<IReadOnlyList<PublicCoachDto>> GetCoachesAsync(CancellationToken cancellationToken) =>
         repository.GetCoachesAsync(cancellationToken);
 
+    public Task<PagedResultDto<PublicHallOfFameInducteeDto>> GetHallOfFameInducteesAsync(
+        HallOfFameInducteeQueryOptions options,
+        CancellationToken cancellationToken) =>
+        repository.GetHallOfFameInducteesAsync(Normalize(options), cancellationToken);
+
     public Task<IReadOnlyList<PublicSponsorDto>> GetSponsorsAsync(CancellationToken cancellationToken) =>
         repository.GetSponsorsAsync(cancellationToken);
 
@@ -80,5 +85,8 @@ public sealed class PublicCmsService(
         options with { Page = Math.Max(1, options.Page), PageSize = Math.Clamp(options.PageSize, 1, 50) };
 
     private static EventQueryOptions Normalize(EventQueryOptions options) =>
+        options with { Page = Math.Max(1, options.Page), PageSize = Math.Clamp(options.PageSize, 1, 50) };
+
+    private static HallOfFameInducteeQueryOptions Normalize(HallOfFameInducteeQueryOptions options) =>
         options with { Page = Math.Max(1, options.Page), PageSize = Math.Clamp(options.PageSize, 1, 50) };
 }

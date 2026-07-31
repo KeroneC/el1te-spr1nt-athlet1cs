@@ -110,6 +110,44 @@ public sealed class AdminCmsServiceTests
     }
 
     [Fact]
+    public async Task HallOfFameCreate_RequiresPhotoOnlyWhenActiveAndPreservesSlugOnRename()
+    {
+        var repository = new FakeRepository();
+        var service = CreateService(repository);
+
+        var draft = await service.CreateHallOfFameInducteeAsync(new HallOfFameInducteeWriteDto
+        {
+            Name = "Future Champion", Affiliation = "El1te", Summary = "A developing athlete.", IsActive = false
+        }, CancellationToken.None);
+        var updated = await service.UpdateHallOfFameInducteeAsync(draft.Id, new HallOfFameInducteeWriteDto
+        {
+            Name = "Renamed Champion", Affiliation = "El1te", Summary = "A developing athlete.",
+            PhotoUrl = "/images/champion.jpg", PhotoAlt = "Champion standing on the track", IsActive = true
+        }, CancellationToken.None);
+
+        Assert.Equal("future-champion", updated.Slug);
+        Assert.True(updated.IsActive);
+    }
+
+    [Fact]
+    public async Task HallOfFameCreate_RejectsInvalidActivePhotoYearAndOrder()
+    {
+        var service = CreateService(new FakeRepository());
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() => service.CreateHallOfFameInducteeAsync(
+            new HallOfFameInducteeWriteDto
+            {
+                Name = "Athlete", Affiliation = "University", Summary = "Summary", PhotoUrl = "invalid",
+                InductionYear = 1899, DisplayOrder = -1, IsActive = true
+            }, CancellationToken.None));
+
+        Assert.Contains(nameof(HallOfFameInductee.PhotoUrl), exception.Errors.Keys);
+        Assert.Contains(nameof(HallOfFameInductee.PhotoAlt), exception.Errors.Keys);
+        Assert.Contains(nameof(HallOfFameInductee.InductionYear), exception.Errors.Keys);
+        Assert.Contains("displayOrder", exception.Errors.Keys, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public async Task ContactStatus_RejectsInvalidEnumAndUpdatesValidStatus()
     {
         var repository = new FakeRepository();
@@ -162,6 +200,7 @@ public sealed class AdminCmsServiceTests
         public List<Announcement> Announcements { get; } = [];
         public List<Event> Events { get; } = [];
         public List<Coach> Coaches { get; } = [];
+        public List<HallOfFameInductee> HallOfFameInductees { get; } = [];
         public List<Sponsor> Sponsors { get; } = [];
         public List<Faq> Faqs { get; } = [];
         public List<ContactSubmission> ContactSubmissions { get; } = [];
@@ -173,6 +212,7 @@ public sealed class AdminCmsServiceTests
         public Task<AdminPage<Announcement>> GetAnnouncementsAsync(AdminAnnouncementOptions options, DateTimeOffset now, CancellationToken token) => Page(Announcements);
         public Task<AdminPage<Event>> GetEventsAsync(AdminEventOptions options, CancellationToken token) => Page(Events);
         public Task<AdminPage<Coach>> GetCoachesAsync(AdminCoachOptions options, CancellationToken token) => Page(Coaches);
+        public Task<AdminPage<HallOfFameInductee>> GetHallOfFameInducteesAsync(AdminHallOfFameInducteeOptions options, CancellationToken token) => Page(HallOfFameInductees);
         public Task<AdminPage<Sponsor>> GetSponsorsAsync(AdminSponsorOptions options, CancellationToken token) => Page(Sponsors);
         public Task<AdminPage<Faq>> GetFaqsAsync(AdminFaqOptions options, CancellationToken token) => Page(Faqs);
         public Task<AdminPage<ContactSubmission>> GetContactSubmissionsAsync(AdminContactOptions options, CancellationToken token) => Page(ContactSubmissions);
@@ -189,6 +229,7 @@ public sealed class AdminCmsServiceTests
             if (typeof(T) == typeof(Announcement)) return (List<T>)(object)Announcements;
             if (typeof(T) == typeof(Event)) return (List<T>)(object)Events;
             if (typeof(T) == typeof(Coach)) return (List<T>)(object)Coaches;
+            if (typeof(T) == typeof(HallOfFameInductee)) return (List<T>)(object)HallOfFameInductees;
             if (typeof(T) == typeof(Sponsor)) return (List<T>)(object)Sponsors;
             if (typeof(T) == typeof(Faq)) return (List<T>)(object)Faqs;
             if (typeof(T) == typeof(ContactSubmission)) return (List<T>)(object)ContactSubmissions;

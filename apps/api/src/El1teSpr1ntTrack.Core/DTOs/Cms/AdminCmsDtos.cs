@@ -31,6 +31,11 @@ public sealed record AdminCoachDto(
     string? Email, bool IsEmailPublic, int DisplayOrder, bool IsActive,
     DateTimeOffset CreatedAtUtc, DateTimeOffset? UpdatedAtUtc);
 
+public sealed record AdminHallOfFameInducteeDto(
+    Guid Id, string Name, string Slug, string Affiliation, string Summary,
+    string? PhotoUrl, string? PhotoAlt, int? InductionYear, int DisplayOrder, bool IsActive,
+    DateTimeOffset CreatedAtUtc, DateTimeOffset? UpdatedAtUtc);
+
 public sealed record AdminSponsorDto(
     Guid Id, string Name, string Slug, SponsorTier Tier, string? LogoUrl, string? WebsiteUrl,
     string? Description, int DisplayOrder, bool IsActive,

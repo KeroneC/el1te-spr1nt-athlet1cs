@@ -1,6 +1,6 @@
 export const MAX_MEDIA_FILES = 20;
 export const MAX_MEDIA_FILE_SIZE = 10 * 1024 * 1024;
-export const MEDIA_UPLOAD_CONCURRENCY = 3;
+export const MEDIA_UPLOAD_CONCURRENCY = 1;
 
 const ALLOWED_MEDIA_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 

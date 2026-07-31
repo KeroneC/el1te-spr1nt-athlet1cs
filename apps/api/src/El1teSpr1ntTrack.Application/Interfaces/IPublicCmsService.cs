@@ -13,6 +13,7 @@ public interface IPublicCmsService
     Task<PagedResultDto<PublicEventListItemDto>> GetEventsAsync(EventQueryOptions options, CancellationToken cancellationToken);
     Task<PublicEventDetailDto?> GetEventAsync(string slug, CancellationToken cancellationToken);
     Task<IReadOnlyList<PublicCoachDto>> GetCoachesAsync(CancellationToken cancellationToken);
+    Task<PagedResultDto<PublicHallOfFameInducteeDto>> GetHallOfFameInducteesAsync(HallOfFameInducteeQueryOptions options, CancellationToken cancellationToken);
     Task<IReadOnlyList<PublicSponsorDto>> GetSponsorsAsync(CancellationToken cancellationToken);
     Task<IReadOnlyList<PublicFaqDto>> GetFaqsAsync(string? category, CancellationToken cancellationToken);
     Task<ContactSubmissionCreatedResponse> CreateContactSubmissionAsync(CreateContactSubmissionRequest request, CancellationToken cancellationToken);

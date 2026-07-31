@@ -1,15 +1,38 @@
+/* eslint-disable @next/next/no-img-element -- Hall of Fame photos may use administrator-configured media hosts. */
 import type { Metadata } from "next";
 import { Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { HALL_OF_FAME_INDUCTEES } from "@/lib/public/site";
+import { EmptyState, Pagination, PublicErrorState } from "@/components/public/ui";
+import { getHallOfFameInductees } from "@/lib/public/client";
 
 export const metadata: Metadata = {
   title: "RGN El1te Hall of Fame",
   description: "Honor Roland George Newton and celebrate El1te Spr1nt Athlet1cs athletes continuing their journey to greatness."
 };
 
-export default function HallOfFamePage() {
+export default async function HallOfFamePage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams;
+  const page = Math.max(1, Number(params.page) || 1);
+  let inducteeContent: React.ReactNode;
+  try {
+    const result = await getHallOfFameInductees(`page=${page}&pageSize=8`);
+    inducteeContent = result.items.length ? <>
+      <div className="hall-inductee-grid">
+        {result.items.map((inductee) => <article className="hall-inductee" key={inductee.slug}>
+          <div className="hall-inductee-photo">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={inductee.photoUrl} alt={inductee.photoAlt} /></div>
+          <div className="hall-inductee-body">
+            <p className="eyebrow">{inductee.inductionYear ? <>Class of {inductee.inductionYear} <span aria-hidden="true">·</span> {inductee.affiliation}</> : inductee.affiliation}</p>
+            <h3>{inductee.name}</h3>
+            <p>{inductee.summary}</p>
+          </div>
+        </article>)}
+      </div>
+      <Pagination page={result.page} totalPages={result.totalPages} pathname="/hall-of-fame" />
+    </> : <EmptyState title="The next chapter is being written" message="Hall of Fame inductees will appear here after club review." />;
+  } catch (error) {
+    inducteeContent = <PublicErrorState error={error} />;
+  }
   return <>
     <section className="hall-hero">
       <div className="site-container hall-hero-content">
@@ -32,16 +55,7 @@ export default function HallOfFamePage() {
     <section className="content-section hall-inductees">
       <div className="site-container">
         <div className="section-heading"><div><p className="eyebrow">Meet our inductees</p><h2>Carrying greatness forward</h2></div></div>
-        <div className="hall-inductee-grid">
-          {HALL_OF_FAME_INDUCTEES.map((inductee) => <article className="hall-inductee" key={inductee.slug}>
-            <div className="hall-inductee-photo"><Image src={inductee.imageSrc} alt={inductee.imageAlt} fill sizes="(max-width: 48rem) 100vw, 50vw" /></div>
-            <div className="hall-inductee-body">
-              <p className="eyebrow">{inductee.affiliation}</p>
-              <h3>{inductee.name}</h3>
-              <p>{inductee.summary}</p>
-            </div>
-          </article>)}
-        </div>
+        {inducteeContent}
       </div>
     </section>
 

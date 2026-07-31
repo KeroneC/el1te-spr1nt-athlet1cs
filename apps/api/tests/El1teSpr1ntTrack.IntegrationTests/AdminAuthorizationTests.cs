@@ -81,7 +81,7 @@ public sealed class AdminAuthorizationTests
         [
             typeof(AdminSiteSettingsController), typeof(AdminContentBlocksController),
             typeof(AdminAnnouncementsController), typeof(AdminEventsController),
-            typeof(AdminCoachesController), typeof(AdminSponsorsController),
+            typeof(AdminCoachesController), typeof(AdminHallOfFameInducteesController), typeof(AdminSponsorsController),
             typeof(AdminFaqsController), typeof(AdminContactSubmissionsController),
             typeof(AdminMediaController), typeof(AdminGalleryAlbumsController),
             typeof(AdminStoreController)

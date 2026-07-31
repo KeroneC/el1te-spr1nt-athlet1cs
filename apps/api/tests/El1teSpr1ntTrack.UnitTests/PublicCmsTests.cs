@@ -39,6 +39,7 @@ public sealed class PublicCmsTests
     public void ActiveVisibility_ExcludesInactiveRecords()
     {
         Assert.False(PublicCmsVisibility.ActiveCoach.Compile()(new Coach { IsActive = false }));
+        Assert.False(PublicCmsVisibility.ActiveHallOfFameInductee.Compile()(new HallOfFameInductee { IsActive = false }));
         Assert.False(PublicCmsVisibility.ActiveSponsor.Compile()(new Sponsor { IsActive = false }));
         Assert.False(PublicCmsVisibility.ActiveFaq.Compile()(new Faq { IsActive = false }));
         Assert.False(PublicCmsVisibility.PublishedContentBlock.Compile()(new ContentBlock { IsPublished = false }));
@@ -124,6 +125,7 @@ public sealed class PublicCmsTests
         public Task<PagedResultDto<PublicEventListItemDto>> GetEventsAsync(EventQueryOptions options, DateTimeOffset now, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<PublicEventDetailDto?> GetEventAsync(string slug, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IReadOnlyList<PublicCoachDto>> GetCoachesAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<PagedResultDto<PublicHallOfFameInducteeDto>> GetHallOfFameInducteesAsync(HallOfFameInducteeQueryOptions options, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IReadOnlyList<PublicSponsorDto>> GetSponsorsAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<IReadOnlyList<PublicFaqDto>> GetFaqsAsync(string? category, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
