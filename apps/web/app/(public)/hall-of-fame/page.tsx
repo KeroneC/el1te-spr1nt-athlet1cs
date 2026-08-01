@@ -1,10 +1,10 @@
-/* eslint-disable @next/next/no-img-element -- Hall of Fame photos may use administrator-configured media hosts. */
 import type { Metadata } from "next";
 import { Mail } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { EmptyState, Pagination, PublicErrorState } from "@/components/public/ui";
 import { getHallOfFameInductees } from "@/lib/public/client";
+import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
 
 export const metadata: Metadata = {
   title: "RGN El1te Hall of Fame",
@@ -20,7 +20,7 @@ export default async function HallOfFamePage({ searchParams }: { searchParams: P
     inducteeContent = result.items.length ? <>
       <div className="hall-inductee-grid">
         {result.items.map((inductee) => <article className="hall-inductee" key={inductee.slug}>
-          <div className="hall-inductee-photo">{/* eslint-disable-next-line @next/next/no-img-element */}<img src={inductee.photoUrl} alt={inductee.photoAlt} /></div>
+          <div className="hall-inductee-photo"><ResponsiveMediaImage src={inductee.photoUrl} alt={inductee.photoAlt} sizes="(max-width: 768px) 100vw, 50vw" /></div>
           <div className="hall-inductee-body">
             <p className="eyebrow">{inductee.inductionYear ? <>Class of {inductee.inductionYear} <span aria-hidden="true">·</span> {inductee.affiliation}</> : inductee.affiliation}</p>
             <h3>{inductee.name}</h3>

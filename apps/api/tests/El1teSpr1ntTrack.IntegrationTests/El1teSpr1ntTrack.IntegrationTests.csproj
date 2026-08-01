@@ -24,6 +24,7 @@
     <ProjectReference Include="..\..\src\El1teSpr1ntTrack.Application\El1teSpr1ntTrack.Application.csproj" />
     <ProjectReference Include="..\..\src\El1teSpr1ntTrack.Infrastructure\El1teSpr1ntTrack.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\El1teSpr1ntTrack.Core\El1teSpr1ntTrack.Core.csproj" />
+    <ProjectReference Include="..\..\tools\El1teSpr1ntTrack.LaunchPromotion\El1teSpr1ntTrack.LaunchPromotion.csproj" Aliases="promotion" />
   </ItemGroup>
 
 </Project>

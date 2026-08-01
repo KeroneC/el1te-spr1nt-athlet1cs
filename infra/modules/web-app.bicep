@@ -5,6 +5,9 @@ param apiBaseUrl string
 param applicationInsightsConnectionString string
 param tags object = {}
 param releaseSha string
+param browserAnalyticsEnabled bool = false
+@allowed(['off', 'report-only', 'enforce'])
+param cspMode string = 'report-only'
 
 resource web 'Microsoft.Web/sites@2023-12-01' = {
   name: name
@@ -66,6 +69,14 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'APPINSIGHTS_JAVASCRIPT_ENABLED'
           value: 'false'
+        }
+        {
+          name: 'BROWSER_ANALYTICS_ENABLED'
+          value: string(browserAnalyticsEnabled)
+        }
+        {
+          name: 'CSP_MODE'
+          value: cspMode
         }
         {
           name: 'RELEASE_SHA'

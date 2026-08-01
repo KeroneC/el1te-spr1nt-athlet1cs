@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 test("customer can browse live stock, configure gear, and review a privacy-safe cart", async ({ page }) => {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -6,11 +7,7 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
   let productId: string | undefined;
 
   try {
-    await page.goto("/admin/login");
-    await page.getByLabel("Email").fill("e2e.admin@example.test");
-    await page.locator("#password").fill("E2eAdmin!2026Pass");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    await signInAsE2eSuperAdmin(page);
 
     await page.goto("/admin/media");
     await page.getByLabel("Images").setInputFiles("public/images/track-hero.png");

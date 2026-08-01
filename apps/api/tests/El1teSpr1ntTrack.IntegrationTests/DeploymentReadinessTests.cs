@@ -162,7 +162,12 @@ public sealed class DeploymentReadinessTests
             ["MediaStorage:PublicBaseUrl"] = "https://api.example.invalid",
             ["MediaStorage:MaxFileSizeBytes"] = "10485760",
             ["AdminInvitations:SiteUrl"] = "https://web.example.invalid",
-            ["AdminInvitations:ExpiresHours"] = "72"
+            ["AdminInvitations:ExpiresHours"] = "72",
+            ["AuthFeatures:AllowPublicRegistration"] = "false",
+            ["TransactionalEmail:Provider"] = "AzureCommunicationServices",
+            ["TransactionalEmail:ConnectionString"] = "endpoint=https://communication.example.invalid/;accesskey=test",
+            ["TransactionalEmail:SenderAddress"] = "DoNotReply@example.invalid",
+            ["TransactionalEmail:AdminSiteUrl"] = "https://web.example.invalid"
         };
     }
 

@@ -44,7 +44,9 @@ public sealed class ActiveCmsAdminHandler(IUserRepository userRepository)
         }
 
         var user = await userRepository.GetByIdAsync(userId);
-        if (user is { IsActive: true } && user.Role is UserRole.Admin or UserRole.SuperAdmin)
+        var securityVersion = context.User.FindFirstValue("security_version");
+        if (user is { IsActive: true } && user.Role is UserRole.Admin or UserRole.SuperAdmin &&
+            securityVersion == user.SecurityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture))
         {
             context.Succeed(requirement);
         }
@@ -61,6 +63,11 @@ public sealed class ActiveSuperAdminHandler(IUserRepository userRepository)
         var identifier = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(identifier, out var userId)) return;
         var user = await userRepository.GetByIdAsync(userId);
-        if (user is { IsActive: true, Role: UserRole.SuperAdmin }) context.Succeed(requirement);
+        var securityVersion = context.User.FindFirstValue("security_version");
+        if (user is { IsActive: true, Role: UserRole.SuperAdmin } &&
+            securityVersion == user.SecurityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture))
+        {
+            context.Succeed(requirement);
+        }
     }
 }

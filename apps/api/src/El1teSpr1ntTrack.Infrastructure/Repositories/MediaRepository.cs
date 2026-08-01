@@ -24,9 +24,10 @@ public sealed class MediaRepository(El1teDbContext dbContext) : IMediaRepository
     }
 
     public Task<MediaAsset?> GetAsync(Guid id, CancellationToken cancellationToken) =>
-        dbContext.MediaAssets.FirstOrDefaultAsync(asset => asset.Id == id, cancellationToken);
+        dbContext.MediaAssets.Include(asset => asset.Derivatives).FirstOrDefaultAsync(asset => asset.Id == id, cancellationToken);
     public Task<MediaAsset?> GetActiveAsync(Guid id, CancellationToken cancellationToken) =>
-        dbContext.MediaAssets.AsNoTracking().FirstOrDefaultAsync(asset => asset.Id == id && asset.IsActive, cancellationToken);
+        dbContext.MediaAssets.AsNoTracking().Include(asset => asset.Derivatives)
+            .FirstOrDefaultAsync(asset => asset.Id == id && asset.IsActive, cancellationToken);
     public async Task AddAsync(MediaAsset asset, CancellationToken cancellationToken) => await dbContext.MediaAssets.AddAsync(asset, cancellationToken);
     public Task SaveChangesAsync(CancellationToken cancellationToken) => dbContext.SaveChangesAsync(cancellationToken);
     public void Delete(MediaAsset asset) => dbContext.MediaAssets.Remove(asset);

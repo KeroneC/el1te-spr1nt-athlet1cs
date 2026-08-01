@@ -22,11 +22,11 @@ export default async function AdminLoginPage({ searchParams }: { searchParams: P
     <main className="relative min-h-screen bg-track-ink">
       <Image src="/images/track-hero.png" alt="" fill priority sizes="100vw" className="object-cover opacity-35" />
       <div className="absolute inset-0 bg-black/55" />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center justify-end px-5 py-10 sm:px-8 lg:px-10">
+      <div className="relative mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center px-5 py-10 sm:px-8 lg:px-10">
         <section className="w-full max-w-md border-t-4 border-track-red bg-white p-7 shadow-2xl sm:p-9" aria-labelledby="login-title">
           <p className="text-sm font-black uppercase text-track-red">El1te Spr1nt Athlet1cs</p>
           <h1 id="login-title" className="mt-2 text-3xl font-black text-track-ink">Admin sign in</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">Manage club announcements through the secure administration workspace.</p>
+          <p className="mt-3 text-sm leading-6 text-slate-600">Manage club content, media, sponsors, Hall of Fame records, and merchandise through the secure administration workspace.</p>
           {reason === "expired" && <p role="status" className="mt-5 border-l-4 border-amber-500 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-900">Your session expired. Please sign in again.</p>}
           <div className="mt-7"><LoginForm /></div>
         </section>

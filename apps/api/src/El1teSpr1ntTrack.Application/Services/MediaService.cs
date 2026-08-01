@@ -11,6 +11,7 @@ public sealed class MediaService(
     IMediaRepository repository,
     IMediaStorage storage,
     IImageInspector imageInspector,
+    IMediaDerivativeGenerator derivativeGenerator,
     MediaStorageOptions options,
     IClock clock,
     ILogger<MediaService> logger) : IMediaService
@@ -44,6 +45,7 @@ public sealed class MediaService(
         var image = imageInspector.Inspect(buffer, originalFileName, contentType);
         buffer.Position = 0;
         var stored = await storage.SaveAsync(buffer, image.Extension, cancellationToken);
+        var storedKeys = new List<string> { stored.StorageKey };
         var asset = new MediaAsset
         {
             OriginalFileName = Path.GetFileName(originalFileName),
@@ -64,13 +66,33 @@ public sealed class MediaService(
 
         try
         {
+            buffer.Position = 0;
+            foreach (var generated in derivativeGenerator.Generate(buffer))
+            {
+                await using var derivativeStream = new MemoryStream(generated.Content, writable: false);
+                var derivativeFile = await storage.SaveAsync(derivativeStream, ".webp", cancellationToken);
+                storedKeys.Add(derivativeFile.StorageKey);
+                asset.Derivatives.Add(new MediaDerivative
+                {
+                    RequestedWidth = generated.RequestedWidth,
+                    Width = generated.Width,
+                    Height = generated.Height,
+                    ContentType = "image/webp",
+                    StorageKey = derivativeFile.StorageKey,
+                    FileSizeBytes = generated.Content.LongLength,
+                    Sha256 = generated.Sha256
+                });
+            }
             await repository.AddAsync(asset, cancellationToken);
             await repository.SaveChangesAsync(cancellationToken);
         }
         catch
         {
-            try { await storage.DeleteAsync(stored.StorageKey, cancellationToken); }
-            catch (Exception exception) { logger.LogWarning(exception, "Failed to clean up media storage after metadata persistence failed."); }
+            foreach (var storageKey in storedKeys)
+            {
+                try { await storage.DeleteAsync(storageKey, cancellationToken); }
+                catch (Exception exception) { logger.LogWarning(exception, "Failed to clean up media storage after media persistence failed."); }
+            }
             throw;
         }
         return Map(asset);
@@ -98,16 +120,26 @@ public sealed class MediaService(
 
         repository.Delete(asset);
         await repository.SaveChangesAsync(cancellationToken);
+        foreach (var derivative in asset.Derivatives)
+        {
+            try { await storage.DeleteAsync(derivative.StorageKey, cancellationToken); }
+            catch (Exception exception) { logger.LogWarning(exception, "A media derivative could not be removed for asset {MediaAssetId}.", id); }
+        }
         try { await storage.DeleteAsync(asset.StorageKey, cancellationToken); }
         catch (Exception exception) { logger.LogWarning(exception, "Media metadata was deleted but the stored file could not be removed for asset {MediaAssetId}.", id); }
     }
 
-    public async Task<PublicMediaFile?> OpenPublicAsync(Guid id, CancellationToken cancellationToken)
+    public async Task<PublicMediaFile?> OpenPublicAsync(Guid id, int? width, CancellationToken cancellationToken)
     {
         var asset = await repository.GetActiveAsync(id, cancellationToken);
         if (asset is null) return null;
-        var stream = await storage.OpenReadAsync(asset.StorageKey, cancellationToken);
-        return stream is null ? null : new PublicMediaFile(stream, asset.ContentType, asset.FileSizeBytes);
+        var derivative = width.HasValue
+            ? asset.Derivatives.FirstOrDefault(item => item.RequestedWidth == width.Value)
+            : null;
+        var storageKey = derivative?.StorageKey ?? asset.StorageKey;
+        var stream = await storage.OpenReadAsync(storageKey, cancellationToken);
+        return stream is null ? null : new PublicMediaFile(stream, derivative?.ContentType ?? asset.ContentType,
+            derivative?.FileSizeBytes ?? asset.FileSizeBytes, derivative is not null);
     }
 
     private static Dictionary<string, string[]> ValidateMetadata(string title, string altText, string? caption)

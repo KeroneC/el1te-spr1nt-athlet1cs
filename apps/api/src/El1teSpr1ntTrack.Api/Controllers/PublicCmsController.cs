@@ -5,6 +5,7 @@ using El1teSpr1ntTrack.Core.DTOs.Cms;
 using El1teSpr1ntTrack.Core.Enums;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace El1teSpr1ntTrack.Api.Controllers;
 
@@ -100,6 +101,7 @@ public sealed class PublicCmsController(IPublicCmsService cmsService) : Controll
         Ok(await cmsService.GetFaqsAsync(category, cancellationToken));
 
     [HttpPost("contact-submissions")]
+    [EnableRateLimiting("public-write")]
     [ProducesResponseType(typeof(ContactSubmissionCreatedResponse), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateContactSubmission(

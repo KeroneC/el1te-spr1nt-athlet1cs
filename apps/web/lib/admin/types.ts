@@ -27,6 +27,13 @@ export interface LoginResponse {
   };
 }
 
+export interface AdminLoginResult {
+  requiresMfa: boolean;
+  authentication: LoginResponse | null;
+  challengeToken: string | null;
+  challengeExpiresAtUtc: string | null;
+}
+
 export interface AdminAnnouncement {
   id: string;
   title: string;

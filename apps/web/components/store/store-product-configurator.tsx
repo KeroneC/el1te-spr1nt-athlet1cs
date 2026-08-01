@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { ArrowLeft, Check, ImageIcon, Minus, Plus, ShoppingBag, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -11,6 +10,7 @@ import type {
   StoreProductModifierGroup
 } from "@/lib/public/types";
 import { addStoreCartLine } from "@/lib/store/cart";
+import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
 import {
   configurationIsComplete,
   configurationPriceMinor,
@@ -122,13 +122,13 @@ export function StoreProductConfigurator({ product }: { product: StoreProduct })
         <div className="store-visual-stage">
           {previewMode === "photo"
             ? selectedImage
-              ? <img className="store-stage-photo" src={selectedImage.publicUrl} alt={selectedImage.altText} />
+              ? <ResponsiveMediaImage className="store-stage-photo" src={selectedImage.publicUrl} alt={selectedImage.altText} priority sizes="(max-width: 900px) 100vw, 50vw" />
               : <div className="store-stage-placeholder"><ShoppingBag aria-hidden="true" /><span>Product image</span></div>
             : <div className="store-live-preview" aria-label={`Live preview of ${product.name}`}>
               {mockup
-                ? <img className="store-preview-base" src={mockup.publicUrl} alt="" />
+                ? <ResponsiveMediaImage className="store-preview-base" src={mockup.publicUrl} alt="" priority sizes="(max-width: 900px) 100vw, 50vw" />
                 : <div className="store-stage-placeholder"><ShoppingBag aria-hidden="true" /></div>}
-              {activeLayers.map((layer, index) => <img
+              {activeLayers.map((layer, index) => <ResponsiveMediaImage
                 key={`${layer.mediaAssetId}-${index}`}
                 className="store-preview-layer"
                 src={layer.publicUrl}
@@ -156,7 +156,7 @@ export function StoreProductConfigurator({ product }: { product: StoreProduct })
         </div>
         {gallery.length > 1 && <div className="store-thumbnail-row" aria-label="Product photos">
           {gallery.map(image => <button key={image.mediaAssetId} type="button" aria-label={`View ${image.altText}`} aria-pressed={previewMode === "photo" && selectedImageId === image.mediaAssetId} onClick={() => { setSelectedImageId(image.mediaAssetId); setPreviewMode("photo"); }}>
-            <img src={image.publicUrl} alt="" />
+            <ResponsiveMediaImage src={image.publicUrl} alt="" sizes="6rem" />
           </button>)}
         </div>}
         <p className="store-preview-notice">Preview placement and screen color may vary slightly from the finished pressed garment.</p>

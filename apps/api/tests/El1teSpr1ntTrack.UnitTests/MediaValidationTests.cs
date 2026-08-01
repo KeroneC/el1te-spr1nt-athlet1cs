@@ -42,6 +42,35 @@ public sealed class MediaValidationTests
     }
 
     [Fact]
+    public void DerivativeGenerator_CreatesWebpSizesWithoutUpscaling_AndPreservesTransparency()
+    {
+        using var bitmap = new SKBitmap(1000, 500, SKColorType.Rgba8888, SKAlphaType.Premul);
+        bitmap.Erase(SKColors.Transparent);
+        bitmap.SetPixel(10, 10, new SKColor(255, 0, 0, 80));
+        using var image = SKImage.FromBitmap(bitmap);
+        using var encoded = image.Encode(SKEncodedImageFormat.Png, 100);
+        using var stream = new MemoryStream(encoded.ToArray());
+
+        var results = new SkiaMediaDerivativeGenerator().Generate(stream);
+
+        Assert.Equal([480, 960], results.Select(value => value.RequestedWidth));
+        Assert.All(results, result => Assert.Equal(result.RequestedWidth / 2, result.Height));
+        using var decoded = SKBitmap.Decode(results[0].Content);
+        Assert.True(decoded.AlphaType is SKAlphaType.Premul or SKAlphaType.Unpremul);
+        Assert.Equal(64, results[0].Sha256.Length);
+    }
+
+    [Fact]
+    public void DerivativeGenerator_AppliesExifOrientationBeforeResizing()
+    {
+        using var source = new SKBitmap(800, 400, SKColorType.Rgba8888, SKAlphaType.Premul);
+        using var oriented = SkiaMediaDerivativeGenerator.ApplyOrientation(source, SKEncodedOrigin.RightTop);
+
+        Assert.Equal(400, oriented.Width);
+        Assert.Equal(800, oriented.Height);
+    }
+
+    [Fact]
     public async Task LocalStorage_GeneratesKeyAndBlocksTraversal()
     {
         var root = Path.Combine(Path.GetTempPath(), $"el1te-media-{Guid.NewGuid():N}");

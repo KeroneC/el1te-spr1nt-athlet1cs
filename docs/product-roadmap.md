@@ -22,7 +22,7 @@ The first stage removes friction from workflows already in use.
 - Grouped public navigation so Scholarship, Hall of Fame, Forms, Programs, Coaches, and Team are discoverable without crowding the primary header.
 - Email-invited Admin and guarded SuperAdmin management, including active-state controls, audit records, and protection against removing the final SuperAdmin or accidentally disabling the current user.
 
-Delivery status: Stage 1 is implemented. The platform now includes the media workflow, searchable media selection, grouped public navigation, email-bound Admin/SuperAdmin invitations, guarded access controls, and append-only privileged identity activity history. Automated email delivery, MFA, password recovery, session management, and broader CMS audit coverage move to Stage 2 launch readiness.
+Delivery status: Stage 1 is implemented. The platform includes the media workflow, searchable media selection, grouped public navigation, email-bound Admin/SuperAdmin invitations, guarded access controls, and append-only privileged identity activity history. Email MFA, password recovery, and security-version session revocation were subsequently delivered in the Stage 2 launch-hardening foundation; broader CMS audit coverage remains pending.
 
 ## Stage 2: Launch Readiness
 
@@ -38,7 +38,7 @@ This stage prepares a separate production environment and the support practices 
 - Keep raw logs in Azure behind RBAC and document the support path from reported time, route, and reference ID to the relevant trace and deployment SHA.
 - Retain the current cost controls unless observed traffic justifies a reviewed change: 30-day logs and the configured daily ingestion cap.
 
-Delivery status: the server-side support foundation is implemented. Next.js and API failures are correlated with safe, copyable references; Bicep owns the readiness check, workbook, alerts, release markers, and RBAC-protected support workflow. Cookie-free browser analytics remains deferred to its own privacy review, so browser page views, performance, and client-side event tracking are not yet collected.
+Delivery status: the server-side support foundation is implemented. Next.js and API failures are correlated with safe, copyable references; Bicep owns the readiness check, workbook, alerts, release markers, and RBAC-protected support workflow. The launch-hardening release adds runtime-configurable, cookie-free public route-template and performance telemetry while continuing to exclude Admin activity, identity, queries, slugs, form values, cart customization, and raw exceptions. Demo validation and organization privacy approval remain required before production.
 
 ### Feedback and accessibility
 
@@ -53,6 +53,8 @@ Delivery status: the server-side support foundation is implemented. Next.js and 
 - Provision production separately from demo with explicit cost review, custom domain and TLS, backup/restore checks, secure email through Azure Communication Services, and release/rollback runbooks.
 - Import only reviewed public CMS and media. Exclude users, contact/feedback records, credentials, and other private or test data.
 - Keep the previous Squarespace site as a temporary read-only archive for 60 to 90 days after cutover.
+
+Delivery status: the launch-hardening foundation is implemented for demo review. It includes Admin lockout, email MFA, password recovery, security-version session revocation, Azure-managed demo email, responsive WebP derivatives and backfill, policy drafts, security headers, accessibility automation dependencies, and a dry-run-first selective promotion CLI. Production provisioning, custom-domain email, final content selection, Blob-copy rehearsal, physical inventory, Square checkout, and public cutover remain pending.
 
 ## Stage 3: Winter Registration Pilot
 

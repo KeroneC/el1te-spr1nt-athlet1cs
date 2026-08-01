@@ -63,6 +63,11 @@ Implemented:
 
 - `POST /api/auth/register`
 - `POST /api/auth/login`
+- `POST /api/auth/admin/login`
+- `POST /api/auth/admin/mfa/verify`
+- `POST /api/auth/admin/password-reset/request`
+- `POST /api/auth/admin/password-reset/inspect`
+- `POST /api/auth/admin/password-reset/complete`
 
 - `GET /api/auth/me` (authenticated)
 
@@ -102,7 +107,7 @@ Successful response: `200 OK`
 
 Validation failures return `400 Bad Request`. Duplicate email is treated as a validation failure.
 
-New public registrations default to `Parent`. Privileged roles are created through the controlled SuperAdmin invitation workflow described below.
+Public registration is disabled by default until the Parent portal is implemented. When explicitly enabled in a local environment, new registrations can create only `Parent`. Privileged roles are created through the controlled SuperAdmin invitation workflow described below.
 
 ### Login
 
@@ -119,7 +124,7 @@ Request:
 
 Successful response: `200 OK` with the same auth response shape as registration.
 
-Invalid credentials or inactive users return `401 Unauthorized`.
+Invalid credentials or inactive users return `401 Unauthorized`. This legacy route cannot authenticate Admin or SuperAdmin accounts; privileged accounts use the dedicated Admin login/MFA flow. Admin password recovery always returns a generic request response, stores only a token hash, and revokes existing sessions when a reset completes.
 
 ## Administrative Identity
 
@@ -130,6 +135,7 @@ The following routes require the `SuperAdmin` policy unless marked public:
 - `GET/POST /api/admin/invitations`
 - `POST /api/admin/invitations/{id}/reissue`
 - `POST /api/admin/invitations/{id}/revoke`
+- `POST /api/admin/users/{id}/revoke-sessions`
 - `GET /api/admin/activity`
 - `POST /api/admin-invitations/inspect` (public)
 - `POST /api/admin-invitations/accept` (public)

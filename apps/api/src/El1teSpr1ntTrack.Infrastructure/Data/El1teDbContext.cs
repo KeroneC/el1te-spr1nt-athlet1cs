@@ -85,6 +85,14 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
+    public DbSet<MediaDerivative> MediaDerivatives => Set<MediaDerivative>();
+
+    public DbSet<AdminPasswordReset> AdminPasswordResets => Set<AdminPasswordReset>();
+
+    public DbSet<AdminMfaChallenge> AdminMfaChallenges => Set<AdminMfaChallenge>();
+
+    public DbSet<AuthenticationAttempt> AuthenticationAttempts => Set<AuthenticationAttempt>();
+
     public DbSet<GalleryAlbum> GalleryAlbums => Set<GalleryAlbum>();
 
     public DbSet<GalleryAlbumMedia> GalleryAlbumMedia => Set<GalleryAlbumMedia>();
@@ -120,6 +128,13 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
         modelBuilder.Entity<User>()
             .Property(user => user.PasswordHash)
             .HasMaxLength(512);
+
+        modelBuilder.Entity<User>()
+            .Property(user => user.SecurityVersion)
+            .HasDefaultValue(1);
+
+        modelBuilder.Entity<User>()
+            .HasIndex(user => user.LockoutEndUtc);
 
         modelBuilder.Entity<User>()
             .HasMany(user => user.Athletes)

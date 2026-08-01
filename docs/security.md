@@ -14,7 +14,9 @@ The JWT signing key is `Jwt:Key`. It must be supplied through user secrets or en
 
 Passwords are stored only as BCrypt hashes. Auth endpoints return DTOs and never return `PasswordHash` or EF entities directly.
 
-Public registration defaults to the `Parent` role. This avoids public self-assignment of privileged roles. Admin and SuperAdmin accounts use one-time, email-bound invitations created by an active SuperAdmin. Invitation secrets are stored only as SHA-256 hashes, expire after 72 hours, and are placed in a browser URL fragment so routine HTTP request logging does not receive them. The demo returns each link once for trusted manual delivery; production email delivery remains a Stage 2 capability.
+Anonymous Parent registration is disabled by default until the Parent portal is implemented. When explicitly enabled for local testing, it can create only the `Parent` role. Admin and SuperAdmin accounts use one-time, email-bound invitations created by an active SuperAdmin. Invitation secrets are stored only as SHA-256 hashes, expire after 72 hours, and are placed in a browser URL fragment so routine HTTP request logging does not receive them. The demo returns each invitation link once for trusted manual delivery.
+
+Admin login has distributed IP/account throttles and a 15-minute lock after five failed passwords in 15 minutes. SuperAdmins complete a one-time email-code challenge. Password recovery uses one-time, hash-at-rest URL-fragment tokens and increments the account security version, as do role changes, deactivation, and explicit session revocation. Every authenticated API request compares the JWT security version with the current active user record.
 
 Current roles are:
 
@@ -49,7 +51,7 @@ Development CORS allows localhost origins for local Next.js work. Production COR
 
 Logs should not include passwords, password hashes, JWTs, refresh tokens, payment data, medical notes, emergency contact details, private document URLs, or raw request bodies containing sensitive data.
 
-Unexpected server failures expose only a safe support reference. API request telemetry uses route templates and clears user/session context; Next.js error instrumentation records a safe route template and production digest rather than the raw request. Browser analytics remain disabled. Raw telemetry and the support workbook stay behind Azure RBAC. See [Observability and support references](guides/observability-support.md).
+Unexpected server failures expose only a safe support reference. API request telemetry uses route templates and clears user/session context; Next.js error instrumentation records a safe route template and production digest rather than the raw request. Demo browser analytics are cookie-free, public-route-only, and exclude Admin activity, identifiers, queries, slugs, form values, cart customization, automatic dependencies, and raw exceptions. Raw telemetry and the support workbook stay behind Azure RBAC. See [Observability and support references](guides/observability-support.md).
 
 ## Administrative Audit
 

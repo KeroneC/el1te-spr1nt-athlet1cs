@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 test("SuperAdmin can invite an Admin whose accepted account cannot manage access", async ({ page }) => {
   test.setTimeout(60_000);
@@ -6,11 +7,7 @@ test("SuperAdmin can invite an Admin whose accepted account cannot manage access
   const email = `invited.admin.${suffix}@example.test`;
   const password = "InvitedAdmin!2026";
 
-  await page.goto("/admin/login");
-  await page.getByLabel("Email").fill("e2e.admin@example.test");
-  await page.locator("#password").fill("E2eAdmin!2026Pass");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await signInAsE2eSuperAdmin(page);
 
   await page.getByRole("link", { name: "Access control" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Access control" })).toBeVisible();

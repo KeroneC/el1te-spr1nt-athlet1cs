@@ -49,7 +49,7 @@ export function SiteFooter({ settings, storeEnabled = false }: { settings: SiteS
       </div>
       <div className="site-container footer-bottom">
         <p>&copy; {new Date().getFullYear()} {settings.clubName}. A community youth track and field club.</p>
-        <Link href="/admin/login">Admin</Link>
+        <nav aria-label="Policies"><Link href="/privacy">Privacy</Link><Link href="/accessibility">Accessibility</Link><Link href="/terms">Terms</Link><Link href="/store-policy">Store policy</Link><Link href="/admin/login">Admin</Link></nav>
       </div>
     </footer>
   );

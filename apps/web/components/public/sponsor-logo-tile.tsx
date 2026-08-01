@@ -1,9 +1,9 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element */
 import { createElement, useState, type CSSProperties } from "react";
 import { sponsorTierClass } from "../../lib/public/site";
 import type { Sponsor } from "../../lib/public/types";
+import { ResponsiveMediaImage } from "./responsive-media-image";
 
 type SponsorLogoTileProps = {
   sponsor: Sponsor;
@@ -21,11 +21,10 @@ export function SponsorLogoTile({ sponsor, variant = "full", revealIndex }: Spon
   const linked = Boolean(sponsor.websiteUrl);
 
   const logo = showLogo
-    ? createElement("img", {
-        src: sponsor.logoUrl ?? undefined,
+    ? createElement(ResponsiveMediaImage, {
+        src: sponsor.logoUrl!,
         alt: linked ? "" : `${sponsor.name} logo`,
-        loading: "lazy",
-        decoding: "async",
+        sizes: variant === "preview" ? "(max-width: 640px) 50vw, 20vw" : "(max-width: 640px) 100vw, 33vw",
         onError: () => setLogoFailed(true)
       })
     : createElement("span", { className: "sponsor-logo-fallback", "aria-hidden": linked || undefined }, sponsor.name);

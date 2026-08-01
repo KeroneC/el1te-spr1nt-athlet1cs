@@ -1,5 +1,4 @@
 "use client";
-/* eslint-disable @next/next/no-img-element */
 
 import { ArrowLeft, Minus, Plus, ShieldCheck, ShoppingBag, Trash2 } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +12,7 @@ import {
   type StoreCartLine
 } from "@/lib/store/cart";
 import { formatStoreMoney } from "@/lib/store/configurator";
+import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
 
 type LineHealth = { status: "checking" | "available" | "low" | "sold" | "missing" | "error"; note: string };
 
@@ -69,7 +69,7 @@ export function StoreCart() {
         {lines.length ? <div className="store-cart-lines">{lines.map(line => {
           const state = health[line.id] ?? { status: "checking", note: "Checking availability…" };
           return <article className="store-cart-line" key={line.id}>
-            <div className="store-cart-image">{line.imageUrl ? <img src={line.imageUrl} alt="" /> : <ShoppingBag aria-hidden="true" />}</div>
+            <div className="store-cart-image">{line.imageUrl ? <ResponsiveMediaImage src={line.imageUrl} alt="" sizes="8rem" /> : <ShoppingBag aria-hidden="true" />}</div>
             <div className="store-cart-copy">
               <div><p>Configured team gear</p><h3><Link href={`/shop/${line.productSlug}`}>{line.productName}</Link></h3><strong>{formatStoreMoney(line.unitPriceMinor, line.currency)}</strong></div>
               <dl>

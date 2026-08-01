@@ -40,7 +40,7 @@ public sealed class CmsModelTests
 
     [Theory]
     [InlineData(typeof(SiteSetting), 1)]
-    [InlineData(typeof(ContentBlock), 7)]
+    [InlineData(typeof(ContentBlock), 11)]
     [InlineData(typeof(Announcement), 3)]
     [InlineData(typeof(Event), 4)]
     [InlineData(typeof(Coach), 3)]

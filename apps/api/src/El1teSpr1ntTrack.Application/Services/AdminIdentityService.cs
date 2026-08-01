@@ -54,6 +54,7 @@ public sealed class AdminIdentityService(
             if (activeChanged) changes.Add($"status {(target.IsActive ? "active" : "inactive")} to {(request.IsActive ? "active" : "inactive")}");
             target.Role = request.Role;
             target.IsActive = request.IsActive;
+            target.SecurityVersion++;
             target.UpdatedAt = clock.UtcNow;
             await repository.AddActivityAsync(Activity(actorUserId, "AdminUserUpdated", "User", target.Id,
                 $"Changed {target.Email}: {string.Join("; ", changes)}.", correlationId), token);
@@ -61,6 +62,20 @@ public sealed class AdminIdentityService(
             result = MapUser(target);
         }, cancellationToken);
         return result!;
+    }
+
+    public async Task RevokeSessionsAsync(Guid actorUserId, Guid targetUserId, string? correlationId, CancellationToken cancellationToken)
+    {
+        await repository.ExecuteSerializableAsync(async token =>
+        {
+            var target = await repository.GetPrivilegedUserAsync(targetUserId, tracked: true, token)
+                ?? throw new CmsNotFoundException("Admin user", targetUserId);
+            target.SecurityVersion++;
+            target.UpdatedAt = clock.UtcNow;
+            await repository.AddActivityAsync(Activity(actorUserId, "AdminSessionsRevoked", "User", target.Id,
+                $"Revoked active sessions for {target.Email}.", correlationId), token);
+            await repository.SaveChangesAsync(token);
+        }, cancellationToken);
     }
 
     public async Task<PagedResultDto<AdminInvitationDto>> GetInvitationsAsync(AdminInvitationOptions options, CancellationToken cancellationToken)

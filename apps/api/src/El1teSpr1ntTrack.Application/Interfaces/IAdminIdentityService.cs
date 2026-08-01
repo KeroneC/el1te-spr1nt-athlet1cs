@@ -8,6 +8,7 @@ public interface IAdminIdentityService
 {
     Task<PagedResultDto<AdminUserDto>> GetUsersAsync(AdminUserOptions options, CancellationToken cancellationToken);
     Task<AdminUserDto> UpdateUserAsync(Guid actorUserId, Guid targetUserId, UpdateAdminUserRequest request, string? correlationId, CancellationToken cancellationToken);
+    Task RevokeSessionsAsync(Guid actorUserId, Guid targetUserId, string? correlationId, CancellationToken cancellationToken);
     Task<PagedResultDto<AdminInvitationDto>> GetInvitationsAsync(AdminInvitationOptions options, CancellationToken cancellationToken);
     Task<AdminInvitationCreatedDto> CreateInvitationAsync(Guid actorUserId, CreateAdminInvitationRequest request, string? correlationId, CancellationToken cancellationToken);
     Task<AdminInvitationCreatedDto> ResendInvitationAsync(Guid actorUserId, Guid invitationId, string? correlationId, CancellationToken cancellationToken);

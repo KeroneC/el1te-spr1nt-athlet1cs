@@ -5,14 +5,18 @@ using El1teSpr1ntTrack.Core.DTOs.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace El1teSpr1ntTrack.Api.Controllers;
 
 [ApiController]
 [Route("api/auth")]
-public sealed class AuthController(IAuthService authService) : ControllerBase
+public sealed class AuthController(
+    IAuthService authService,
+    IAdminAuthenticationService adminAuthenticationService) : ControllerBase
 {
     [HttpPost("register")]
+    [EnableRateLimiting("public-write")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> Register(RegisterRequestDto request, CancellationToken cancellationToken)
@@ -33,6 +37,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     }
 
     [HttpPost("login")]
+    [EnableRateLimiting("authentication")]
     [ProducesResponseType(typeof(AuthResponseDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> Login(LoginRequestDto request, CancellationToken cancellationToken)
@@ -51,6 +56,74 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
                 Status = StatusCodes.Status401Unauthorized
             });
         }
+    }
+
+    [AllowAnonymous]
+    [HttpPost("admin/login")]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> AdminLogin(AdminLoginRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await adminAuthenticationService.LoginAsync(request, ClientPartition(), cancellationToken));
+        }
+        catch (InvalidCredentialsException)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Login failed.", Detail = "Email or password is incorrect.",
+                Status = StatusCodes.Status401Unauthorized
+            });
+        }
+    }
+
+    [AllowAnonymous]
+    [HttpPost("admin/mfa/verify")]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> VerifyAdminMfa(AdminMfaVerifyRequestDto request, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return Ok(await adminAuthenticationService.VerifyMfaAsync(request, ClientPartition(), cancellationToken));
+        }
+        catch (InvalidCredentialsException)
+        {
+            return Unauthorized(new ProblemDetails
+            {
+                Title = "Verification failed.", Detail = "The verification code is invalid or expired.",
+                Status = StatusCodes.Status401Unauthorized
+            });
+        }
+    }
+
+    [AllowAnonymous]
+    [HttpPost("admin/password-reset/request")]
+    [EnableRateLimiting("public-write")]
+    public async Task<IActionResult> RequestAdminPasswordReset(
+        AdminPasswordResetRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        await adminAuthenticationService.RequestPasswordResetAsync(request, ClientPartition(), cancellationToken);
+        return Accepted(new GenericAcceptedDto("If an eligible account exists, a password reset message has been sent."));
+    }
+
+    [AllowAnonymous]
+    [HttpPost("admin/password-reset/inspect")]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> InspectAdminPasswordReset(
+        AdminPasswordResetInspectDto request,
+        CancellationToken cancellationToken) =>
+        Ok(await adminAuthenticationService.InspectPasswordResetAsync(request.Token, cancellationToken));
+
+    [AllowAnonymous]
+    [HttpPost("admin/password-reset/complete")]
+    [EnableRateLimiting("authentication")]
+    public async Task<IActionResult> CompleteAdminPasswordReset(
+        AdminPasswordResetCompleteDto request,
+        CancellationToken cancellationToken)
+    {
+        await adminAuthenticationService.CompletePasswordResetAsync(request, ClientPartition(), cancellationToken);
+        return NoContent();
     }
 
     [Authorize]
@@ -83,4 +156,6 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
         return modelState;
     }
+
+    private string ClientPartition() => HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
 }

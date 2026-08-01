@@ -7,7 +7,11 @@ export const CONTENT_KEYS = {
   aboutStory: "about.story",
   aboutValues: "about.values",
   registrationIntro: "registration.intro",
-  sponsorsIntro: "sponsors.intro"
+  sponsorsIntro: "sponsors.intro",
+  privacyPolicy: "policy.privacy",
+  accessibilityPolicy: "policy.accessibility",
+  termsPolicy: "policy.terms",
+  storePolicy: "policy.store"
 } as const;
 
 export function contentByKey(blocks: ContentBlock[]): Map<string, ContentBlock> {

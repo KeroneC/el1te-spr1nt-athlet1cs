@@ -11,9 +11,14 @@ sequenceDiagram
     participant A as ASP.NET Core API
     participant D as Database
     B->>N: POST /api/admin-session/login
-    N->>A: POST /api/auth/login
+    N->>A: POST /api/auth/admin/login
     A->>D: Find normalized email
     A->>A: Verify BCrypt password and active status
+    alt SuperAdmin
+        A-->>N: One-time email challenge
+        B->>N: Six-digit code
+        N->>A: POST /api/auth/admin/mfa/verify
+    end
     A-->>N: JWT, expiration, user summary
     N->>A: GET /api/auth/me with Bearer JWT
     A->>D: Load current user
@@ -25,7 +30,7 @@ sequenceDiagram
     A->>A: Validate JWT and CmsAdmin policy
 ```
 
-`AuthService` normalizes email and rejects inactive users or invalid passwords with the same credential error. `JwtTokenService` signs claims for identifier, email, name, and role. `Program.cs` validates issuer, audience, lifetime, signing key, and signature, with a two-minute clock skew.
+`AdminAuthenticationService` normalizes email and rejects inactive, locked, or invalid accounts with the same credential error. It adds account/IP throttling, lockout, SuperAdmin email MFA, and one-time password recovery. `JwtTokenService` signs claims for identifier, email, name, role, and security version. `Program.cs` validates issuer, audience, lifetime, signing key, signature, current active user, and current security version, with a two-minute clock skew.
 
 ## Authorization Boundaries
 
@@ -35,7 +40,7 @@ The `CmsAdmin` policy requires:
 2. an Admin or SuperAdmin role claim; and
 3. a current database user that is still active and privileged.
 
-The database lookup in `ActiveCmsAdminHandler` means disabling or demoting an account takes effect for admin authorization even if an older JWT still contains an admin role. Frontend route protection improves navigation and privacy, but it cannot replace this API policy.
+Global JWT validation and the database lookup in `ActiveCmsAdminHandler` mean disabling, demoting, resetting, or explicitly revoking an account invalidates its older JWT. Frontend route protection improves navigation and privacy, but it cannot replace this API policy.
 
 The separate `SuperAdmin` policy does not trust the JWT role claim by itself. `ActiveSuperAdminHandler` loads the current database record and requires an active SuperAdmin, so deactivation or demotion immediately removes access-control authority. Signing in again refreshes the JWT role used by other role-aware paths after a promotion.
 
@@ -47,10 +52,10 @@ Next.js stores the JWT in `el1te_admin_session`, an HttpOnly, SameSite Lax cooki
 
 HttpOnly reduces exposure to client-side JavaScript; SameSite helps limit cross-site request contexts; Secure prevents production transmission over plain HTTP. These controls do not remove the need for XSS prevention, TLS, API validation, or authorization.
 
-Logout deletes the web cookie. The API token is stateless and is not revoked. There is currently no refresh-token, revocation, remember-me, or password-reset flow.
+Logout deletes the web cookie. Password resets, role/status changes, and the explicit SuperAdmin session-revocation action increment `SecurityVersion` and invalidate older tokens on their next authenticated request. There is no refresh-token or remember-me flow.
 
 ## Registration and Development Administration
 
-Public registration always creates an active Parent in `AuthService`; request data cannot select a privileged role. Admin and SuperAdmin access is granted through a one-time invitation created by an active SuperAdmin. The secret is returned only at creation/reissue, stored as a SHA-256 hash, expires after 72 hours, and is accepted through a browser-fragment link so normal request URLs do not contain it. For local learning, `DevelopmentAdminSeeder` can create one SuperAdmin from User Secrets. It runs only in Development, skips incomplete configuration, and never changes an existing user. Production keeps the non-HTTP bootstrap command for initial provisioning and recovery only.
+Anonymous Parent registration is default-off until the Parent portal is approved. When temporarily enabled for local testing, request data still cannot select a privileged role. Admin and SuperAdmin access is granted through a one-time invitation created by an active SuperAdmin. The secret is returned only at creation/reissue, stored as a SHA-256 hash, expires after 72 hours, and is accepted through a browser-fragment link so normal request URLs do not contain it. For local learning, `DevelopmentAdminSeeder` can create one SuperAdmin from User Secrets. It runs only in Development, skips incomplete configuration, and never changes an existing user. Production keeps the non-HTTP bootstrap command for initial provisioning and recovery only.
 
 Never place signing keys, seed passwords, JWT values, or production credentials in Git, docs, logs, URLs, or screenshots.

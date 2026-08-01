@@ -29,7 +29,8 @@ public sealed class JwtTokenService(IConfiguration configuration) : IJwtTokenSer
             new(JwtRegisteredClaimNames.Email, user.Email),
             new(ClaimTypes.Email, user.Email),
             new(ClaimTypes.Role, user.Role.ToString()),
-            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim())
+            new(ClaimTypes.Name, $"{user.FirstName} {user.LastName}".Trim()),
+            new("security_version", user.SecurityVersion.ToString(System.Globalization.CultureInfo.InvariantCulture))
         };
 
         var credentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);

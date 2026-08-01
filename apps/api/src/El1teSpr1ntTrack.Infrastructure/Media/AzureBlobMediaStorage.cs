@@ -28,6 +28,9 @@ public sealed class AzureBlobMediaStorage : IMediaStorage
         return new StoredMediaFile(key);
     }
 
+    public async Task SaveAsAsync(Stream stream, string storageKey, CancellationToken cancellationToken) =>
+        await _container.GetBlobClient(ValidateKey(storageKey)).UploadAsync(stream, overwrite: true, cancellationToken);
+
     public async Task<Stream?> OpenReadAsync(string storageKey, CancellationToken cancellationToken)
     {
         var blob = _container.GetBlobClient(ValidateKey(storageKey));

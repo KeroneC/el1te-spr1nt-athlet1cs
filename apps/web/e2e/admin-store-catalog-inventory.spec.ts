@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 test("Admin can create a draft SKU, receive it, and complete a physical count", async ({ page }) => {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -6,11 +7,7 @@ test("Admin can create a draft SKU, receive it, and complete a physical count", 
   let productId: string | undefined;
 
   try {
-    await page.goto("/admin/login");
-    await page.getByLabel("Email").fill("e2e.admin@example.test");
-    await page.locator("#password").fill("E2eAdmin!2026Pass");
-    await page.getByRole("button", { name: "Sign in" }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    await signInAsE2eSuperAdmin(page);
 
     await page.getByRole("link", { name: "Merchandise", exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Merchandise operations" })).toBeVisible();

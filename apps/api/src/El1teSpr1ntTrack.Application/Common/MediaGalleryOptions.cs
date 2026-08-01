@@ -12,8 +12,10 @@ public sealed class MediaStorageOptions
     public string ContainerName { get; set; } = "media";
     public string PublicBaseUrl { get; set; } = "http://localhost:5126";
     public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
+    public bool BackfillDerivativesOnStartup { get; set; }
 }
 
 public sealed record StoredMediaFile(string StorageKey);
 public sealed record InspectedImage(string ContentType, string Extension, int Width, int Height);
-public sealed record PublicMediaFile(Stream Stream, string ContentType, long Length);
+public sealed record GeneratedMediaDerivative(int RequestedWidth, int Width, int Height, byte[] Content, string Sha256);
+public sealed record PublicMediaFile(Stream Stream, string ContentType, long Length, bool IsVersionedDerivative = false);

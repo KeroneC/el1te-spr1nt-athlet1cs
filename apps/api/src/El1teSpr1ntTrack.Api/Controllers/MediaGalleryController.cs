@@ -9,12 +9,16 @@ namespace El1teSpr1ntTrack.Api.Controllers;
 public sealed class MediaController(IMediaService service) : ControllerBase
 {
     [HttpGet("{id:guid}")]
-    [ResponseCache(Duration = 3600, Location = ResponseCacheLocation.Any)]
-    public async Task<IActionResult> Get(Guid id, CancellationToken token)
+    public async Task<IActionResult> Get(Guid id, [FromQuery] int? width, CancellationToken token)
     {
-        var media = await service.OpenPublicAsync(id, token);
+        if (width.HasValue && width is not (480 or 960 or 1600))
+            return BadRequest(new ProblemDetails { Title = "Invalid media width", Detail = "Width must be 480, 960, or 1600." });
+        var media = await service.OpenPublicAsync(id, width, token);
         if (media is null) return NotFound();
         Response.Headers.XContentTypeOptions = "nosniff";
+        Response.Headers.CacheControl = media.IsVersionedDerivative
+            ? "public,max-age=86400,stale-while-revalidate=604800"
+            : "public,max-age=3600";
         return File(media.Stream, media.ContentType, enableRangeProcessing: true);
     }
 }

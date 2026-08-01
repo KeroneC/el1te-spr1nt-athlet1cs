@@ -8,6 +8,7 @@ param jwtAudience string
 param jwtSecretUri string
 param blobServiceUri string
 param mediaContainerName string
+param backfillMediaDerivativesOnStartup bool = false
 param applicationInsightsConnectionString string
 param publicBaseUrl string
 param allowedOrigins array
@@ -20,6 +21,8 @@ param squareWebhookNotificationUrl string = ''
 param squareCheckoutReturnUrl string = ''
 param squareAccessTokenSecretUri string = ''
 param squareWebhookSignatureKeySecretUri string = ''
+param transactionalEmailConnectionSecretUri string
+param transactionalEmailSenderAddress string
 param tags object = {}
 
 var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
@@ -113,12 +116,36 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: '10485760'
         }
         {
+          name: 'MediaStorage__BackfillDerivativesOnStartup'
+          value: string(backfillMediaDerivativesOnStartup)
+        }
+        {
           name: 'AdminInvitations__SiteUrl'
           value: jwtAudience
         }
         {
           name: 'AdminInvitations__ExpiresHours'
           value: '72'
+        }
+        {
+          name: 'AuthFeatures__AllowPublicRegistration'
+          value: 'false'
+        }
+        {
+          name: 'TransactionalEmail__Provider'
+          value: 'AzureCommunicationServices'
+        }
+        {
+          name: 'TransactionalEmail__ConnectionString'
+          value: '@Microsoft.KeyVault(SecretUri=${transactionalEmailConnectionSecretUri})'
+        }
+        {
+          name: 'TransactionalEmail__SenderAddress'
+          value: transactionalEmailSenderAddress
+        }
+        {
+          name: 'TransactionalEmail__AdminSiteUrl'
+          value: jwtAudience
         }
         {
           name: 'Store__Enabled'

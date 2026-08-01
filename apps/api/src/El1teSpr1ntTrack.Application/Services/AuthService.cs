@@ -1,3 +1,4 @@
+using El1teSpr1ntTrack.Application.Common;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.DTOs.Auth;
@@ -9,12 +10,22 @@ namespace El1teSpr1ntTrack.Application.Services;
 
 public sealed class AuthService(
     IUserRepository userRepository,
-    IJwtTokenService jwtTokenService) : IAuthService
+    IJwtTokenService jwtTokenService,
+    AuthFeatureSettings? featureSettings = null) : IAuthService
 {
+    private readonly AuthFeatureSettings _featureSettings = featureSettings ?? new AuthFeatureSettings();
     public async Task<AuthResponseDto> RegisterAsync(
         RegisterRequestDto request,
         CancellationToken cancellationToken = default)
     {
+        if (!_featureSettings.AllowPublicRegistration)
+        {
+            throw new AuthValidationException(new Dictionary<string, string[]>
+            {
+                ["Registration"] = ["Online account registration is not available."]
+            });
+        }
+
         var normalizedEmail = NormalizeEmail(request.Email);
         var errors = ValidateRegisterRequest(request, normalizedEmail);
 
@@ -59,7 +70,8 @@ public sealed class AuthService(
         }
 
         var user = await userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
-        if (user is null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user is null || !user.IsActive || user.Role is UserRole.Admin or UserRole.SuperAdmin ||
+            !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
         {
             throw new InvalidCredentialsException();
         }

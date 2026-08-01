@@ -20,7 +20,7 @@ A browser admin experience needs convenient navigation without exposing a bearer
 
 ## How It Works
 
-The Client Component submits credentials to the same-origin login Route Handler. That handler calls `/api/auth/login`, then `/api/auth/me`, and accepts only active Admin/SuperAdmin users. It returns user data but stores the JWT only in `el1te_admin_session`, an HttpOnly cookie.
+The Client Component submits credentials to the same-origin login Route Handler. That handler calls `/api/auth/admin/login`; SuperAdmins then complete `/api/auth/admin/mfa/verify`. The handler calls `/api/auth/me`, accepts only active Admin/SuperAdmin users, and stores the JWT only in `el1te_admin_session`, an HttpOnly cookie. The short-lived MFA challenge token is held only in a separate HttpOnly cookie scoped to the MFA route.
 
 The protected layout calls `requireAdminUser` on every dynamic request. `adminApiFetch` reads the cookie server-side, adds a Bearer header, and disables caching. A `401` routes through logout to clear the cookie; a `403` routes to access denied.
 
@@ -48,4 +48,4 @@ Backend-for-frontend, HttpOnly/Secure/SameSite cookies, Server Components, Route
 
 ## What Was Intentionally Deferred
 
-There is no refresh token, revocation, remember-me, password reset, multi-factor authentication, or granular frontend permission system.
+This original learning note predates launch hardening. Refresh tokens, remember-me, authenticator-app TOTP, and granular frontend permissions remain deferred; email MFA, one-time password recovery, and security-version session revocation are now implemented.
