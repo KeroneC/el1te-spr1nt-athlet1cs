@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, LoaderCircle, LogIn } from "lucide-react";
@@ -16,6 +16,11 @@ export function LoginForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
   const [requiresMfa, setRequiresMfa] = useState(false);
+  const verificationCodeInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (requiresMfa) verificationCodeInput.current?.focus();
+  }, [requiresMfa]);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -78,7 +83,7 @@ export function LoginForm() {
 
   if (requiresMfa) return <form onSubmit={verifyMfa} noValidate className="space-y-5">
     {message && <p role="status" className="border-l-4 border-sky-500 bg-sky-50 px-4 py-3 text-sm font-semibold text-sky-900">{message}</p>}
-    <Field label="Verification code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} autoFocus error={errors.code?.[0]} />
+    <Field label="Verification code" name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} inputRef={verificationCodeInput} error={errors.code?.[0]} />
     <button type="submit" disabled={submitting} className="inline-flex min-h-11 w-full items-center justify-center gap-2 bg-track-red px-5 text-sm font-bold text-white focus:outline-none focus:ring-2 focus:ring-track-red focus:ring-offset-2 disabled:opacity-65">
       {submitting ? <LoaderCircle size={18} className="animate-spin" /> : <LogIn size={18} />}{submitting ? "Verifying…" : "Verify and sign in"}
     </button>
@@ -108,7 +113,7 @@ export function LoginForm() {
   );
 }
 
-function Field({ label, name, error, ...props }: { label: string; name: string; error?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
+function Field({ label, name, error, inputRef, ...props }: { label: string; name: string; error?: string; inputRef?: React.Ref<HTMLInputElement> } & React.InputHTMLAttributes<HTMLInputElement>) {
   const errorId = `${name}-error`;
-  return <div><label htmlFor={name} className="mb-2 block text-sm font-bold text-track-ink">{label}</label><input id={name} name={name} {...props} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} className="min-h-11 w-full border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-track-red focus:ring-2 focus:ring-track-red/20" />{error && <p id={errorId} className="mt-1 text-sm font-semibold text-red-700">{error}</p>}</div>;
+  return <div><label htmlFor={name} className="mb-2 block text-sm font-bold text-track-ink">{label}</label><input ref={inputRef} id={name} name={name} {...props} aria-invalid={Boolean(error)} aria-describedby={error ? errorId : undefined} className="min-h-11 w-full border border-slate-300 bg-white px-3 text-base outline-none transition focus:border-track-red focus:ring-2 focus:ring-track-red/20" />{error && <p id={errorId} className="mt-1 text-sm font-semibold text-red-700">{error}</p>}</div>;
 }
