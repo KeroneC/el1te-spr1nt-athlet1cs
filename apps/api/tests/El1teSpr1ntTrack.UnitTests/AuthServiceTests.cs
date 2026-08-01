@@ -159,7 +159,10 @@ public class AuthServiceTests
 
     private static AuthService CreateAuthService(FakeUserRepository repository)
     {
-        return new AuthService(repository, new FakeJwtTokenService());
+        return new AuthService(repository, new FakeJwtTokenService(), new AuthFeatureSettings
+        {
+            AllowPublicRegistration = true
+        });
     }
 
     private static RegisterRequestDto CreateRegisterRequest()

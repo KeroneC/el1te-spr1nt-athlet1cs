@@ -18,6 +18,14 @@ public sealed class LocalMediaStorage(MediaStorageOptions options) : IMediaStora
         return new StoredMediaFile(key.Replace('\\', '/'));
     }
 
+    public async Task SaveAsAsync(Stream stream, string storageKey, CancellationToken cancellationToken)
+    {
+        var path = Resolve(storageKey);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using var output = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 81920, true);
+        await stream.CopyToAsync(output, cancellationToken);
+    }
+
     public Task<Stream?> OpenReadAsync(string storageKey, CancellationToken cancellationToken)
     {
         var path = Resolve(storageKey);

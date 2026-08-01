@@ -152,6 +152,16 @@ module monitoring 'modules/monitoring.bicep' = {
   }
 }
 
+module communicationEmail 'modules/communication-email.bicep' = {
+  name: 'communication-email'
+  params: {
+    baseName: baseName
+    keyVaultName: vaultName
+    tags: tags
+  }
+  dependsOn: [deploymentSecretsOfficer]
+}
+
 module api 'modules/api-app.bicep' = {
   name: 'api-app'
   params: {
@@ -174,6 +184,8 @@ module api 'modules/api-app.bicep' = {
     squareCheckoutReturnUrl: squareCheckoutReturnUrl
     squareAccessTokenSecretUri: squareAccessTokenSecretUri
     squareWebhookSignatureKeySecretUri: squareWebhookSignatureKeySecretUri
+    transactionalEmailConnectionSecretUri: communicationEmail.outputs.connectionSecretUri
+    transactionalEmailSenderAddress: communicationEmail.outputs.senderAddress
     location: location
     name: apiAppName
     sqlServerFqdn: sqlServer.outputs.fullyQualifiedDomainName
@@ -190,6 +202,8 @@ module web 'modules/web-app.bicep' = {
     location: location
     name: webAppName
     releaseSha: releaseSha
+    browserAnalyticsEnabled: true
+    cspMode: 'report-only'
     tags: tags
   }
 }

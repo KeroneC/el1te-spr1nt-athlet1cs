@@ -87,6 +87,14 @@ public static class ProductionConfigurationValidator
             errors.Add("AdminInvitations:ExpiresHours must be between 1 and 168.");
         }
 
+        if (configuration.GetValue<bool>("AuthFeatures:AllowPublicRegistration"))
+            errors.Add("AuthFeatures:AllowPublicRegistration must remain false until the Parent portal is approved.");
+        if (!string.Equals(configuration["TransactionalEmail:Provider"], "AzureCommunicationServices", StringComparison.OrdinalIgnoreCase))
+            errors.Add("TransactionalEmail:Provider must be AzureCommunicationServices in Production.");
+        Required(configuration, "TransactionalEmail:ConnectionString", errors);
+        Required(configuration, "TransactionalEmail:SenderAddress", errors);
+        RequiredHttpsUrl(configuration, "TransactionalEmail:AdminSiteUrl", errors);
+
         if (configuration.GetValue<bool>("Store:Enabled"))
         {
             ValidateCommerce(configuration, errors);

@@ -129,6 +129,89 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.ToTable("AdminInvitations");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AdminMfaChallenge", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ChallengeTokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("CodeHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("FailedAttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChallengeTokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "ExpiresAtUtc");
+
+                    b.ToTable("AdminMfaChallenges");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AdminPasswordReset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset>("ExpiresAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("RevokedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("UsedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "ExpiresAtUtc");
+
+                    b.ToTable("AdminPasswordResets");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Announcement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -300,6 +383,38 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.HasIndex("AthleteId");
 
                     b.ToTable("AthleteDocuments");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AuthenticationAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("PartitionHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<bool>("WasSuccessful")
+                        .HasColumnType("bit");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Purpose", "PartitionHash", "CreatedAt");
+
+                    b.ToTable("AuthenticationAttempts");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Coach", b =>
@@ -788,6 +903,46 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                             IsPublished = true,
                             Key = "sponsors.intro",
                             Title = "Partner With Our Team"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000008"),
+                            Body = "We collect only the information needed to respond to inquiries, manage authorized club content, and operate approved services. Public performance analytics are configured without cookies or user identifiers. We do not sell personal information. Authorized staff may access submitted information only for club operations, support, safety, and legal obligations. Contact the club to ask about access, correction, or removal. This draft must be approved by the organization before public launch.",
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayOrder = 1,
+                            IsPublished = true,
+                            Key = "policy.privacy",
+                            Title = "Privacy"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000009"),
+                            Body = "El1te Spr1nt Athlet1cs aims to provide a website that works with keyboards, screen readers, zoom, reduced motion, and common mobile devices. If you encounter a barrier, contact the club with the page, approximate time, and a description of the problem so staff can investigate and provide an alternative. This draft must be approved by the organization before public launch.",
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayOrder = 2,
+                            IsPublished = true,
+                            Key = "policy.accessibility",
+                            Title = "Accessibility"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000010"),
+                            Body = "This website provides club information and administrative tools. Content may change as schedules, programs, eligibility, and availability are reviewed. Do not misuse the site, attempt unauthorized access, or submit information you are not authorized to provide. External services and links have their own terms. This draft is factual operational guidance, not legal advice, and must be approved before public launch.",
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayOrder = 3,
+                            IsPublished = true,
+                            Key = "policy.terms",
+                            Title = "Website Terms"
+                        },
+                        new
+                        {
+                            Id = new Guid("20000000-0000-0000-0000-000000000011"),
+                            Body = "The merchandise shop is currently a preview and does not accept payment. Before launch, final prices, tax, availability, handoff arrangements, customization review, cancellations, returns, and refunds will be shown before checkout. Card details will be handled by Square and not stored by El1te. This draft must be updated and approved before payments are enabled.",
+                            CreatedAtUtc = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            DisplayOrder = 4,
+                            IsPublished = true,
+                            Key = "policy.store",
+                            Title = "Store Policy"
                         });
                 });
 
@@ -1565,6 +1720,59 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.HasIndex("UploadedByUserId");
 
                     b.ToTable("MediaAssets", (string)null);
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaDerivative", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<long>("FileSizeBytes")
+                        .HasColumnType("bigint");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("MediaAssetId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("RequestedWidth")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StorageKey")
+                        .IsUnique();
+
+                    b.HasIndex("MediaAssetId", "RequestedWidth")
+                        .IsUnique();
+
+                    b.ToTable("MediaDerivatives");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
@@ -2675,6 +2883,12 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<int>("FailedLoginCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("FailedLoginWindowStartedUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -2688,6 +2902,12 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<DateTimeOffset?>("LastSuccessfulLoginUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("LockoutEndUtc")
+                        .HasColumnType("datetimeoffset");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
@@ -2696,6 +2916,11 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
+                    b.Property<int>("SecurityVersion")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("datetimeoffset");
 
@@ -2703,6 +2928,8 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("LockoutEndUtc");
 
                     b.ToTable("Users");
                 });
@@ -2733,6 +2960,28 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("AcceptedUser");
 
                     b.Navigation("InvitedByUser");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AdminMfaChallenge", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "User")
+                        .WithMany("MfaChallenges")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.AdminPasswordReset", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "User")
+                        .WithMany("PasswordResets")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Athlete", b =>
@@ -2934,6 +3183,17 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("UploadedByUser");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaDerivative", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.MediaAsset", "MediaAsset")
+                        .WithMany("Derivatives")
+                        .HasForeignKey("MediaAssetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MediaAsset");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
@@ -3196,6 +3456,8 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("AlbumMedia");
 
                     b.Navigation("CoverForAlbums");
+
+                    b.Navigation("Derivatives");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.Order", b =>
@@ -3263,7 +3525,11 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                 {
                     b.Navigation("Athletes");
 
+                    b.Navigation("MfaChallenges");
+
                     b.Navigation("Orders");
+
+                    b.Navigation("PasswordResets");
 
                     b.Navigation("UploadedMedia");
                 });

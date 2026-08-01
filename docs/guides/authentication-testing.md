@@ -8,7 +8,7 @@ Complete [local development](local-development.md), start API and web, and confi
 
 ## Registration and Login
 
-1. In Swagger, call `POST /api/auth/register` with a new local email, matching password confirmation, and a password of at least eight characters.
+1. Confirm `AuthFeatures:AllowPublicRegistration` is false and that `POST /api/auth/register` rejects anonymous registration. If Parent-account behavior specifically needs local testing, temporarily set the flag to true, restart the API, and call the endpoint with a disposable email, matching password confirmation, and a password of at least eight characters.
 2. Confirm `200` and role `Parent`. The request cannot choose Admin/SuperAdmin.
 3. Call `POST /api/auth/login` with wrong credentials; confirm `401` without learning whether the email exists.
 4. Call it with the registered credentials; confirm a token and expiration are returned by the API.
@@ -30,12 +30,12 @@ The inactive test has no product UI. Use a disposable user in a local database, 
 
 1. Open `/admin` in a private browser window; confirm redirect to login.
 2. Try invalid credentials; confirm a generic error.
-3. Sign in as the Development SuperAdmin; confirm dashboard name and role.
+3. Sign in as the Development SuperAdmin. Open the newest owner-readable message in the gitignored `.dev-mail` directory, enter the six-digit code without copying it into logs, and confirm dashboard name and role.
 4. In developer tools, open Application/Storage -> Cookies and select `http://localhost:3000`.
 5. Confirm `el1te_admin_session` is HttpOnly, SameSite Lax, scoped to `/`, and has an expiration. Secure is enabled in production; local HTTP development does not set it.
 6. Do not reveal or copy the cookie value. Confirm Local Storage and Session Storage contain no JWT.
 7. Inspect the login request response: it returns user data, not `accessToken`.
-8. Log out; confirm the cookie disappears and `/admin` requires login again.
+8. Log out; confirm the cookie disappears and `/admin` requires login again. Separately test password recovery with a disposable Admin and confirm the one-time fragment disappears from the address bar, cannot be reused, and invalidates its prior session.
 
 ## Invalid or Expired Session
 

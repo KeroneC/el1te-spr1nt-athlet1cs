@@ -21,10 +21,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.AspNetCore.HttpOverrides;
+using System.Threading.RateLimiting;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
 var isAdminBootstrap = args.Contains("--bootstrap-admin", StringComparer.OrdinalIgnoreCase);
+var isMediaBackfill = args.Contains("--backfill-media-derivatives", StringComparer.OrdinalIgnoreCase);
 
 ProductionConfigurationValidator.Validate(
     builder.Configuration,
@@ -86,9 +90,35 @@ builder.Services
     .AddCheck<DatabaseHealthCheck>("database", tags: ["ready"])
     .AddCheck<SquareHealthCheck>("square", tags: ["commerce"]);
 builder.Services.AddApiCors(builder.Configuration);
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddPolicy("authentication", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 20, Window = TimeSpan.FromMinutes(15), QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+    options.AddPolicy("public-write", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 5, Window = TimeSpan.FromMinutes(10), QueueLimit = 0,
+            AutoReplenishment = true
+        }));
+});
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardLimit = 2;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 builder.Services.AddScoped<IClock, SystemClock>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IAdminAuthenticationService, AdminAuthenticationService>();
 builder.Services.AddScoped<IAdminIdentityService, AdminIdentityService>();
 builder.Services.AddScoped<IAdminIdentityRepository, AdminIdentityRepository>();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
@@ -100,6 +130,8 @@ builder.Services.AddScoped<IAdminCmsService, AdminCmsService>();
 builder.Services.AddScoped<IAdminCmsRepository, AdminCmsRepository>();
 builder.Services.AddScoped<IMediaService, MediaService>();
 builder.Services.AddScoped<IMediaRepository, MediaRepository>();
+builder.Services.AddSingleton<IMediaDerivativeGenerator, SkiaMediaDerivativeGenerator>();
+builder.Services.AddScoped<MediaDerivativeBackfillService>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
 builder.Services.AddScoped<IStoreAdminService, StoreAdminService>();
@@ -137,6 +169,22 @@ builder.Services.AddHttpClient<ISquareCatalogImageImporter, SquareCatalogImageIm
     AllowAutoRedirect = false
 });
 builder.Services.AddHostedService<CommerceOutboxWorker>();
+
+var authFeatureSettings = builder.Configuration
+    .GetSection(AuthFeatureSettings.SectionName).Get<AuthFeatureSettings>() ?? new AuthFeatureSettings();
+var transactionalEmailSettings = builder.Configuration
+    .GetSection(TransactionalEmailSettings.SectionName).Get<TransactionalEmailSettings>() ?? new TransactionalEmailSettings();
+if (!Path.IsPathRooted(transactionalEmailSettings.DevelopmentOutboxPath))
+{
+    transactionalEmailSettings.DevelopmentOutboxPath = Path.Combine(
+        builder.Environment.ContentRootPath, transactionalEmailSettings.DevelopmentOutboxPath);
+}
+builder.Services.AddSingleton(authFeatureSettings);
+builder.Services.AddSingleton(transactionalEmailSettings);
+builder.Services.AddSingleton<ITransactionalEmailSender>(_ =>
+    string.Equals(transactionalEmailSettings.Provider, "AzureCommunicationServices", StringComparison.OrdinalIgnoreCase)
+        ? new AzureCommunicationEmailSender(transactionalEmailSettings)
+        : new DevelopmentFileEmailSender(transactionalEmailSettings));
 
 var adminInvitationSettings = builder.Configuration
     .GetSection(AdminInvitationSettings.SectionName)
@@ -190,6 +238,24 @@ builder.Services
             IssuerSigningKey = signingKey,
             ClockSkew = TimeSpan.FromMinutes(2)
         };
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var identifier = context.Principal?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var versionClaim = context.Principal?.FindFirst("security_version")?.Value;
+                if (!Guid.TryParse(identifier, out var userId) || !int.TryParse(versionClaim, out var tokenVersion))
+                {
+                    context.Fail("The session is no longer valid.");
+                    return;
+                }
+
+                var repository = context.HttpContext.RequestServices.GetRequiredService<IUserRepository>();
+                var user = await repository.GetByIdAsync(userId, context.HttpContext.RequestAborted);
+                if (user is null || !user.IsActive || user.SecurityVersion != tokenVersion)
+                    context.Fail("The session is no longer valid.");
+            }
+        };
     });
 
 builder.Services.AddAuthorization(CmsAdminAuthorization.Configure);
@@ -204,12 +270,22 @@ if (isAdminBootstrap)
     return;
 }
 
+if (isMediaBackfill)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var report = await scope.ServiceProvider.GetRequiredService<MediaDerivativeBackfillService>().RunAsync();
+    Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+    Environment.ExitCode = report.Failed == 0 ? 0 : 2;
+    return;
+}
+
 if (app.Environment.IsDevelopment())
 {
     await using var scope = app.Services.CreateAsyncScope();
     await scope.ServiceProvider.GetRequiredService<DevelopmentAdminSeeder>().SeedAsync();
 }
 
+app.UseForwardedHeaders();
 app.UseSerilogRequestLogging();
 app.UseMiddleware<PrivacySafeRequestTelemetryMiddleware>();
 app.UseMiddleware<GlobalExceptionMiddleware>();
@@ -219,9 +295,22 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+else
+{
+    app.UseHsts();
+}
 
 app.UseHttpsRedirection();
+app.Use(async (context, next) =>
+{
+    context.Response.Headers.XContentTypeOptions = "nosniff";
+    context.Response.Headers.XFrameOptions = "DENY";
+    context.Response.Headers["Referrer-Policy"] = "no-referrer";
+    context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
+    await next();
+});
 app.UseCors(ApiCorsExtensions.ConfiguredCorsPolicy);
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 

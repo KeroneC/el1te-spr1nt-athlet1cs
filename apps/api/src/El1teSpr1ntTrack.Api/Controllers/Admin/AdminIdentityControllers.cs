@@ -22,6 +22,13 @@ public sealed class AdminUsersController(IAdminIdentityService service) : Contro
     public async Task<IActionResult> Update(Guid id, UpdateAdminUserRequest request, CancellationToken token) =>
         Ok(await service.UpdateUserAsync(CurrentUserId(), id, request, HttpContext.TraceIdentifier, token));
 
+    [HttpPost("{id:guid}/revoke-sessions")]
+    public async Task<IActionResult> RevokeSessions(Guid id, CancellationToken token)
+    {
+        await service.RevokeSessionsAsync(CurrentUserId(), id, HttpContext.TraceIdentifier, token);
+        return NoContent();
+    }
+
     private Guid CurrentUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }
 

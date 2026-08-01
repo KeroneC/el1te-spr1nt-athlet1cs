@@ -16,4 +16,5 @@ public sealed class MediaStorageOptions
 
 public sealed record StoredMediaFile(string StorageKey);
 public sealed record InspectedImage(string ContentType, string Extension, int Width, int Height);
-public sealed record PublicMediaFile(Stream Stream, string ContentType, long Length);
+public sealed record GeneratedMediaDerivative(int RequestedWidth, int Width, int Height, byte[] Content, string Sha256);
+public sealed record PublicMediaFile(Stream Stream, string ContentType, long Length, bool IsVersionedDerivative = false);

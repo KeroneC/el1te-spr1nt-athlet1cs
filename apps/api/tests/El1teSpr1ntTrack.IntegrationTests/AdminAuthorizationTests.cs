@@ -75,6 +75,27 @@ public sealed class AdminAuthorizationTests
     }
 
     [Fact]
+    public async Task CmsAdminPolicy_RejectsARevokedSecurityVersion()
+    {
+        var user = new User { Role = UserRole.Admin, IsActive = true, Email = "user@example.com", SecurityVersion = 2 };
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAuthorizationCore(CmsAdminAuthorization.Configure);
+        services.AddSingleton<IAuthorizationHandler>(new ActiveCmsAdminHandler(new FakeUserRepository(user)));
+        await using var provider = services.BuildServiceProvider();
+        var principal = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim("security_version", "1")
+        ], "Test"));
+
+        var result = await provider.GetRequiredService<IAuthorizationService>()
+            .AuthorizeAsync(principal, null, CmsAdminAuthorization.PolicyName);
+
+        Assert.False(result.Succeeded);
+    }
+
+    [Fact]
     public void EveryAdminController_RequiresCmsAdminPolicy()
     {
         Type[] controllerTypes =
@@ -127,7 +148,8 @@ public sealed class AdminAuthorizationTests
     private static ClaimsPrincipal Principal(User user) => new(new ClaimsIdentity(
     [
         new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-        new Claim(ClaimTypes.Role, user.Role.ToString())
+        new Claim(ClaimTypes.Role, user.Role.ToString()),
+        new Claim("security_version", user.SecurityVersion.ToString())
     ], "Test"));
 
     private sealed class FakeUserRepository(User? user) : IUserRepository

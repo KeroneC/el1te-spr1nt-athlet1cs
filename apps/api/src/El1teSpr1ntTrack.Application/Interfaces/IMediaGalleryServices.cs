@@ -12,7 +12,7 @@ public interface IMediaService
         CancellationToken cancellationToken);
     Task<AdminMediaAssetDto> UpdateAsync(Guid id, MediaMetadataUpdateDto request, CancellationToken cancellationToken);
     Task DeleteAsync(Guid id, CancellationToken cancellationToken);
-    Task<PublicMediaFile?> OpenPublicAsync(Guid id, CancellationToken cancellationToken);
+    Task<PublicMediaFile?> OpenPublicAsync(Guid id, int? width, CancellationToken cancellationToken);
 }
 
 public interface IGalleryService

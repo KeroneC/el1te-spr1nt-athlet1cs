@@ -18,4 +18,5 @@ public sealed class MediaAsset : CmsEntityBase
     public User UploadedByUser { get; set; } = null!;
     public ICollection<GalleryAlbumMedia> AlbumMedia { get; set; } = new List<GalleryAlbumMedia>();
     public ICollection<GalleryAlbum> CoverForAlbums { get; set; } = new List<GalleryAlbum>();
+    public ICollection<MediaDerivative> Derivatives { get; set; } = new List<MediaDerivative>();
 }

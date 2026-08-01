@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 test("Admin can draft, publish, edit, and deactivate a Hall of Fame inductee", async ({ page }) => {
   test.setTimeout(75_000);
@@ -6,11 +7,7 @@ test("Admin can draft, publish, edit, and deactivate a Hall of Fame inductee", a
   const mediaTitle = `E2E Hall of Fame ${suffix}`;
   const athleteName = `E2E Inductee ${suffix}`;
 
-  await page.goto("/admin/login");
-  await page.getByLabel("Email").fill("e2e.admin@example.test");
-  await page.locator("#password").fill("E2eAdmin!2026Pass");
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await signInAsE2eSuperAdmin(page);
 
   await page.goto("/admin/media");
   await page.getByLabel("Images").setInputFiles("public/images/track-hero.png");

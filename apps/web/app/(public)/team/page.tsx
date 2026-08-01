@@ -1,10 +1,10 @@
-/* eslint-disable @next/next/no-img-element */
 import type { Metadata } from "next";
 import { ArrowRight, Camera, ShieldCheck, Sparkles, Users } from "lucide-react";
 import Link from "next/link";
 import { EmptyState, PageHero } from "@/components/public/ui";
 import { getGalleryAlbums } from "@/lib/public/client";
 import { TEAM_VALUES } from "@/lib/public/site";
+import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
 
 export const metadata: Metadata = {
   title: "Team",
@@ -66,7 +66,7 @@ export default async function TeamPage() {
         </div>
         {albums.length ? <div className="gallery-album-grid compact">{albums.map((album) => (
           <Link href={`/gallery/${album.slug}`} key={album.slug} className="gallery-album-card">
-            {album.coverImageUrl ? <img src={album.coverImageUrl} alt={album.coverAltText ?? ""} /> : <div className="gallery-placeholder">Gallery album</div>}
+            {album.coverImageUrl ? <ResponsiveMediaImage src={album.coverImageUrl} alt={album.coverAltText ?? ""} sizes="(max-width: 768px) 100vw, 50vw" /> : <div className="gallery-placeholder">Gallery album</div>}
             <div><p className="eyebrow">{album.imageCount} {album.imageCount === 1 ? "photo" : "photos"}</p><h2>{album.title}</h2><p>{album.description}</p></div>
           </Link>
         ))}</div> : <EmptyState title="Team photos are coming soon" message="Published gallery albums will appear here." />}

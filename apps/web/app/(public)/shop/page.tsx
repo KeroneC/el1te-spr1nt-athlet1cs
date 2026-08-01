@@ -1,10 +1,10 @@
-/* eslint-disable @next/next/no-img-element */
 import { ArrowRight, Search, ShoppingBag, SlidersHorizontal } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStoreProducts, PublicApiError } from "@/lib/public/client";
 import type { PublicStockStatus } from "@/lib/public/types";
 import { formatStoreMoney } from "@/lib/store/configurator";
+import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
 
 type Props = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -70,7 +70,7 @@ export default async function ShopPage({ searchParams }: Props) {
         {catalog.items.map(product => <Link className="store-product-card" href={`/shop/${product.slug}`} key={product.slug}>
           <div className="store-product-image">
             {product.primaryImageUrl
-              ? <img src={product.primaryImageUrl} alt={product.primaryImageAltText ?? product.name} />
+              ? <ResponsiveMediaImage src={product.primaryImageUrl} alt={product.primaryImageAltText ?? product.name} sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" />
               : <span aria-hidden="true"><ShoppingBag /></span>}
             {product.isFeatured && <span className="store-featured-tag">Featured</span>}
             <span className={`store-stock-tag ${stockClass(product.availability)}`}>{stockLabel(product.availability)}</span>

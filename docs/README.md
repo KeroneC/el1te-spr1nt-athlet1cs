@@ -90,6 +90,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [CI troubleshooting and branch protection](guides/ci-troubleshooting.md)
 - [Azure setup and release](guides/future-azure-setup.md)
 - [Observability and support references](guides/observability-support.md)
+- [Launch hardening, performance, and content promotion](guides/launch-hardening-performance.md)
 - [Store and Square foundation](guides/store-square-foundation.md)
 - [Store catalog and inventory administration](guides/store-catalog-inventory.md)
 - [Public storefront and configurator](guides/store-public-configurator.md)

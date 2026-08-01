@@ -41,6 +41,14 @@ public sealed class GlobalExceptionMiddleware(
                 return;
             }
 
+            if (exception is TooManyAttemptsException)
+            {
+                context.Response.Headers.RetryAfter = "900";
+                await WriteProblemAsync(context, StatusCodes.Status429TooManyRequests,
+                    "Too many attempts.", "Wait before trying again.");
+                return;
+            }
+
             var referenceId = SupportReference.Create();
             var operationId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
             logger.LogError(
