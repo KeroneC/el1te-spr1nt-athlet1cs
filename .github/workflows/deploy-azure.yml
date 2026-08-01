@@ -117,6 +117,10 @@ jobs:
           tenant-id: ${{ env.AZURE_TENANT_ID }}
           subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
+      - name: Register required Azure resource providers
+        shell: bash
+        run: az provider register --namespace Microsoft.Communication --wait
+
       - name: Validate and preview infrastructure
         shell: bash
         run: |
