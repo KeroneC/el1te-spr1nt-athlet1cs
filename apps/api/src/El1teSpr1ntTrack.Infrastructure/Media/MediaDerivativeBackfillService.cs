@@ -14,7 +14,9 @@ public sealed class MediaDerivativeBackfillService(
     IMediaStorage storage,
     IMediaDerivativeGenerator generator)
 {
-    public async Task<MediaBackfillReport> RunAsync(CancellationToken cancellationToken = default)
+    public async Task<MediaBackfillReport> RunAsync(
+        bool includeSkippedHashes = true,
+        CancellationToken cancellationToken = default)
     {
         var processed = 0; var skipped = 0; var failed = 0;
         long originalBytes = 0; long derivativeBytes = 0;
@@ -30,6 +32,13 @@ public sealed class MediaDerivativeBackfillService(
             {
                 var asset = await dbContext.MediaAssets.Include(value => value.Derivatives)
                     .SingleAsync(value => value.Id == assetId, cancellationToken);
+                var expectedWidths = new[] { 480, 960, 1600 }.Where(width => width <= asset.Width).ToArray();
+                if (!includeSkippedHashes && expectedWidths.All(width =>
+                        asset.Derivatives.Any(existing => existing.RequestedWidth == width)))
+                {
+                    skipped++;
+                    continue;
+                }
                 await using var original = await storage.OpenReadAsync(asset.StorageKey, cancellationToken);
                 if (original is null) throw new InvalidOperationException("Original file is missing.");
                 await using var buffer = new MemoryStream();

@@ -173,6 +173,7 @@ module api 'modules/api-app.bicep' = {
     jwtSecretUri: '${vault.outputs.vaultUri}secrets/jwt-signing-key'
     blobServiceUri: storage.outputs.blobServiceUri
     mediaContainerName: storage.outputs.containerName
+    backfillMediaDerivativesOnStartup: environmentName == 'demo'
     applicationInsightsConnectionString: monitoring.outputs.connectionString
     publicBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     releaseSha: releaseSha

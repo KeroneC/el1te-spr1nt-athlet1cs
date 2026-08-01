@@ -24,6 +24,8 @@ dotnet run --project apps/api/src/El1teSpr1ntTrack.Api -- --backfill-media-deriv
 
 The JSON report includes processed, skipped, and failed counts, byte totals, and original SHA-256 hashes. Re-running is safe. CMS references remain unchanged. Confirm representative photographs, transparent logos, portraits, sponsor marks, and shop images before relying on derivatives.
 
+Demo additionally enables an idempotent startup backfill. It quickly skips assets whose expected derivatives already exist, never blocks application readiness, and leaves the original available if an individual conversion fails. Production keeps startup backfill disabled unless it is explicitly enabled for a controlled promotion.
+
 The public `ResponsiveMediaImage` component adds `srcset`, `sizes`, dimensions, lazy loading, and async decoding for managed `/media/{guid}` URLs. A page may explicitly prioritize only its primary above-the-fold image.
 
 ## Browser performance telemetry

@@ -12,6 +12,7 @@ public sealed class MediaStorageOptions
     public string ContainerName { get; set; } = "media";
     public string PublicBaseUrl { get; set; } = "http://localhost:5126";
     public long MaxFileSizeBytes { get; set; } = 10 * 1024 * 1024;
+    public bool BackfillDerivativesOnStartup { get; set; }
 }
 
 public sealed record StoredMediaFile(string StorageKey);

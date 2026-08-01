@@ -13,7 +13,7 @@ test("SuperAdmin verification-code state is keyboard accessible", async ({ page 
   await page.route("**/api/admin-session/login", route => route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ requiresMfa: true }) }));
   await page.goto("/admin/login");
   await page.getByLabel("Email").fill("superadmin@example.test");
-  await page.getByLabel("Password").fill("Valid-Password-42!");
+  await page.locator("#password").fill("Valid-Password-42!");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.getByLabel("Verification code")).toBeFocused();
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();

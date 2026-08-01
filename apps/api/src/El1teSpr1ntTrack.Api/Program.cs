@@ -203,6 +203,7 @@ builder.Services.AddSingleton<IMediaStorage>(provider =>
     string.Equals(mediaStorageOptions.Provider, "AzureBlob", StringComparison.OrdinalIgnoreCase)
         ? new AzureBlobMediaStorage(mediaStorageOptions)
         : new LocalMediaStorage(mediaStorageOptions));
+builder.Services.AddHostedService<MediaDerivativeBackfillWorker>();
 
 var databaseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var useManagedIdentity = builder.Configuration.GetValue<bool>("Database:UseManagedIdentity");
@@ -273,7 +274,8 @@ if (isAdminBootstrap)
 if (isMediaBackfill)
 {
     await using var scope = app.Services.CreateAsyncScope();
-    var report = await scope.ServiceProvider.GetRequiredService<MediaDerivativeBackfillService>().RunAsync();
+    var report = await scope.ServiceProvider.GetRequiredService<MediaDerivativeBackfillService>().RunAsync(
+        cancellationToken: default);
     Console.WriteLine(System.Text.Json.JsonSerializer.Serialize(report, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
     Environment.ExitCode = report.Failed == 0 ? 0 : 2;
     return;

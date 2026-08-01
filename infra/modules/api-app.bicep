@@ -8,6 +8,7 @@ param jwtAudience string
 param jwtSecretUri string
 param blobServiceUri string
 param mediaContainerName string
+param backfillMediaDerivativesOnStartup bool = false
 param applicationInsightsConnectionString string
 param publicBaseUrl string
 param allowedOrigins array
@@ -113,6 +114,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'MediaStorage__MaxFileSizeBytes'
           value: '10485760'
+        }
+        {
+          name: 'MediaStorage__BackfillDerivativesOnStartup'
+          value: string(backfillMediaDerivativesOnStartup)
         }
         {
           name: 'AdminInvitations__SiteUrl'
