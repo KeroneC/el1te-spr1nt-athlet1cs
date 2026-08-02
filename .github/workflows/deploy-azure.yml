@@ -119,7 +119,13 @@ jobs:
 
       - name: Register required Azure resource providers
         shell: bash
-        run: az provider register --namespace Microsoft.Communication --wait
+        run: |
+          communication_state="$(az provider show --namespace Microsoft.Communication --query registrationState --output tsv)"
+          if [[ "$communication_state" == "Registered" ]]; then
+            echo "Microsoft.Communication is already registered."
+          else
+            az provider register --namespace Microsoft.Communication --wait
+          fi
 
       - name: Validate and preview infrastructure
         shell: bash
