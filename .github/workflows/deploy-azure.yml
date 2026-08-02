@@ -167,11 +167,17 @@ jobs:
       - name: Configure conservative monthly budget
         shell: bash
         run: |
-          start=$(date -u +%Y-%m-01T00:00:00Z)
-          end=$(date -u -d '+10 years' +%Y-%m-01T00:00:00Z)
           scope="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP"
+          budget_url="https://management.azure.com${scope}/providers/Microsoft.Consumption/budgets/el1te-demo-monthly?api-version=2024-08-01"
+          if existing_budget="$(az rest --method get --url "$budget_url" --output json 2>/dev/null)"; then
+            start="$(jq -er '.properties.timePeriod.startDate' <<< "$existing_budget")"
+            end="$(jq -er '.properties.timePeriod.endDate' <<< "$existing_budget")"
+          else
+            start="$(date -u +%Y-%m-01T00:00:00Z)"
+            end="$(date -u -d '+10 years' +%Y-%m-01T00:00:00Z)"
+          fi
           body=$(jq -n --arg start "$start" --arg end "$end" --arg email "$BUDGET_CONTACT_EMAIL" '{properties:{category:"Cost",amount:125,timeGrain:"Monthly",timePeriod:{startDate:$start,endDate:$end},notifications:{Actual50:{enabled:true,operator:"GreaterThan",threshold:50,thresholdType:"Actual",contactEmails:[$email]},Actual75:{enabled:true,operator:"GreaterThan",threshold:75,thresholdType:"Actual",contactEmails:[$email]},Actual90:{enabled:true,operator:"GreaterThan",threshold:90,thresholdType:"Actual",contactEmails:[$email]},Actual100:{enabled:true,operator:"GreaterThan",threshold:100,thresholdType:"Actual",contactEmails:[$email]}}}}')
-          az rest --method put --url "https://management.azure.com${scope}/providers/Microsoft.Consumption/budgets/el1te-demo-monthly?api-version=2024-08-01" --body "$body" --output none
+          az rest --method put --url "$budget_url" --body "$body" --output none
 
       - name: Infrastructure bootstrap summary
         if: ${{ inputs.infrastructure_only }}
