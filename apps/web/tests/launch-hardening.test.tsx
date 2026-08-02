@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { ResponsiveMediaImage, isManagedMediaUrl, mediaUrlAtWidth } from "@/components/public/responsive-media-image";
 import { sanitizePublicRoute } from "@/lib/observability/browser-analytics";
+import { isEnabledSetting } from "@/lib/runtime-config";
 import { readFileSync } from "node:fs";
 
 describe("launch hardening frontend", () => {
@@ -33,5 +34,12 @@ describe("launch hardening frontend", () => {
     const source = readFileSync("app/admin/(auth)/login/page.tsx", "utf8");
     expect(source).toContain("items-center justify-center");
     expect(source).not.toContain("items-center justify-end");
+  });
+
+  it("accepts Azure's title-cased enabled setting without accepting other values", () => {
+    expect(isEnabledSetting("True")).toBe(true);
+    expect(isEnabledSetting(" true ")).toBe(true);
+    expect(isEnabledSetting("False")).toBe(false);
+    expect(isEnabledSetting(undefined)).toBe(false);
   });
 });
