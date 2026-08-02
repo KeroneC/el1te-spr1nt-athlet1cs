@@ -17,13 +17,32 @@ if [[ ! "$publish_retry_base_seconds" =~ ^[0-9]+$ ]]; then
   echo "DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS must be a non-negative integer."
   exit 2
 fi
+publish_retry_max_seconds="${DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS:-60}"
+if [[ ! "$publish_retry_max_seconds" =~ ^[0-9]+$ ]]; then
+  echo "DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS must be a non-negative integer."
+  exit 2
+fi
+publish_attempts="${DEPLOYMENT_PUBLISH_ATTEMPTS:-16}"
+if [[ ! "$publish_attempts" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DEPLOYMENT_PUBLISH_ATTEMPTS must be a positive integer."
+  exit 2
+fi
 
 is_transient_azure_deployment_response()
 {
   grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout|Deployment has been stopped due to SCM container restart"
 }
 
-publish_attempts=4
+retry_delay_for_attempt()
+{
+  local attempt="$1"
+  local delay=$((publish_retry_base_seconds * (2 ** (attempt - 1))))
+  if (( delay > publish_retry_max_seconds )); then
+    delay="$publish_retry_max_seconds"
+  fi
+  printf '%s' "$delay"
+}
+
 previous_id=""
 for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++)); do
   set +e
@@ -52,7 +71,7 @@ for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++))
     exit "$previous_id_exit_code"
   fi
 
-  retry_delay=$((publish_retry_base_seconds * (2 ** (status_attempt - 1))))
+  retry_delay="$(retry_delay_for_attempt "$status_attempt")"
   echo "Azure deployment status returned a transient gateway response for $app_name; retrying in ${retry_delay}s (attempt $((status_attempt + 1))/$publish_attempts)."
   sleep "$retry_delay"
 done
@@ -89,7 +108,7 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
     exit "$publish_exit_code"
   fi
 
-  retry_delay=$((publish_retry_base_seconds * (2 ** (publish_attempt - 1))))
+  retry_delay="$(retry_delay_for_attempt "$publish_attempt")"
   echo "Azure publishing returned a transient response for $app_name; retrying in ${retry_delay}s (attempt $((publish_attempt + 1))/$publish_attempts)."
   sleep "$retry_delay"
 done
@@ -102,11 +121,25 @@ fi
 deployment_id=""
 attempts="${DEPLOYMENT_STATUS_ATTEMPTS:-90}"
 for ((attempt = 1; attempt <= attempts; attempt++)); do
+  set +e
   deployment=$(az webapp log deployment list \
     --resource-group "$resource_group" \
     --name "$app_name" \
     --query '[?active] | [0].{id:id,status:status}' \
-    --output tsv)
+    --output tsv 2>&1)
+  deployment_exit_code=$?
+  set -e
+
+  if [[ "$deployment_exit_code" -ne 0 ]]; then
+    if is_transient_azure_deployment_response <<< "$deployment"; then
+      echo "Azure deployment status remained transient for $app_name; retrying status check ($attempt/$attempts)."
+      sleep 5
+      continue
+    fi
+    printf '%s\n' "$deployment" >&2
+    echo "Deployment status polling failed with a non-retriable error for $app_name."
+    exit "$deployment_exit_code"
+  fi
   read -r deployment_id deployment_status <<< "$deployment"
 
   if [[ -n "$deployment_id" && "$deployment_id" != "$previous_id" && "$deployment_status" == "4" ]]; then

@@ -19,11 +19,24 @@ printf '%s\n' \
   '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
   '  count=$((count + 1))' \
   '  printf "%s" "$count" > "$count_file"' \
+  '  if [[ -f "$state_dir/published" ]]; then' \
+  '    post_count_file="$state_dir/post-list-count"' \
+  '    post_count=0' \
+  '    [[ -f "$post_count_file" ]] && post_count=$(<"$post_count_file")' \
+  '    post_count=$((post_count + 1))' \
+  '    printf "%s" "$post_count" > "$post_count_file"' \
+  '    if (( post_count <= MOCK_AZ_POST_LIST_FAILURES )); then' \
+  '      echo "ERROR: Status lookup failed with status code '\''${MOCK_AZ_POST_LIST_STATUS}'\''." >&2' \
+  '      exit 1' \
+  '    fi' \
+  '    printf "new-deployment\t4\n"' \
+  '    exit 0' \
+  '  fi' \
   '  if (( count <= MOCK_AZ_LIST_FAILURES )); then' \
   '    echo "ERROR: Status lookup failed with status code '\''${MOCK_AZ_LIST_STATUS}'\''." >&2' \
   '    exit 1' \
   '  fi' \
-  '  if [[ -f "$state_dir/published" ]]; then printf "new-deployment\t4\n"; else echo "old-deployment"; fi' \
+  '  echo "old-deployment"' \
   '  exit 0' \
   'fi' \
   'if [[ "$command_line" == "webapp deploy "* ]]; then' \
@@ -53,6 +66,8 @@ run_deployment()
   local list_failures="${4:-0}"
   local list_status="${5:-502}"
   local deploy_error="${6:-}"
+  local post_list_failures="${7:-0}"
+  local post_list_status="${8:-503}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
@@ -62,7 +77,10 @@ run_deployment()
     MOCK_AZ_DEPLOY_ERROR="$deploy_error" \
     MOCK_AZ_LIST_FAILURES="$list_failures" \
     MOCK_AZ_LIST_STATUS="$list_status" \
+    MOCK_AZ_POST_LIST_FAILURES="$post_list_failures" \
+    MOCK_AZ_POST_LIST_STATUS="$post_list_status" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
+    DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS=0 \
     bash "$script_dir/deploy-webapp-artifact.sh" test-resource-group test-app test-artifact.zip
 }
 
@@ -70,6 +88,17 @@ status_retry_state="$test_root/status-retry"
 status_retry_output=$(run_deployment "$status_retry_state" 0 502 2 504)
 [[ "$(<"$status_retry_state/list-count")" == "4" ]]
 grep -q "deployment status returned a transient gateway response" <<< "$status_retry_output"
+
+long_status_retry_state="$test_root/long-status-retry"
+long_status_retry_output=$(run_deployment "$long_status_retry_state" 0 502 8 503)
+[[ "$(<"$long_status_retry_state/list-count")" == "10" ]]
+grep -q "attempt 9/16" <<< "$long_status_retry_output"
+
+post_status_retry_state="$test_root/post-status-retry"
+post_status_retry_output=$(run_deployment "$post_status_retry_state" 0 502 0 502 "" 3 504)
+[[ "$(<"$post_status_retry_state/list-count")" == "5" ]]
+[[ "$(<"$post_status_retry_state/post-list-count")" == "4" ]]
+grep -q "status remained transient" <<< "$post_status_retry_output"
 
 retry_state="$test_root/retry"
 run_deployment "$retry_state" 2 502
@@ -91,11 +120,11 @@ grep -q "non-retriable" <<< "$non_retry_output"
 
 exhausted_state="$test_root/exhausted"
 set +e
-exhausted_output=$(run_deployment "$exhausted_state" 10 503 2>&1)
+exhausted_output=$(run_deployment "$exhausted_state" 20 503 2>&1)
 exhausted_exit=$?
 set -e
 [[ "$exhausted_exit" -ne 0 ]]
-[[ "$(<"$exhausted_state/deploy-count")" == "4" ]]
-grep -q "exhausted 4 attempts" <<< "$exhausted_output"
+[[ "$(<"$exhausted_state/deploy-count")" == "16" ]]
+grep -q "exhausted 16 attempts" <<< "$exhausted_output"
 
 echo "Deployment publishing retry tests passed."
