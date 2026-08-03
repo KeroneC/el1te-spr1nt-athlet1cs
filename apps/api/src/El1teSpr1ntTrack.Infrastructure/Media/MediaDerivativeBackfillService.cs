@@ -28,6 +28,7 @@ public sealed class MediaDerivativeBackfillService(
         foreach (var assetId in assetIds)
         {
             var newKeys = new List<string>();
+            long pendingDerivativeBytes = 0;
             try
             {
                 var asset = await dbContext.MediaAssets.Include(value => value.Derivatives)
@@ -54,16 +55,18 @@ public sealed class MediaDerivativeBackfillService(
                     await using var derivativeSource = new MemoryStream(item.Content, writable: false);
                     var stored = await storage.SaveAsync(derivativeSource, ".webp", cancellationToken);
                     newKeys.Add(stored.StorageKey);
-                    asset.Derivatives.Add(new MediaDerivative
+                    dbContext.MediaDerivatives.Add(new MediaDerivative
                     {
+                        MediaAssetId = asset.Id,
                         RequestedWidth = item.RequestedWidth, Width = item.Width, Height = item.Height,
                         ContentType = "image/webp", StorageKey = stored.StorageKey,
                         FileSizeBytes = item.Content.LongLength, Sha256 = item.Sha256
                     });
-                    derivativeBytes += item.Content.LongLength;
+                    pendingDerivativeBytes += item.Content.LongLength;
                 }
                 await dbContext.SaveChangesAsync(cancellationToken);
                 originalBytes += sourceBytes.LongLength;
+                derivativeBytes += pendingDerivativeBytes;
                 processed++;
             }
             catch (Exception exception)
