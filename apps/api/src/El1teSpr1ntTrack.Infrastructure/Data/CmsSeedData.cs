@@ -41,7 +41,7 @@ public static class CmsSeedData
         Block("20000000-0000-0000-0000-000000000011", "policy.store", "Store Policy", StorePolicy, 4)
     ];
 
-    private const string PrivacyPolicy = """
+    private static string PrivacyPolicy => """
         Last updated: August 4, 2026
 
         ## Information we collect
@@ -71,9 +71,9 @@ public static class CmsSeedData
         ## Your choices
 
         To request access, correction, or deletion, email [el1tespr1nt.athlet1cs@gmail.com](mailto:el1tespr1nt.athlet1cs@gmail.com). Some records may need to be retained for accounting, safety, dispute, or legal reasons.
-        """;
+        """.ReplaceLineEndings("\n");
 
-    private const string AccessibilityPolicy = """
+    private static string AccessibilityPolicy => """
         Last updated: August 4, 2026
 
         ## Our commitment
@@ -97,9 +97,9 @@ public static class CmsSeedData
         Email [el1tespr1nt.athlet1cs@gmail.com](mailto:el1tespr1nt.athlet1cs@gmail.com) with the page, device or browser, approximate time, and a description of the problem. Please do not include payment information or sensitive athlete information.
 
         We will investigate and respond as soon as practical. Accessibility is an ongoing responsibility, and this statement will be updated as the website and its services change.
-        """;
+        """.ReplaceLineEndings("\n");
 
-    private const string TermsPolicy = """
+    private static string TermsPolicy => """
         Last updated: August 4, 2026
 
         ## Using this website
@@ -121,9 +121,9 @@ public static class CmsSeedData
         ## Questions and updates
 
         These limitations apply only to the extent permitted by law. We may update these terms as the website changes. Questions may be sent to [el1tespr1nt.athlet1cs@gmail.com](mailto:el1tespr1nt.athlet1cs@gmail.com).
-        """;
+        """.ReplaceLineEndings("\n");
 
-    private const string StorePolicy = """
+    private static string StorePolicy => """
         Last updated: August 4, 2026
 
         ## Prices, payment, and delivery
@@ -155,7 +155,7 @@ public static class CmsSeedData
         ## Store support
 
         Email [el1tespr1nt.athlet1cs@gmail.com](mailto:el1tespr1nt.athlet1cs@gmail.com) with your order reference. Do not send card details by email.
-        """;
+        """.ReplaceLineEndings("\n");
 
     public static readonly Announcement[] Announcements =
     [
