@@ -199,6 +199,13 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .back-link { margin-bottom: 2rem; }
 .article-body { padding-block: 4rem 6rem; font-size: 1.1rem; line-height: 1.85; white-space: pre-line; }
 .article-body .button { margin-top: 1.5rem; }
+.policy-content { white-space: normal; }
+.policy-content h2 { margin: 2.75rem 0 .75rem; font-size: clamp(1.45rem, 3vw, 2rem); line-height: 1.2; }
+.policy-content h2:first-child { margin-top: 0; }
+.policy-content p { margin: 0 0 1.15rem; }
+.policy-content ul { margin: 0 0 1.5rem; padding-left: 1.35rem; }
+.policy-content li + li { margin-top: .45rem; }
+.policy-content a { color: var(--track-red); font-weight: 700; text-decoration: underline; text-underline-offset: .18em; }
 .event-facts { display: grid; gap: 0.65rem; margin-top: 1.7rem; }
 .event-facts p { display: flex; gap: 0.65rem; align-items: flex-start; margin: 0; }
 .event-facts svg { flex: 0 0 auto; }
