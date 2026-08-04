@@ -296,6 +296,8 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .social-links svg { width: 1.1rem; }
 .footer-bottom { display: flex; justify-content: space-between; gap: 1rem; border-top: 1px solid #334155; padding-block: 1.25rem; color: #94a3b8; font-size: 0.82rem; }
 .footer-bottom p { margin: 0; }
+.footer-bottom nav { display: flex; flex-wrap: wrap; gap: 0.55rem 1.15rem; }
+.footer-bottom nav a { display: inline-flex; min-height: 1.5rem; align-items: center; }
 
 /* Figma correction pass: angular youth-sports visual system */
 .site-container { width: min(100% - 2rem, 80rem); }

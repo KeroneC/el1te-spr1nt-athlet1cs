@@ -1,5 +1,6 @@
-import { Camera, ExternalLink, Mail, MapPin, MessageCircle, Phone, ShoppingBag } from "lucide-react";
+import { ExternalLink, Mail, MapPin, Phone, ShoppingBag } from "lucide-react";
 import Link from "next/link";
+import { FacebookIcon, InstagramIcon } from "@/components/public/brand-social-icons";
 import { BRAND, FOOTER_LINK_GROUPS } from "@/lib/public/site";
 import type { SiteSettings } from "@/lib/public/types";
 
@@ -8,8 +9,8 @@ export function SiteFooter({ settings, storeEnabled = false }: { settings: SiteS
   const email = settings.contactEmail || BRAND.contactEmail;
   const phone = settings.phoneNumber || BRAND.contactPhone;
   const socials = [
-    [settings.facebookUrl ?? BRAND.facebookUrl, "Facebook", MessageCircle],
-    [settings.instagramUrl ?? BRAND.instagramUrl, "Instagram", Camera]
+    [settings.facebookUrl ?? BRAND.facebookUrl, "Facebook", FacebookIcon],
+    [settings.instagramUrl ?? BRAND.instagramUrl, "Instagram", InstagramIcon]
   ] as const;
 
   return (
@@ -42,7 +43,7 @@ export function SiteFooter({ settings, storeEnabled = false }: { settings: SiteS
           </div>
           <div className="social-links">
             {socials.map(([url, label, Icon]) => url && (
-              <a key={label} href={url} target="_blank" rel="noreferrer noopener" aria-label={label}><Icon aria-hidden="true" /></a>
+              <a key={label} href={url} target="_blank" rel="noreferrer noopener" aria-label={`El1te Spr1nt Athlet1cs on ${label}`}><Icon aria-hidden="true" /></a>
             ))}
           </div>
         </div>
