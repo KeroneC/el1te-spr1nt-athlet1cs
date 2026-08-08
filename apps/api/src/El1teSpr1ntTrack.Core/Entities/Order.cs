@@ -6,6 +6,14 @@ public sealed class Order : EntityBase
 {
     public string PublicNumber { get; set; } = string.Empty;
 
+    public string CheckoutAttemptId { get; set; } = string.Empty;
+
+    public string CheckoutPayloadHash { get; set; } = string.Empty;
+
+    public string CheckoutReturnTokenHash { get; set; } = string.Empty;
+
+    public DateTimeOffset CheckoutReturnTokenExpiresAtUtc { get; set; }
+
     public Guid? UserId { get; set; }
 
     public User? User { get; set; }
@@ -36,6 +44,14 @@ public sealed class Order : EntityBase
 
     public bool HasUnusualRequest { get; set; }
 
+    public DateTimeOffset? PaymentVerifiedAtUtc { get; set; }
+
+    public DateTimeOffset? CustomerCancellationExpiresAtUtc { get; set; }
+
+    public DateTimeOffset? CustomerCancellationRequestedAtUtc { get; set; }
+
+    public DateTimeOffset? SquarePaymentLinkDeletedAtUtc { get; set; }
+
     public string? TrackingTokenHash { get; set; }
 
     public DateTimeOffset? TrackingExpiresAtUtc { get; set; }
@@ -45,6 +61,8 @@ public sealed class Order : EntityBase
     public string? SquarePaymentId { get; set; }
 
     public string? SquarePaymentLinkId { get; set; }
+
+    public string? SquarePaymentLinkUrl { get; set; }
 
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
 

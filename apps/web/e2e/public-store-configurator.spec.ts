@@ -110,7 +110,11 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     await expect(cartLine.locator("dt").filter({ hasText: "Logo treatment" })).toBeVisible();
     await expect(cartLine.locator("dd").filter({ hasText: "Track red logo" })).toBeVisible();
     await expect(cartLine.getByText("Low stock — checkout soon.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Secure Square checkout" })).toBeDisabled();
+    await expect(page.getByRole("link", { name: "Secure Square checkout" })).toHaveAttribute("href", "/shop/checkout");
+    await page.getByRole("link", { name: "Secure Square checkout" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Checkout details" })).toBeVisible();
+    await expect(page.getByLabel("Full name")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Continue to Square" })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 844 });

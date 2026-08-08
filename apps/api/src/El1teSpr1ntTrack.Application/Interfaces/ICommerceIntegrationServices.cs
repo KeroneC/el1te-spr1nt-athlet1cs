@@ -8,8 +8,15 @@ public interface ISquareClient
         SquarePaymentLinkCommand command,
         CancellationToken cancellationToken);
     Task<SquarePaymentResult> RetrievePaymentAsync(string paymentId, CancellationToken cancellationToken);
+    Task<SquareOrderResult> RetrieveOrderAsync(string orderId, CancellationToken cancellationToken);
+    Task<SquarePaymentLinkDeleteResult> DeletePaymentLinkAsync(
+        string paymentLinkId,
+        CancellationToken cancellationToken);
     Task<SquareRefundResult> RefundPaymentAsync(
         SquareRefundCommand command,
+        CancellationToken cancellationToken);
+    Task<SquareRefundStatusResult> RetrieveRefundAsync(
+        string refundId,
         CancellationToken cancellationToken);
 }
 
@@ -18,6 +25,8 @@ public sealed record SquarePaymentLinkCommand(
     string ReferenceId,
     string RedirectUrl,
     string Currency,
+    string BuyerEmail,
+    string BuyerPhone,
     IReadOnlyList<SquareCheckoutLineItem> Items);
 
 public sealed record SquareCheckoutLineItem(
@@ -29,7 +38,12 @@ public sealed record SquareCheckoutLineItem(
 
 public sealed record SquareCheckoutModifier(string Name, long BasePriceMinor);
 
-public sealed record SquarePaymentLinkResult(string PaymentLinkId, string SquareOrderId, string Url);
+public sealed record SquarePaymentLinkResult(
+    string PaymentLinkId,
+    string SquareOrderId,
+    string Url,
+    long TaxMinor,
+    long TotalMinor);
 
 public sealed record SquarePaymentResult(
     string PaymentId,
@@ -37,6 +51,13 @@ public sealed record SquarePaymentResult(
     string? OrderId,
     long AmountMinor,
     string Currency);
+
+public sealed record SquareOrderResult(
+    string OrderId,
+    string State,
+    long TotalMinor,
+    string Currency,
+    IReadOnlyList<string> PaymentIds);
 
 public sealed record SquareRefundCommand(
     string IdempotencyKey,
@@ -46,6 +67,10 @@ public sealed record SquareRefundCommand(
     string Reason);
 
 public sealed record SquareRefundResult(string RefundId, string Status);
+
+public sealed record SquareRefundStatusResult(string RefundId, string Status);
+
+public sealed record SquarePaymentLinkDeleteResult(string PaymentLinkId, string? CanceledOrderId);
 
 public interface ISquareSignatureVerifier
 {

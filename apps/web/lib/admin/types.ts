@@ -275,3 +275,22 @@ export interface SquareCatalogImportPreview {
 export interface SquareCatalogImportResult {
   importRunId: string; productsDiscovered: number; productsCreated: number; productsSkipped: number; imagesImported: number;
 }
+
+export type AdminStoreOrderStatus = "AwaitingPayment" | "Paid" | "NeedsReview" | "ReadyForProduction" |
+  "InProduction" | "NeedsCustomerInfo" | "ReadyForHandoff" | "Completed" | "Canceled" | "Refunded";
+export type AdminPaymentStatus = "Pending" | "Authorized" | "Paid" | "Refunding" | "Refunded" | "PartiallyRefunded" | "Failed" | "Canceled";
+export interface AdminStoreOperationsDashboard { awaitingPayment: number; cancellationHold: number; needsReview: number; inProduction: number; readyForHandoff: number; refundFailures: number; emailFailures: number; }
+export interface AdminStoreOrderSummary { id: string; orderReference: string; customerName: string; customerEmail: string; status: AdminStoreOrderStatus; paymentStatus: AdminPaymentStatus; totalMinor: number; currency: string; hasPersonalization: boolean; customerCancellationExpiresAtUtc: string | null; createdAtUtc: string; }
+export interface AdminStoreOrder {
+  id: string; orderReference: string; customerName: string; customerEmail: string; customerPhone: string;
+  athleteTeamNote: string | null; fulfillmentNote: string | null; status: AdminStoreOrderStatus; paymentStatus: AdminPaymentStatus;
+  subtotalMinor: number; taxMinor: number; totalMinor: number; currency: string; hasPersonalization: boolean;
+  customerCancellationExpiresAtUtc: string | null; squareOrderId: string | null; squarePaymentId: string | null;
+  items: Array<{ id: string; productVariantId: string | null; productName: string; variantName: string; sku: string; quantity: number; unitPriceMinor: number; lineTotalMinor: number; configuration: Array<{ label: string; value: string }> }>;
+  timeline: Array<{ fromStatus: AdminStoreOrderStatus; toStatus: AdminStoreOrderStatus; note: string | null; createdAtUtc: string }>;
+  notes: Array<{ id: string; note: string; createdAtUtc: string }>;
+  refunds: Array<{ id: string; amountMinor: number; status: string; reason: string; safeFailureCode: string | null; createdAtUtc: string }>;
+  emails: Array<{ id: string; templateName: string; status: string; safeFailureCode: string | null; createdAtUtc: string; sentAtUtc: string | null }>;
+  createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminCommerceIntegrationHealth { checkoutEnabled: boolean; squareConfigured: boolean; squareReachable: boolean; pendingOutboxMessages: number; failedRefunds: number; failedEmails: number; }

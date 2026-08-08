@@ -67,6 +67,8 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<CommerceRefund> CommerceRefunds => Set<CommerceRefund>();
 
+    public DbSet<CommerceRefundLine> CommerceRefundLines => Set<CommerceRefundLine>();
+
     public DbSet<OrderInternalNote> OrderInternalNotes => Set<OrderInternalNote>();
 
     public DbSet<CommerceEmailMessage> CommerceEmailMessages => Set<CommerceEmailMessage>();

@@ -94,6 +94,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Store and Square foundation](guides/store-square-foundation.md)
 - [Store catalog and inventory administration](guides/store-catalog-inventory.md)
 - [Public storefront and configurator](guides/store-public-configurator.md)
+- [Square checkout and order operations](guides/store-square-checkout-orders.md)
 - [AI project handoff](guides/ai-project-handoff.md)
 
 The older phase-level files at the root of `docs` are retained as short compatibility links. The documents above are the maintained references.

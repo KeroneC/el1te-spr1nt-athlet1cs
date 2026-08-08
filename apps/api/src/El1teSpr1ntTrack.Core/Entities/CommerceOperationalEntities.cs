@@ -85,14 +85,27 @@ public sealed class CommerceRefund : EntityBase
 {
     public Guid OrderId { get; set; }
     public Order Order { get; set; } = null!;
-    public Guid ActorUserId { get; set; }
-    public User ActorUser { get; set; } = null!;
+    public Guid? ActorUserId { get; set; }
+    public User? ActorUser { get; set; }
     public long AmountMinor { get; set; }
     public string Currency { get; set; } = "USD";
     public CommerceRefundStatus Status { get; set; } = CommerceRefundStatus.Pending;
     public string Reason { get; set; } = string.Empty;
     public string? SquareRefundId { get; set; }
     public string? SafeFailureCode { get; set; }
+    public ICollection<CommerceRefundLine> Lines { get; set; } = new List<CommerceRefundLine>();
+}
+
+public sealed class CommerceRefundLine : EntityBase
+{
+    public Guid CommerceRefundId { get; set; }
+    public CommerceRefund CommerceRefund { get; set; } = null!;
+    public Guid OrderItemId { get; set; }
+    public OrderItem OrderItem { get; set; } = null!;
+    public int Quantity { get; set; }
+    public int RestockQuantity { get; set; }
+    public Guid? InventoryAdjustmentId { get; set; }
+    public InventoryAdjustment? InventoryAdjustment { get; set; }
 }
 
 public sealed class OrderInternalNote : EntityBase

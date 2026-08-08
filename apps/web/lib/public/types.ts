@@ -264,6 +264,66 @@ export interface StoreProduct {
   visualizerLayers: StoreProductVisualizerLayer[];
 }
 
+export type StoreOrderStatus = "AwaitingPayment" | "Paid" | "NeedsReview" | "ReadyForProduction" |
+  "InProduction" | "NeedsCustomerInfo" | "ReadyForHandoff" | "Completed" | "Canceled" | "Refunded";
+export type StorePaymentStatus = "Pending" | "Authorized" | "Paid" | "Refunding" | "Refunded" | "PartiallyRefunded" | "Failed" | "Canceled";
+
+export interface StoreCheckoutRequest {
+  checkoutAttemptId: string;
+  customerName: string;
+  customerEmail: string;
+  customerPhone: string;
+  athleteTeamNote: string | null;
+  confirmsAdultBuyer: boolean;
+  acceptsStorePolicy: boolean;
+  lines: Array<{
+    productVariantId: string;
+    quantity: number;
+    modifierValueIds: string[];
+    customInputs: Array<{ modifierGroupId: string; value: string }>;
+  }>;
+}
+
+export interface StoreCheckoutResult {
+  orderReference: string;
+  checkoutUrl: string;
+  reservationExpiresAtUtc: string;
+  subtotalMinor: number;
+  taxMinor: number;
+  totalMinor: number;
+  currency: string;
+}
+
+export interface StoreOrderStatusResult {
+  orderReference: string;
+  status: StoreOrderStatus;
+  paymentStatus: StorePaymentStatus;
+  subtotalMinor: number;
+  taxMinor: number;
+  totalMinor: number;
+  currency: string;
+  hasPersonalization: boolean;
+  customerCancellationExpiresAtUtc: string | null;
+  canCustomerCancel: boolean;
+  items: Array<{
+    productName: string;
+    variantName: string;
+    quantity: number;
+    unitPriceMinor: number;
+    lineTotalMinor: number;
+    configuration: Array<{ label: string; value: string }>;
+  }>;
+  timeline: Array<{ status: StoreOrderStatus; label: string; createdAtUtc: string }>;
+}
+
+export interface StoreCheckoutReturnStatus {
+  orderReference: string;
+  paymentStatus: StorePaymentStatus;
+  status: StoreOrderStatus;
+  isFinal: boolean;
+  message: string;
+}
+
 export interface GalleryAlbumListItem {
   title: string; slug: string; description: string; coverImageUrl: string | null;
   coverAltText: string | null; eventDateUtc: string | null; imageCount: number;

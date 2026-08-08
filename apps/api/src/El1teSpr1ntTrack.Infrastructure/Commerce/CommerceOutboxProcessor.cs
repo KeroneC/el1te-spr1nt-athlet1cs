@@ -10,11 +10,12 @@ public sealed class CommerceOutboxProcessor(
     El1teDbContext dbContext,
     IClock clock,
     StoreSettings storeSettings,
+    IStoreOrderService orderService,
     ILogger<CommerceOutboxProcessor> logger) : ICommerceOutboxProcessor
 {
     public async Task<bool> ProcessNextAsync(CancellationToken cancellationToken)
     {
-        if (!storeSettings.Enabled)
+        if (!storeSettings.CommerceOperationsEnabled)
         {
             return false;
         }
@@ -45,10 +46,21 @@ public sealed class CommerceOutboxProcessor(
             {
                 using var payload = JsonDocument.Parse(message.PayloadJson);
                 var eventId = payload.RootElement.GetProperty("eventId").GetGuid();
-                var webhookEvent = await dbContext.SquareWebhookEvents
-                    .SingleAsync(item => item.Id == eventId, cancellationToken);
-                webhookEvent.ProcessedAtUtc ??= clock.UtcNow;
-                webhookEvent.UpdatedAt = clock.UtcNow;
+                await orderService.ProcessSquareWebhookAsync(eventId, cancellationToken);
+            }
+            else if (message.MessageType == "StoreRefundRequested")
+            {
+                using var payload = JsonDocument.Parse(message.PayloadJson);
+                await orderService.ProcessRefundAsync(
+                    payload.RootElement.GetProperty("refundId").GetGuid(),
+                    cancellationToken);
+            }
+            else if (message.MessageType == "StoreEmailRequested")
+            {
+                using var payload = JsonDocument.Parse(message.PayloadJson);
+                await orderService.SendOrderEmailAsync(
+                    payload.RootElement.GetProperty("emailId").GetGuid(),
+                    cancellationToken);
             }
 
             message.ProcessedAtUtc = clock.UtcNow;

@@ -15,7 +15,9 @@ namespace El1teSpr1ntTrack.Api.Controllers.Admin;
 [Tags("Admin - Store")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 [ProducesResponseType(StatusCodes.Status403Forbidden)]
-public sealed class AdminStoreController(IStoreAdminService service) : ControllerBase
+public sealed class AdminStoreController(
+    IStoreAdminService service,
+    IStoreOrderService orderService) : ControllerBase
 {
     [HttpGet("dashboard")]
     public async Task<IActionResult> Dashboard(CancellationToken token) =>
@@ -121,6 +123,77 @@ public sealed class AdminStoreController(IStoreAdminService service) : Controlle
     [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
     public async Task<IActionResult> ImportSquareCatalog(CancellationToken token) =>
         StatusCode(StatusCodes.Status201Created, await service.ImportSquareCatalogAsync(CurrentUserId(), token));
+
+    [HttpGet("operations-dashboard")]
+    public async Task<IActionResult> OperationsDashboard(CancellationToken token) =>
+        Ok(await orderService.GetOperationsDashboardAsync(token));
+
+    [HttpGet("orders")]
+    public async Task<IActionResult> Orders(
+        string? search,
+        StoreOrderStatus? status,
+        PaymentStatus? paymentStatus,
+        int page = 1,
+        int pageSize = 20,
+        CancellationToken token = default) =>
+        Ok(await orderService.GetOrdersAsync(
+            new AdminStoreOrderOptions(search, status, paymentStatus, page, pageSize), token));
+
+    [HttpGet("orders/{id:guid}")]
+    public async Task<IActionResult> Order(Guid id, CancellationToken token) =>
+        Ok(await orderService.GetOrderAsync(id, token));
+
+    [HttpPost("orders/{id:guid}/transitions")]
+    public async Task<IActionResult> TransitionOrder(
+        Guid id,
+        AdminStoreOrderTransitionDto request,
+        CancellationToken token) =>
+        Ok(await orderService.TransitionAsync(id, request, CurrentUserId(), token));
+
+    [HttpPost("orders/{id:guid}/notes")]
+    public async Task<IActionResult> AddOrderNote(
+        Guid id,
+        AdminStoreOrderNoteWriteDto request,
+        CancellationToken token) =>
+        StatusCode(StatusCodes.Status201Created,
+            await orderService.AddNoteAsync(id, request, CurrentUserId(), token));
+
+    [HttpPost("orders/{id:guid}/refunds")]
+    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
+    public async Task<IActionResult> RefundOrder(
+        Guid id,
+        AdminStoreRefundWriteDto request,
+        CancellationToken token) =>
+        StatusCode(StatusCodes.Status202Accepted,
+            await orderService.RefundAsync(id, request, CurrentUserId(), token));
+
+    [HttpPost("orders/{id:guid}/refunds/{refundId:guid}/retry")]
+    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
+    public async Task<IActionResult> RetryRefund(Guid id, Guid refundId, CancellationToken token)
+    {
+        await orderService.RetryRefundAsync(id, refundId, CurrentUserId(), token);
+        return Accepted();
+    }
+
+    [HttpPost("orders/{id:guid}/tracking-link")]
+    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
+    public async Task<IActionResult> RotateTrackingLink(Guid id, CancellationToken token) =>
+        Ok(await orderService.RotateTrackingLinkAsync(id, CurrentUserId(), token));
+
+    [HttpPost("orders/{id:guid}/emails/{emailId:guid}/retry")]
+    public async Task<IActionResult> RetryOrderEmail(
+        Guid id,
+        Guid emailId,
+        CancellationToken token)
+    {
+        await orderService.RetryEmailAsync(id, emailId, CurrentUserId(), token);
+        return Accepted();
+    }
+
+    [HttpGet("integration-health")]
+    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
+    public async Task<IActionResult> IntegrationHealth(CancellationToken token) =>
+        Ok(await orderService.GetIntegrationHealthAsync(token));
 
     private Guid CurrentUserId() => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 }

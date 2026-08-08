@@ -40,7 +40,7 @@ Use `/api/runtime-config` to confirm the runtime flag. Inspect Application Insig
 
 All web responses receive HSTS in production plus content-type, frame, referrer, permissions, and CSP headers. Demo uses `CSP_MODE=report-only`. Production must use `CSP_MODE=enforce` only after report-only violations have been reviewed.
 
-The reserved CMS keys `policy.privacy`, `policy.accessibility`, `policy.terms`, and `policy.store` feed `/privacy`, `/accessibility`, `/terms`, and `/store-policy`. Their approved text-only format supports `##` headings, `-` list items, paragraphs separated by blank lines, and links using `[label](https://...)`, `[label](mailto:...)`, or root-relative destinations. Raw HTML and other URL schemes are always rendered as text. The policies describe actual website, analytics, payment, Printify fulfillment, cancellation, return, and accessibility behavior; they remain operational wording rather than legal advice.
+The reserved CMS keys `policy.privacy`, `policy.accessibility`, `policy.terms`, and `policy.store` feed `/privacy`, `/accessibility`, `/terms`, and `/store-policy`. Their approved text-only format supports `##` headings, `-` list items, paragraphs separated by blank lines, and links using `[label](https://...)`, `[label](mailto:...)`, or root-relative destinations. Raw HTML and other URL schemes are always rendered as text. The August 8, 2026 demo wording describes the Square-only club-handoff launch, cancellation, returns, analytics, and accessibility behavior; it remains operational wording rather than legal advice and requires final club approval before production.
 
 ## Selective content promotion
 

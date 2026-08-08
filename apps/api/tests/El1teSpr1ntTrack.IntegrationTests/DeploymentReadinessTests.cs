@@ -61,6 +61,8 @@ public sealed class DeploymentReadinessTests
     {
         var values = SafeProductionValues(useManagedIdentity: true);
         values["Store:Enabled"] = "true";
+        values["Store:CheckoutEnabled"] = "true";
+        values["Store:PublicSiteUrl"] = "https://web.example.invalid";
         values["Store:Currency"] = "USD";
         values["Store:ReservationMinutes"] = "30";
         values["Square:Environment"] = "Production";

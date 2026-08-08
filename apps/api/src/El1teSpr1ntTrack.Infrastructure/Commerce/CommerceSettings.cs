@@ -5,12 +5,16 @@ public sealed class StoreSettings
     public const string SectionName = "Store";
 
     public bool Enabled { get; set; }
+    public bool CheckoutEnabled { get; set; }
     public bool PublicPreviewEnabled { get; set; }
     public bool PublicCatalogEnabled => Enabled || PublicPreviewEnabled;
+    public bool CommerceOperationsEnabled => Enabled && CheckoutEnabled;
     public string Currency { get; set; } = "USD";
     public int ReservationMinutes { get; set; } = 30;
     public int DefaultLowStockThreshold { get; set; } = 3;
     public int OutboxPollSeconds { get; set; } = 5;
+    public int ReconciliationMinutes { get; set; } = 5;
+    public string PublicSiteUrl { get; set; } = "http://localhost:3000";
 }
 
 public sealed class SquareSettings

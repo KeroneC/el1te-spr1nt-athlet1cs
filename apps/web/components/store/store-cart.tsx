@@ -37,7 +37,7 @@ export function StoreCart() {
 
   const total = useMemo(() => cartTotalMinor(lines), [lines]);
   const currency = lines[0]?.currency ?? "USD";
-  const hasBlockedLine = Object.values(health).some(value => value.status === "sold" || value.status === "missing" || value.status === "error");
+  const hasBlockedLine = lines.some(line => !health[line.id] || health[line.id].status !== "available" && health[line.id].status !== "low");
 
   function update(next: StoreCartLine[]) {
     setLines(next);
@@ -102,8 +102,8 @@ export function StoreCart() {
         <h2 id="cart-summary-heading">Ready for the next step?</h2>
         <dl><div><dt>Merchandise</dt><dd>{formatStoreMoney(total, currency)}</dd></div><div><dt>Tax</dt><dd>Calculated by Square</dd></div><div><dt>Practice handoff</dt><dd>Arranged after payment</dd></div><div className="store-cart-total"><dt>Subtotal</dt><dd>{formatStoreMoney(total, currency)}</dd></div></dl>
         {hasBlockedLine && <p className="store-cart-warning">Resolve unavailable or unverified items before continuing.</p>}
-        <button className="button button-primary" type="button" disabled>Secure Square checkout</button>
-        <p className="store-checkout-phase-note">Secure payment is being connected in the next guarded release. No order or personal information is collected in this preview.</p>
+        {hasBlockedLine ? <button className="button button-primary" type="button" disabled>Secure Square checkout</button> : <Link className="button button-primary" href="/shop/checkout">Secure Square checkout</Link>}
+        <p className="store-checkout-phase-note">You will confirm buyer and personalization details before continuing to Square-hosted payment.</p>
         <p className="store-secure-note"><ShieldCheck size={18} aria-hidden="true" />Card details will stay with Square.</p>
       </aside>}
     </div>
