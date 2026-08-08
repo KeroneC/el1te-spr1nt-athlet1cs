@@ -14,11 +14,16 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(value => value.Description).HasMaxLength(5000);
         builder.Property(value => value.Currency).HasMaxLength(3).IsRequired();
         builder.Property(value => value.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Property(value => value.FulfillmentMode).HasConversion<string>().HasMaxLength(30);
         builder.Property(value => value.SquareCatalogObjectId).HasMaxLength(100);
+        builder.Property(value => value.PrintifyProductId).HasMaxLength(100);
         builder.HasIndex(value => value.Slug).IsUnique();
         builder.HasIndex(value => value.SquareCatalogObjectId)
             .IsUnique()
             .HasFilter("[SquareCatalogObjectId] IS NOT NULL");
+        builder.HasIndex(value => value.PrintifyProductId)
+            .IsUnique()
+            .HasFilter("[PrintifyProductId] IS NOT NULL");
         builder.HasIndex(value => new { value.Status, value.DisplayOrder });
         builder.HasOne(value => value.Category)
             .WithMany(value => value.Products)
@@ -104,6 +109,9 @@ public sealed class ProductVariantConfiguration : IEntityTypeConfiguration<Produ
         builder.HasIndex(value => value.SquareCatalogObjectId)
             .IsUnique()
             .HasFilter("[SquareCatalogObjectId] IS NOT NULL");
+        builder.HasIndex(value => new { value.ProductId, value.PrintifyVariantId })
+            .IsUnique()
+            .HasFilter("[PrintifyVariantId] IS NOT NULL");
         builder.HasOne(value => value.Product).WithMany(value => value.Variants)
             .HasForeignKey(value => value.ProductId).OnDelete(DeleteBehavior.Cascade);
     }
@@ -263,6 +271,18 @@ public sealed class SquareCatalogImportRunConfiguration : IEntityTypeConfigurati
     }
 }
 
+public sealed class PrintifyCatalogImportRunConfiguration : IEntityTypeConfiguration<PrintifyCatalogImportRun>
+{
+    public void Configure(EntityTypeBuilder<PrintifyCatalogImportRun> builder)
+    {
+        builder.Property(value => value.Status).HasConversion<string>().HasMaxLength(30);
+        builder.Property(value => value.SafeFailureCode).HasMaxLength(100);
+        builder.HasIndex(value => value.CreatedAt);
+        builder.HasOne(value => value.ActorUser).WithMany()
+            .HasForeignKey(value => value.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
 public sealed class InventoryReservationConfiguration : IEntityTypeConfiguration<InventoryReservation>
 {
     public void Configure(EntityTypeBuilder<InventoryReservation> builder)
@@ -357,6 +377,20 @@ public sealed class SquareWebhookEventConfiguration : IEntityTypeConfiguration<S
         builder.Property(value => value.ObjectId).HasMaxLength(100);
         builder.Property(value => value.PayloadSha256).HasMaxLength(64).IsRequired();
         builder.HasIndex(value => value.SquareEventId).IsUnique();
+        builder.HasIndex(value => value.ProcessedAtUtc);
+    }
+}
+
+public sealed class PrintifyWebhookEventConfiguration : IEntityTypeConfiguration<PrintifyWebhookEvent>
+{
+    public void Configure(EntityTypeBuilder<PrintifyWebhookEvent> builder)
+    {
+        builder.Property(value => value.PrintifyEventId).HasMaxLength(100).IsRequired();
+        builder.Property(value => value.EventType).HasMaxLength(100).IsRequired();
+        builder.Property(value => value.ResourceId).HasMaxLength(100).IsRequired();
+        builder.Property(value => value.ResourceType).HasMaxLength(40).IsRequired();
+        builder.Property(value => value.PayloadSha256).HasMaxLength(64).IsRequired();
+        builder.HasIndex(value => value.PrintifyEventId).IsUnique();
         builder.HasIndex(value => value.ProcessedAtUtc);
     }
 }

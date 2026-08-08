@@ -28,6 +28,16 @@ public sealed class Product : EntityBase
 
     public bool AllowsSpecialRequests { get; set; }
 
+    public ProductFulfillmentMode FulfillmentMode { get; set; } = ProductFulfillmentMode.ClubHandoff;
+
+    public string? PrintifyProductId { get; set; }
+
+    public int? PrintifyBlueprintId { get; set; }
+
+    public int? PrintifyProviderId { get; set; }
+
+    public DateTimeOffset? PrintifyLastSyncedAtUtc { get; set; }
+
     public string? SquareCatalogObjectId { get; set; }
 
     public long? SquareCatalogVersion { get; set; }

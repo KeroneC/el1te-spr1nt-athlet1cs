@@ -51,6 +51,20 @@ public sealed class SquareCatalogImportRun : EntityBase
     public DateTimeOffset? CompletedAtUtc { get; set; }
 }
 
+public sealed class PrintifyCatalogImportRun : EntityBase
+{
+    public Guid ActorUserId { get; set; }
+    public User ActorUser { get; set; } = null!;
+    public PrintifyCatalogImportStatus Status { get; set; } = PrintifyCatalogImportStatus.Running;
+    public int ProductsDiscovered { get; set; }
+    public int ProductsCreated { get; set; }
+    public int ProductsConnected { get; set; }
+    public int ProductsSkipped { get; set; }
+    public int ImagesImported { get; set; }
+    public string? SafeFailureCode { get; set; }
+    public DateTimeOffset? CompletedAtUtc { get; set; }
+}
+
 public sealed class InventoryReservation : EntityBase
 {
     public Guid OrderId { get; set; }
@@ -124,6 +138,18 @@ public sealed class SquareWebhookEvent : EntityBase
     public string? ObjectId { get; set; }
     public string PayloadSha256 { get; set; } = string.Empty;
     public DateTimeOffset? SquareCreatedAtUtc { get; set; }
+    public DateTimeOffset? ProcessedAtUtc { get; set; }
+}
+
+public sealed class PrintifyWebhookEvent : EntityBase
+{
+    public string PrintifyEventId { get; set; } = string.Empty;
+    public string EventType { get; set; } = string.Empty;
+    public string ResourceId { get; set; } = string.Empty;
+    public string ResourceType { get; set; } = string.Empty;
+    public long? ShopId { get; set; }
+    public string PayloadSha256 { get; set; } = string.Empty;
+    public DateTimeOffset? PrintifyCreatedAtUtc { get; set; }
     public DateTimeOffset? ProcessedAtUtc { get; set; }
 }
 

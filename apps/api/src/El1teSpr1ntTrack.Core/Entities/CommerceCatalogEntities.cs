@@ -63,6 +63,10 @@ public sealed class ProductVariant : EntityBase
     public bool IsActive { get; set; } = true;
     public string? SquareCatalogObjectId { get; set; }
     public long? SquareCatalogVersion { get; set; }
+    public int? PrintifyVariantId { get; set; }
+    public long? PrintifyProviderCostMinor { get; set; }
+    public bool PrintifyIsAvailable { get; set; }
+    public DateTimeOffset? PrintifyLastVerifiedAtUtc { get; set; }
     public byte[] RowVersion { get; set; } = [];
     public ICollection<ProductVariantOptionValue> OptionValues { get; set; } = new List<ProductVariantOptionValue>();
     public ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

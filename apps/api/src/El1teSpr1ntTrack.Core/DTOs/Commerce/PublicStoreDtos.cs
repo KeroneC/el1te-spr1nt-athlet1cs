@@ -25,6 +25,7 @@ public sealed record PublicStoreProductSummaryDto(
     long MaximumPriceMinor,
     string Currency,
     bool IsFeatured,
+    ProductFulfillmentMode FulfillmentMode,
     string? PrimaryImageUrl,
     string? PrimaryImageAltText,
     PublicStockStatus Availability);
@@ -38,6 +39,7 @@ public sealed record PublicStoreProductDto(
     long BasePriceMinor,
     string Currency,
     bool AllowsSpecialRequests,
+    ProductFulfillmentMode FulfillmentMode,
     PublicStockStatus Availability,
     IReadOnlyList<PublicProductMediaDto> Media,
     IReadOnlyList<PublicProductOptionDto> Options,

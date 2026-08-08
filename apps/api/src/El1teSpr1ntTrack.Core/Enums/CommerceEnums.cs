@@ -7,6 +7,12 @@ public enum StoreProductStatus
     Archived = 2
 }
 
+public enum ProductFulfillmentMode
+{
+    ClubHandoff = 0,
+    PrintifyDirectShip = 1
+}
+
 public enum StoreOrderStatus
 {
     AwaitingPayment = 0,
@@ -69,6 +75,14 @@ public enum CommerceEmailStatus
 }
 
 public enum SquareCatalogImportStatus
+{
+    Running = 0,
+    Completed = 1,
+    Failed = 2
+}
+
+
+public enum PrintifyCatalogImportStatus
 {
     Running = 0,
     Completed = 1,

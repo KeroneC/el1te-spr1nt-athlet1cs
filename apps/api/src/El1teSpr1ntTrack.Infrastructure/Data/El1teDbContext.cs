@@ -75,6 +75,10 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<SquareCatalogImportRun> SquareCatalogImportRuns => Set<SquareCatalogImportRun>();
 
+    public DbSet<PrintifyCatalogImportRun> PrintifyCatalogImportRuns => Set<PrintifyCatalogImportRun>();
+
+    public DbSet<PrintifyWebhookEvent> PrintifyWebhookEvents => Set<PrintifyWebhookEvent>();
+
     public DbSet<CommerceOutboxMessage> CommerceOutboxMessages => Set<CommerceOutboxMessage>();
 
     public DbSet<Donation> Donations => Set<Donation>();

@@ -21,6 +21,14 @@ param squareWebhookNotificationUrl string = ''
 param squareCheckoutReturnUrl string = ''
 param squareAccessTokenSecretUri string = ''
 param squareWebhookSignatureKeySecretUri string = ''
+param printifyEnabled bool = false
+param printifyOrderCreationEnabled bool = false
+param printifyProductionReleaseEnabled bool = false
+param printifyShopId string = ''
+param printifyWebhookNotificationUrl string = ''
+param printifyTokenExpiresAtUtc string = ''
+param printifyAccessTokenSecretUri string = ''
+param printifyWebhookSecretUri string = ''
 param transactionalEmailConnectionSecretUri string
 param transactionalEmailSenderAddress string
 param tags object = {}
@@ -41,6 +49,19 @@ var squareSecretAppSettings = concat(
     {
       name: 'Square__WebhookSignatureKey'
       value: '@Microsoft.KeyVault(SecretUri=${squareWebhookSignatureKeySecretUri})'
+    }
+  ])
+var printifySecretAppSettings = concat(
+  empty(printifyAccessTokenSecretUri) ? [] : [
+    {
+      name: 'Printify__AccessToken'
+      value: '@Microsoft.KeyVault(SecretUri=${printifyAccessTokenSecretUri})'
+    }
+  ],
+  empty(printifyWebhookSecretUri) ? [] : [
+    {
+      name: 'Printify__WebhookSecret'
+      value: '@Microsoft.KeyVault(SecretUri=${printifyWebhookSecretUri})'
     }
   ])
 
@@ -156,6 +177,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: string(storePublicPreviewEnabled)
         }
         {
+          name: 'Store__CheckoutEnabled'
+          value: 'false'
+        }
+        {
           name: 'Store__Currency'
           value: 'USD'
         }
@@ -196,6 +221,42 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: '15'
         }
         {
+          name: 'Printify__Enabled'
+          value: string(printifyEnabled)
+        }
+        {
+          name: 'Printify__OrderCreationEnabled'
+          value: string(printifyOrderCreationEnabled)
+        }
+        {
+          name: 'Printify__ProductionReleaseEnabled'
+          value: string(printifyProductionReleaseEnabled)
+        }
+        {
+          name: 'Printify__ShopId'
+          value: printifyShopId
+        }
+        {
+          name: 'Printify__WebhookNotificationUrl'
+          value: printifyWebhookNotificationUrl
+        }
+        {
+          name: 'Printify__TokenExpiresAtUtc'
+          value: printifyTokenExpiresAtUtc
+        }
+        {
+          name: 'Printify__MinimumGrossContributionMinor'
+          value: '500'
+        }
+        {
+          name: 'Printify__RefreshMinutes'
+          value: '360'
+        }
+        {
+          name: 'Printify__RequestTimeoutSeconds'
+          value: '20'
+        }
+        {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
           value: applicationInsightsConnectionString
         }
@@ -215,7 +276,7 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           name: 'WEBSITES_CONTAINER_START_TIME_LIMIT'
           value: '600'
         }
-      ], corsAppSettings, squareSecretAppSettings)
+      ], corsAppSettings, squareSecretAppSettings, printifySecretAppSettings)
     }
   }
 }

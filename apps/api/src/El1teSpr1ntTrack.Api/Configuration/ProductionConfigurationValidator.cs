@@ -99,12 +99,36 @@ public static class ProductionConfigurationValidator
         {
             ValidateCommerce(configuration, errors);
         }
+        if (configuration.GetValue<bool>("Printify:Enabled"))
+        {
+            ValidatePrintify(configuration, errors);
+        }
 
         if (errors.Count > 0)
         {
             throw new InvalidOperationException(
                 "Production configuration is invalid: " + string.Join(" ", errors));
         }
+    }
+
+    private static void ValidatePrintify(IConfiguration configuration, ICollection<string> errors)
+    {
+        Required(configuration, "Printify:AccessToken", errors);
+        if (!long.TryParse(configuration["Printify:ShopId"], out var shopId) || shopId <= 0)
+            errors.Add("Printify:ShopId must be a positive integer.");
+        Required(configuration, "Printify:WebhookSecret", errors);
+        RequiredHttpsUrl(configuration, "Printify:WebhookNotificationUrl", errors);
+        if (!DateTimeOffset.TryParse(configuration["Printify:TokenExpiresAtUtc"], out var expiresAt) ||
+            expiresAt <= DateTimeOffset.UtcNow)
+            errors.Add("Printify:TokenExpiresAtUtc must be a future timestamp recorded when the annual token is created.");
+        if (!long.TryParse(configuration["Printify:MinimumGrossContributionMinor"], out var floor) || floor < 0)
+            errors.Add("Printify:MinimumGrossContributionMinor must be non-negative.");
+        if (configuration.GetValue<bool>("Printify:OrderCreationEnabled") &&
+            !configuration.GetValue<bool>("Store:CheckoutEnabled"))
+            errors.Add("Printify order creation requires Store:CheckoutEnabled.");
+        if (configuration.GetValue<bool>("Printify:ProductionReleaseEnabled") &&
+            !configuration.GetValue<bool>("Printify:OrderCreationEnabled"))
+            errors.Add("Printify production release requires Printify:OrderCreationEnabled.");
     }
 
     private static void ValidateCommerce(

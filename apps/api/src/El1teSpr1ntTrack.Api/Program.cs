@@ -151,11 +151,18 @@ var storeSettings = builder.Configuration
 var squareSettings = builder.Configuration
     .GetSection(SquareSettings.SectionName)
     .Get<SquareSettings>() ?? new SquareSettings();
+var printifySettings = builder.Configuration
+    .GetSection(PrintifySettings.SectionName)
+    .Get<PrintifySettings>() ?? new PrintifySettings();
 builder.Services.AddSingleton(storeSettings);
 builder.Services.AddSingleton(squareSettings);
+builder.Services.AddSingleton(printifySettings);
 builder.Services.AddSingleton<ISquareSignatureVerifier, SquareSignatureVerifier>();
 builder.Services.AddScoped<ISquareWebhookService, SquareWebhookService>();
 builder.Services.AddScoped<ICommerceOutboxProcessor, CommerceOutboxProcessor>();
+builder.Services.AddSingleton<IPrintifySignatureVerifier, PrintifySignatureVerifier>();
+builder.Services.AddScoped<IPrintifyWebhookService, PrintifyWebhookService>();
+builder.Services.AddScoped<IPrintifyAdminService, PrintifyAdminService>();
 builder.Services.AddHttpClient<ISquareClient, SquareClient>(client =>
 {
     client.BaseAddress = new Uri(squareSettings.BaseUrl);
@@ -168,7 +175,20 @@ builder.Services.AddHttpClient<ISquareCatalogImageImporter, SquareCatalogImageIm
 {
     AllowAutoRedirect = false
 });
+builder.Services.AddHttpClient<IPrintifyClient, PrintifyClient>(client =>
+{
+    client.BaseAddress = new Uri(PrintifySettings.ApiBaseUrl);
+    client.Timeout = TimeSpan.FromSeconds(Math.Clamp(printifySettings.RequestTimeoutSeconds, 5, 60));
+});
+builder.Services.AddHttpClient<IPrintifyCatalogImageImporter, PrintifyCatalogImageImporter>(client =>
+{
+    client.Timeout = TimeSpan.FromSeconds(30);
+}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+{
+    AllowAutoRedirect = false
+});
 builder.Services.AddHostedService<CommerceOutboxWorker>();
+builder.Services.AddHostedService<PrintifyCatalogRefreshWorker>();
 
 var authFeatureSettings = builder.Configuration
     .GetSection(AuthFeatureSettings.SectionName).Get<AuthFeatureSettings>() ?? new AuthFeatureSettings();

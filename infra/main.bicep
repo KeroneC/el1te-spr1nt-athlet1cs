@@ -66,6 +66,14 @@ param squareAccessTokenSecretUri string = ''
 
 @description('Optional Key Vault secret URI containing the Square webhook signature key.')
 param squareWebhookSignatureKeySecretUri string = ''
+param printifyEnabled bool = false
+param printifyOrderCreationEnabled bool = false
+param printifyProductionReleaseEnabled bool = false
+param printifyShopId string = ''
+param printifyWebhookNotificationUrl string = ''
+param printifyTokenExpiresAtUtc string = ''
+param printifyAccessTokenSecretUri string = ''
+param printifyWebhookSecretUri string = ''
 
 @description('Immutable Git commit SHA promoted by the deployment workflow.')
 @minLength(7)
@@ -185,6 +193,14 @@ module api 'modules/api-app.bicep' = {
     squareCheckoutReturnUrl: squareCheckoutReturnUrl
     squareAccessTokenSecretUri: squareAccessTokenSecretUri
     squareWebhookSignatureKeySecretUri: squareWebhookSignatureKeySecretUri
+    printifyEnabled: printifyEnabled
+    printifyOrderCreationEnabled: printifyOrderCreationEnabled
+    printifyProductionReleaseEnabled: printifyProductionReleaseEnabled
+    printifyShopId: printifyShopId
+    printifyWebhookNotificationUrl: printifyWebhookNotificationUrl
+    printifyTokenExpiresAtUtc: printifyTokenExpiresAtUtc
+    printifyAccessTokenSecretUri: printifyAccessTokenSecretUri
+    printifyWebhookSecretUri: printifyWebhookSecretUri
     transactionalEmailConnectionSecretUri: communicationEmail.outputs.connectionSecretUri
     transactionalEmailSenderAddress: communicationEmail.outputs.senderAddress
     location: location

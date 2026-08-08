@@ -41,6 +41,7 @@ public sealed record AdminStoreProductSummaryDto(
     StoreProductStatus Status,
     bool IsFeatured,
     int DisplayOrder,
+    ProductFulfillmentMode FulfillmentMode,
     int VariantCount,
     int TotalOnHand,
     int TotalAvailable,
@@ -63,6 +64,11 @@ public sealed record AdminStoreProductDto(
     bool IsFeatured,
     int DisplayOrder,
     bool AllowsSpecialRequests,
+    ProductFulfillmentMode FulfillmentMode,
+    string? PrintifyProductId,
+    int? PrintifyBlueprintId,
+    int? PrintifyProviderId,
+    DateTimeOffset? PrintifyLastSyncedAtUtc,
     string? SquareCatalogObjectId,
     long? SquareCatalogVersion,
     DateTimeOffset? ImportedAtUtc,
@@ -115,6 +121,10 @@ public sealed record AdminProductVariantDto(
     bool IsActive,
     string? SquareCatalogObjectId,
     long? SquareCatalogVersion,
+    int? PrintifyVariantId,
+    long? PrintifyProviderCostMinor,
+    bool PrintifyIsAvailable,
+    DateTimeOffset? PrintifyLastVerifiedAtUtc,
     string RowVersion,
     IReadOnlyList<Guid> OptionValueIds);
 
@@ -173,6 +183,10 @@ public sealed class StoreProductWriteDto
     public int DisplayOrder { get; init; }
 
     public bool AllowsSpecialRequests { get; init; }
+    public ProductFulfillmentMode FulfillmentMode { get; init; } = ProductFulfillmentMode.ClubHandoff;
+    public string? PrintifyProductId { get; init; }
+    public int? PrintifyBlueprintId { get; init; }
+    public int? PrintifyProviderId { get; init; }
     public IReadOnlyList<ProductMediaWriteDto> Media { get; init; } = [];
     public IReadOnlyList<ProductOptionWriteDto> Options { get; init; } = [];
     public IReadOnlyList<ProductVariantWriteDto> Variants { get; init; } = [];
@@ -211,6 +225,7 @@ public sealed record ProductVariantWriteDto(
     int LowStockThreshold,
     bool IsActive,
     string? RowVersion,
+    int? PrintifyVariantId,
     IReadOnlyList<Guid> OptionValueIds);
 
 public sealed record ProductModifierGroupWriteDto(
@@ -335,3 +350,58 @@ public sealed record SquareCatalogImportResultDto(
     int ProductsCreated,
     int ProductsSkipped,
     int ImagesImported);
+
+public sealed record PrintifyIntegrationHealthDto(
+    bool Enabled,
+    bool IsConfigured,
+    bool ConnectionHealthy,
+    string? ShopTitle,
+    long? ShopId,
+    DateTimeOffset? TokenExpiresAtUtc,
+    bool TokenExpiresWithinThirtyDays,
+    bool WebhookConfigured,
+    int ExpectedWebhookCount,
+    int ActiveWebhookCount,
+    int MappedProductCount,
+    int MappingIssueCount,
+    int CostChangeCount,
+    DateTimeOffset? LastCatalogSyncAtUtc,
+    long MinimumGrossContributionMinor,
+    bool OrderCreationEnabled,
+    bool ProductionReleaseEnabled);
+
+public sealed record PrintifyCatalogPreviewProductDto(
+    string PrintifyProductId,
+    string Name,
+    int VariantCount,
+    int AvailableVariantCount,
+    int ImageCount,
+    bool AlreadyConnected);
+
+public sealed record PrintifyCatalogPreviewDto(
+    bool IsConfigured,
+    string? ShopTitle,
+    int ProductCount,
+    int NewProductCount,
+    IReadOnlyList<PrintifyCatalogPreviewProductDto> Products);
+
+public sealed class PrintifyCatalogImportRequestDto
+{
+    [MinLength(1), MaxLength(100)]
+    public IReadOnlyList<string> ProductIds { get; init; } = [];
+}
+
+public sealed record PrintifyCatalogImportResultDto(
+    Guid ImportRunId,
+    int ProductsDiscovered,
+    int ProductsCreated,
+    int ProductsSkipped,
+    int ImagesImported);
+
+public sealed record PrintifyRefreshResultDto(
+    int ProductsChecked,
+    int VariantsChecked,
+    int AvailabilityChanges,
+    int CostChanges,
+    int MappingIssues,
+    DateTimeOffset CompletedAtUtc);

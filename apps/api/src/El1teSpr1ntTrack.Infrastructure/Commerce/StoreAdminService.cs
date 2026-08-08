@@ -86,6 +86,7 @@ public sealed class StoreAdminService(
                 value.Status,
                 value.IsFeatured,
                 value.DisplayOrder,
+                value.FulfillmentMode,
                 value.Variants.Count,
                 value.Variants.Sum(variant => variant.OnHandQuantity),
                 value.Variants.Sum(variant => variant.OnHandQuantity - variant.ReservedQuantity),
@@ -127,6 +128,10 @@ public sealed class StoreAdminService(
             IsFeatured = request.IsFeatured,
             DisplayOrder = request.DisplayOrder,
             AllowsSpecialRequests = request.AllowsSpecialRequests,
+            FulfillmentMode = request.FulfillmentMode,
+            PrintifyProductId = Clean(request.PrintifyProductId),
+            PrintifyBlueprintId = request.PrintifyBlueprintId,
+            PrintifyProviderId = request.PrintifyProviderId,
             CreatedAt = now
         };
         dbContext.Products.Add(product);
@@ -155,6 +160,10 @@ public sealed class StoreAdminService(
         product.IsFeatured = request.IsFeatured;
         product.DisplayOrder = request.DisplayOrder;
         product.AllowsSpecialRequests = request.AllowsSpecialRequests;
+        product.FulfillmentMode = request.FulfillmentMode;
+        product.PrintifyProductId = Clean(request.PrintifyProductId);
+        product.PrintifyBlueprintId = request.PrintifyBlueprintId;
+        product.PrintifyProviderId = request.PrintifyProviderId;
         product.UpdatedAt = now;
 
         SyncMedia(product, request.Media, now);
@@ -188,6 +197,7 @@ public sealed class StoreAdminService(
             IsFeatured = false,
             DisplayOrder = source.DisplayOrder,
             AllowsSpecialRequests = source.AllowsSpecialRequests,
+            FulfillmentMode = ProductFulfillmentMode.ClubHandoff,
             CreatedAt = now
         };
         var valueMap = new Dictionary<Guid, Guid>();
@@ -301,7 +311,9 @@ public sealed class StoreAdminService(
         CancellationToken cancellationToken)
     {
         var (page, pageSize) = NormalizePage(options.Page, options.PageSize, 200);
-        var query = dbContext.ProductVariants.AsNoTracking().AsQueryable();
+        var query = dbContext.ProductVariants.AsNoTracking()
+            .Where(value => value.Product.FulfillmentMode == ProductFulfillmentMode.ClubHandoff)
+            .AsQueryable();
         if (!string.IsNullOrWhiteSpace(options.Search))
         {
             var search = options.Search.Trim();
@@ -350,7 +362,8 @@ public sealed class StoreAdminService(
             Invalid("Lines", "Each variant can appear only once.");
         var ids = request.Lines.Select(value => value.VariantId).ToHashSet();
         var variants = await dbContext.ProductVariants.Include(value => value.Product)
-            .Where(value => ids.Contains(value.Id)).ToListAsync(cancellationToken);
+            .Where(value => ids.Contains(value.Id) && value.Product.FulfillmentMode == ProductFulfillmentMode.ClubHandoff)
+            .ToListAsync(cancellationToken);
         if (variants.Count != ids.Count) throw new CmsConflictException("One or more inventory variants no longer exist.");
         var byId = variants.ToDictionary(value => value.Id);
         var now = clock.UtcNow;
@@ -376,7 +389,8 @@ public sealed class StoreAdminService(
             Invalid("Lines", "Each variant can appear only once.");
         var ids = request.Lines.Select(value => value.VariantId).ToHashSet();
         var variants = await dbContext.ProductVariants.Include(value => value.Product)
-            .Where(value => ids.Contains(value.Id)).ToListAsync(cancellationToken);
+            .Where(value => ids.Contains(value.Id) && value.Product.FulfillmentMode == ProductFulfillmentMode.ClubHandoff)
+            .ToListAsync(cancellationToken);
         if (variants.Count != ids.Count) throw new CmsConflictException("One or more inventory variants no longer exist.");
         var byId = variants.ToDictionary(value => value.Id);
         var now = clock.UtcNow;
@@ -532,7 +546,8 @@ public sealed class StoreAdminService(
 
     private async Task<ProductVariant> InventoryVariant(Guid id, CancellationToken token) =>
         await dbContext.ProductVariants.Include(value => value.Product)
-            .SingleOrDefaultAsync(value => value.Id == id, token)
+            .SingleOrDefaultAsync(value => value.Id == id &&
+                                           value.Product.FulfillmentMode == ProductFulfillmentMode.ClubHandoff, token)
         ?? throw new CmsNotFoundException("Product variant", id);
 
     private void ApplyNewGraph(Product product, StoreProductWriteDto request, DateTimeOffset now)
@@ -565,7 +580,7 @@ public sealed class StoreAdminService(
             {
                 Id = variant.Id, Name = variant.Name.Trim(), Sku = variant.Sku.Trim(),
                 PriceOverrideMinor = variant.PriceOverrideMinor, LowStockThreshold = variant.LowStockThreshold,
-                IsActive = variant.IsActive, CreatedAt = now
+                IsActive = variant.IsActive, PrintifyVariantId = variant.PrintifyVariantId, CreatedAt = now
             };
             foreach (var id in variant.OptionValueIds)
                 entity.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = entity, ProductOptionValueId = id });
@@ -649,7 +664,7 @@ public sealed class StoreAdminService(
             }
             variant.Name = item.Name.Trim(); variant.Sku = item.Sku.Trim();
             variant.PriceOverrideMinor = item.PriceOverrideMinor; variant.LowStockThreshold = item.LowStockThreshold;
-            variant.IsActive = item.IsActive; variant.UpdatedAt = now;
+            variant.IsActive = item.IsActive; variant.PrintifyVariantId = item.PrintifyVariantId; variant.UpdatedAt = now;
             var requestedValues = item.OptionValueIds.ToHashSet();
             foreach (var link in variant.OptionValues.Where(link => !requestedValues.Contains(link.ProductOptionValueId)).ToList())
             {
@@ -760,6 +775,22 @@ public sealed class StoreAdminService(
             errors["Status"] = ["A published product must have at least one active variant."];
         if (request.Status == StoreProductStatus.Published && request.Media.Count == 0)
             errors["Media"] = ["A published product must have at least one image."];
+        if (request.FulfillmentMode == ProductFulfillmentMode.PrintifyDirectShip)
+        {
+            if (request.AllowsSpecialRequests)
+                errors["AllowsSpecialRequests"] = ["Printify products cannot accept free-form special requests at launch."];
+            if (request.Status == StoreProductStatus.Published &&
+                (string.IsNullOrWhiteSpace(request.PrintifyProductId) ||
+                 request.PrintifyBlueprintId is null or <= 0 || request.PrintifyProviderId is null or <= 0))
+                errors["PrintifyProductId"] = ["A published Printify product needs a complete provider mapping."];
+            var activeMappings = request.Variants.Where(value => value.IsActive).Select(value => value.PrintifyVariantId).ToList();
+            if (request.Status == StoreProductStatus.Published &&
+                (activeMappings.Any(value => value is null or <= 0) || activeMappings.Distinct().Count() != activeMappings.Count))
+                errors["Variants"] = ["Every active Printify variant needs a unique provider variant mapping before publishing."];
+            if (!string.IsNullOrWhiteSpace(request.PrintifyProductId) &&
+                await dbContext.Products.AnyAsync(value => value.PrintifyProductId == request.PrintifyProductId.Trim() && value.Id != productId, token))
+                errors["PrintifyProductId"] = ["That Printify product is already connected."];
+        }
         if (request.ModifierGroups.Any(value =>
                 string.IsNullOrWhiteSpace(value.Name) || value.MinimumSelections < 0 ||
                 value.MaximumSelections < value.MinimumSelections))
@@ -929,7 +960,9 @@ public sealed class StoreAdminService(
     private AdminStoreProductDto MapProduct(Product value) => new(
         value.Id, value.CategoryId, value.Name, value.Slug, value.ShortDescription, value.Description,
         value.BasePriceMinor, value.Currency, value.Status, value.IsFeatured, value.DisplayOrder,
-        value.AllowsSpecialRequests, value.SquareCatalogObjectId, value.SquareCatalogVersion,
+        value.AllowsSpecialRequests, value.FulfillmentMode, value.PrintifyProductId,
+        value.PrintifyBlueprintId, value.PrintifyProviderId, value.PrintifyLastSyncedAtUtc,
+        value.SquareCatalogObjectId, value.SquareCatalogVersion,
         value.ImportedAtUtc,
         value.Media.OrderBy(media => media.DisplayOrder).Select(media => new AdminProductMediaDto(
             media.Id, media.MediaAssetId, media.MediaAsset.PublicUrl, media.MediaAsset.Title,
@@ -943,7 +976,9 @@ public sealed class StoreAdminService(
             variant.Id, variant.Name, variant.Sku, variant.PriceOverrideMinor, variant.OnHandQuantity,
             variant.ReservedQuantity, variant.OnHandQuantity - variant.ReservedQuantity,
             variant.LowStockThreshold, variant.IsActive, variant.SquareCatalogObjectId,
-            variant.SquareCatalogVersion, Convert.ToBase64String(variant.RowVersion),
+            variant.SquareCatalogVersion, variant.PrintifyVariantId, variant.PrintifyProviderCostMinor,
+            variant.PrintifyIsAvailable, variant.PrintifyLastVerifiedAtUtc,
+            Convert.ToBase64String(variant.RowVersion),
             variant.OptionValues.Select(link => link.ProductOptionValueId).ToList())).ToList(),
         value.ModifierGroups.OrderBy(group => group.DisplayOrder).Select(group => new AdminProductModifierGroupDto(
             group.Id, group.Name, group.Type, group.IsRequired, group.MinimumSelections, group.MaximumSelections,

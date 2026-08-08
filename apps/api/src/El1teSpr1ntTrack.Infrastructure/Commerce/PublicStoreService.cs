@@ -111,9 +111,17 @@ public sealed class PublicStoreService(El1teDbContext db) : IPublicStoreService
             : PublicStockStatus.InStock;
     }
 
-    private static PublicStockStatus ProductStockStatus(IEnumerable<ProductVariant> variants)
+    internal static PublicStockStatus StockStatus(ProductVariant variant, ProductFulfillmentMode fulfillmentMode) =>
+        fulfillmentMode == ProductFulfillmentMode.PrintifyDirectShip
+            ? variant.PrintifyIsAvailable ? PublicStockStatus.InStock : PublicStockStatus.SoldOut
+            : StockStatus(variant);
+
+    private static PublicStockStatus ProductStockStatus(
+        IEnumerable<ProductVariant> variants,
+        ProductFulfillmentMode fulfillmentMode)
     {
-        var statuses = variants.Where(value => value.IsActive).Select(StockStatus).ToList();
+        var statuses = variants.Where(value => value.IsActive)
+            .Select(value => StockStatus(value, fulfillmentMode)).ToList();
         if (statuses.Count == 0 || statuses.All(value => value == PublicStockStatus.SoldOut))
             return PublicStockStatus.SoldOut;
         if (statuses.Any(value => value == PublicStockStatus.InStock))
@@ -140,9 +148,10 @@ public sealed class PublicStoreService(El1teDbContext db) : IPublicStoreService
             prices.Max(),
             product.Currency,
             product.IsFeatured,
+            product.FulfillmentMode,
             image?.MediaAsset.PublicUrl,
             image is null ? null : image.AltTextOverride ?? image.MediaAsset.AltText,
-            ProductStockStatus(variants));
+            ProductStockStatus(variants, product.FulfillmentMode));
     }
 
     private static PublicStoreProductDto ToDetail(Product product)
@@ -154,7 +163,7 @@ public sealed class PublicStoreService(El1teDbContext db) : IPublicStoreService
                 value.Id,
                 value.Name,
                 value.PriceOverrideMinor ?? product.BasePriceMinor,
-                StockStatus(value),
+                StockStatus(value, product.FulfillmentMode),
                 value.OptionValues.Select(option => option.ProductOptionValueId).ToList()))
             .ToList();
 
@@ -238,7 +247,8 @@ public sealed class PublicStoreService(El1teDbContext db) : IPublicStoreService
             product.BasePriceMinor,
             product.Currency,
             product.AllowsSpecialRequests,
-            ProductStockStatus(product.Variants),
+            product.FulfillmentMode,
+            ProductStockStatus(product.Variants, product.FulfillmentMode),
             media,
             options,
             variants,
