@@ -14,6 +14,7 @@ param publicBaseUrl string
 param allowedOrigins array
 param releaseSha string
 param storeEnabled bool = false
+param storeCheckoutEnabled bool = false
 param storePublicPreviewEnabled bool = false
 param squareEnvironment string = 'Sandbox'
 param squareLocationId string = ''
@@ -156,6 +157,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
           value: string(storePublicPreviewEnabled)
         }
         {
+          name: 'Store__CheckoutEnabled'
+          value: string(storeCheckoutEnabled)
+        }
+        {
           name: 'Store__Currency'
           value: 'USD'
         }
@@ -170,6 +175,14 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'Store__OutboxPollSeconds'
           value: '5'
+        }
+        {
+          name: 'Store__ReconciliationMinutes'
+          value: '5'
+        }
+        {
+          name: 'Store__PublicSiteUrl'
+          value: jwtAudience
         }
         {
           name: 'Square__Environment'

@@ -226,6 +226,9 @@ public sealed class StoreAdminServiceTests
         public Task<bool> CheckConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(true);
         public Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(SquarePaymentLinkCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<SquarePaymentResult> RetrievePaymentAsync(string paymentId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<SquareOrderResult> RetrieveOrderAsync(string orderId, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<SquarePaymentLinkDeleteResult> DeletePaymentLinkAsync(string paymentLinkId, CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<SquareRefundResult> RefundPaymentAsync(SquareRefundCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
+        public Task<SquareRefundStatusResult> RetrieveRefundAsync(string refundId, CancellationToken cancellationToken) => throw new NotSupportedException();
     }
 }

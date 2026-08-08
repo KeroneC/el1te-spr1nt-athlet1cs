@@ -136,6 +136,7 @@ builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
 builder.Services.AddScoped<IStoreAdminService, StoreAdminService>();
 builder.Services.AddScoped<IPublicStoreService, PublicStoreService>();
+builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();
 builder.Services.AddSingleton<IImageInspector, SkiaImageInspector>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 builder.Services.AddScoped(typeof(ICmsRepository<>), typeof(CmsRepository<>));

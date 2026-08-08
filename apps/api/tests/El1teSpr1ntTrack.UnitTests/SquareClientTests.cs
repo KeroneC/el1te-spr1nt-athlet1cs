@@ -11,7 +11,7 @@ public sealed class SquareClientTests
     public async Task CreatePaymentLink_UsesAdHocLinesAndSquareManagedTaxes()
     {
         var handler = new RecordingHandler(
-            """{"payment_link":{"id":"link-1","order_id":"square-order-1","url":"https://sandbox.square.link/u/test"}}""");
+            """{"payment_link":{"id":"link-1","order_id":"square-order-1","url":"https://sandbox.square.link/u/test"},"related_resources":{"orders":[{"id":"square-order-1","total_tax_money":{"amount":330,"currency":"USD"},"total_money":{"amount":5830,"currency":"USD"}}]}}""");
         var httpClient = new HttpClient(handler)
         {
             BaseAddress = new Uri(SquareSettings.SandboxBaseUrl)
@@ -29,6 +29,8 @@ public sealed class SquareClientTests
                 "ESA-ORDER-1",
                 "https://web.example.invalid/shop/order-confirmation",
                 "USD",
+                "buyer@example.com",
+                "+14155550100",
                 [
                     new SquareCheckoutLineItem(
                         "Team hoodie",
@@ -40,10 +42,14 @@ public sealed class SquareClientTests
             CancellationToken.None);
 
         Assert.Equal("link-1", result.PaymentLinkId);
+        Assert.Equal(330, result.TaxMinor);
+        Assert.Equal(5830, result.TotalMinor);
         Assert.Equal(HttpMethod.Post, handler.Request!.Method);
         Assert.Equal("/v2/online-checkout/payment-links", handler.Request.RequestUri!.AbsolutePath);
         Assert.Contains("\"auto_apply_taxes\":true", handler.Body);
         Assert.Contains("\"reference_id\":\"ESA-ORDER-1\"", handler.Body);
+        Assert.Contains("\"buyer_email\":\"buyer@example.com\"", handler.Body);
+        Assert.Contains("\"ask_for_shipping_address\":false", handler.Body);
         Assert.Contains("\"base_price_money\":{\"amount\":5000,\"currency\":\"USD\"}", handler.Body);
         Assert.DoesNotContain("test-token", handler.Body);
     }
@@ -119,6 +125,28 @@ public sealed class SquareClientTests
         Assert.All(handler.Requests, request => Assert.Equal("2026-07-15", request.SquareVersion));
     }
 
+    [Fact]
+    public async Task PaymentLinkDeletionAndRefundLookup_UseSquareManagementEndpoints()
+    {
+        var handler = new SequenceHandler([
+            """{"id":"link-1","cancelled_order_id":"order-1"}""",
+            """{"refund":{"id":"refund-1","status":"COMPLETED"}}"""
+        ]);
+        var client = new SquareClient(
+            new HttpClient(handler) { BaseAddress = new Uri(SquareSettings.SandboxBaseUrl) },
+            new SquareSettings { AccessToken = "token", LocationId = "location-1", ApiVersion = "2026-07-15" });
+
+        var deleted = await client.DeletePaymentLinkAsync("link-1", CancellationToken.None);
+        var refund = await client.RetrieveRefundAsync("refund-1", CancellationToken.None);
+
+        Assert.Equal("order-1", deleted.CanceledOrderId);
+        Assert.Equal("COMPLETED", refund.Status);
+        Assert.Equal(HttpMethod.Delete, handler.Requests[0].Method);
+        Assert.Equal("/v2/online-checkout/payment-links/link-1", handler.Requests[0].Path);
+        Assert.Equal(HttpMethod.Get, handler.Requests[1].Method);
+        Assert.Equal("/v2/refunds/refund-1", handler.Requests[1].Path);
+    }
+
     private sealed class RecordingHandler(string responseJson) : HttpMessageHandler
     {
         public HttpRequestMessage? Request { get; private set; }
@@ -142,13 +170,14 @@ public sealed class SquareClientTests
     private sealed class SequenceHandler(IReadOnlyList<string> responses) : HttpMessageHandler
     {
         private int _index;
-        public List<(string Path, string Body, string? SquareVersion)> Requests { get; } = [];
+        public List<(HttpMethod Method, string Path, string Body, string? SquareVersion)> Requests { get; } = [];
 
         protected override async Task<HttpResponseMessage> SendAsync(
             HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
             Requests.Add((
+                request.Method,
                 request.RequestUri!.AbsolutePath,
                 request.Content is null ? string.Empty : await request.Content.ReadAsStringAsync(cancellationToken),
                 request.Headers.TryGetValues("Square-Version", out var values) ? values.Single() : null));

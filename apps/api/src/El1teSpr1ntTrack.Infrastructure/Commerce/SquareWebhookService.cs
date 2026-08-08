@@ -19,7 +19,7 @@ public sealed class SquareWebhookService(
         string? suppliedSignature,
         CancellationToken cancellationToken)
     {
-        if (!storeSettings.Enabled)
+        if (!storeSettings.CommerceOperationsEnabled)
         {
             return SquareWebhookResult.Disabled;
         }

@@ -27,6 +27,11 @@ on:
         required: true
         type: boolean
         default: false
+      enable_square_sandbox_checkout:
+        description: Enable the demo store and Square Sandbox checkout after all Square settings below are configured
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: deploy-azure-demo
@@ -59,6 +64,11 @@ jobs:
       BOOTSTRAP_ADMIN_FIRST_NAME: ${{ vars.BOOTSTRAP_ADMIN_FIRST_NAME }}
       BOOTSTRAP_ADMIN_LAST_NAME: ${{ vars.BOOTSTRAP_ADMIN_LAST_NAME }}
       BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
+      SQUARE_LOCATION_ID: ${{ vars.SQUARE_LOCATION_ID }}
+      SQUARE_WEBHOOK_NOTIFICATION_URL: ${{ vars.SQUARE_WEBHOOK_NOTIFICATION_URL }}
+      SQUARE_CHECKOUT_RETURN_URL: ${{ vars.SQUARE_CHECKOUT_RETURN_URL }}
+      SQUARE_ACCESS_TOKEN_SECRET_URI: ${{ vars.SQUARE_ACCESS_TOKEN_SECRET_URI }}
+      SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI: ${{ vars.SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI }}
 
     steps:
       - name: Validate release request and configuration
@@ -74,6 +84,14 @@ jobs:
           if [[ "${{ inputs.bootstrap_admin }}" == "true" ]]; then
             required_admin=(BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD BOOTSTRAP_ADMIN_FIRST_NAME BOOTSTRAP_ADMIN_LAST_NAME)
             for name in "${required_admin[@]}"; do [[ -n "${!name}" ]] || { echo "Missing admin bootstrap configuration: $name"; exit 1; }; done
+          fi
+          if [[ "${{ inputs.enable_square_sandbox_checkout }}" == "true" ]]; then
+            required_square=(SQUARE_LOCATION_ID SQUARE_WEBHOOK_NOTIFICATION_URL SQUARE_CHECKOUT_RETURN_URL SQUARE_ACCESS_TOKEN_SECRET_URI SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI)
+            for name in "${required_square[@]}"; do [[ -n "${!name}" ]] || { echo "Missing Square Sandbox configuration: $name"; exit 1; }; done
+            [[ "$SQUARE_WEBHOOK_NOTIFICATION_URL" == https://*/api/webhooks/square ]] || { echo "Square webhook URL must be the exact demo HTTPS webhook endpoint."; exit 1; }
+            [[ "$SQUARE_CHECKOUT_RETURN_URL" == https://*/shop/order-confirmation ]] || { echo "Square return URL must be the exact demo HTTPS confirmation page."; exit 1; }
+            [[ "$SQUARE_ACCESS_TOKEN_SECRET_URI" == https://*.vault.azure.net/secrets/* ]] || { echo "Square access token must be supplied by Azure Key Vault secret URI."; exit 1; }
+            [[ "$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" == https://*.vault.azure.net/secrets/* ]] || { echo "Square webhook key must be supplied by Azure Key Vault secret URI."; exit 1; }
           fi
 
       - name: Verify selected CI run
@@ -134,7 +152,10 @@ jobs:
           az deployment group what-if --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
             --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
-              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" storePublicPreviewEnabled=true
+              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" storePublicPreviewEnabled=true \
+              storeEnabled="${{ inputs.enable_square_sandbox_checkout }}" storeCheckoutEnabled="${{ inputs.enable_square_sandbox_checkout }}" squareEnvironment=Sandbox \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI"
 
       - name: Apply infrastructure
         id: infrastructure
@@ -144,6 +165,9 @@ jobs:
             --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
               monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" storePublicPreviewEnabled=true \
+              storeEnabled="${{ inputs.enable_square_sandbox_checkout }}" storeCheckoutEnabled="${{ inputs.enable_square_sandbox_checkout }}" squareEnvironment=Sandbox \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" \
               tags="{\"project\":\"el1te-platform\",\"environment\":\"demo\",\"funding\":\"nonprofit-grant\"}" \
             --query properties.outputs --output json)
           for key in apiUrl webUrl apiAppName webAppName sqlServerName sqlDatabaseName apiPrincipalId keyVaultName; do
@@ -240,6 +264,7 @@ jobs:
           echo "Commit: ${{ steps.release.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "API: ${{ steps.infrastructure.outputs.apiurl }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Web: ${{ steps.infrastructure.outputs.weburl }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Square Sandbox checkout enabled: ${{ inputs.enable_square_sandbox_checkout }}" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Remove temporary SQL firewall access
         if: ${{ always() && ! inputs.infrastructure_only && steps.infrastructure.outcome == 'success' }}

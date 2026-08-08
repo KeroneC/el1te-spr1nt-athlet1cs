@@ -95,9 +95,14 @@ public static class ProductionConfigurationValidator
         Required(configuration, "TransactionalEmail:SenderAddress", errors);
         RequiredHttpsUrl(configuration, "TransactionalEmail:AdminSiteUrl", errors);
 
-        if (configuration.GetValue<bool>("Store:Enabled"))
+        if (configuration.GetValue<bool>("Store:CheckoutEnabled") &&
+            configuration.GetValue<bool>("Store:Enabled"))
         {
             ValidateCommerce(configuration, errors);
+        }
+        else if (configuration.GetValue<bool>("Store:CheckoutEnabled"))
+        {
+            errors.Add("Store:CheckoutEnabled requires Store:Enabled=true.");
         }
 
         if (errors.Count > 0)
@@ -121,6 +126,8 @@ public static class ProductionConfigurationValidator
         {
             errors.Add("Store:ReservationMinutes must be between 5 and 120.");
         }
+
+        RequiredHttpsUrl(configuration, "Store:PublicSiteUrl", errors);
 
         if (!string.Equals(configuration["Square:Environment"], "Sandbox", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(configuration["Square:Environment"], "Production", StringComparison.OrdinalIgnoreCase))

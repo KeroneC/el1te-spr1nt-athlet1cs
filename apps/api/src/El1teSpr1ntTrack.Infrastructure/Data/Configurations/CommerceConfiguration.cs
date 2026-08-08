@@ -173,6 +173,9 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
     public void Configure(EntityTypeBuilder<Order> builder)
     {
         builder.Property(value => value.PublicNumber).HasMaxLength(30).IsRequired();
+        builder.Property(value => value.CheckoutAttemptId).HasMaxLength(64).IsRequired();
+        builder.Property(value => value.CheckoutPayloadHash).HasMaxLength(64).IsRequired();
+        builder.Property(value => value.CheckoutReturnTokenHash).HasMaxLength(64).IsRequired();
         builder.Property(value => value.CustomerName).HasMaxLength(200).IsRequired();
         builder.Property(value => value.CustomerEmail).HasMaxLength(256).IsRequired();
         builder.Property(value => value.CustomerPhone).HasMaxLength(40).IsRequired();
@@ -186,7 +189,10 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(value => value.SquareOrderId).HasMaxLength(100);
         builder.Property(value => value.SquarePaymentId).HasMaxLength(100);
         builder.Property(value => value.SquarePaymentLinkId).HasMaxLength(100);
+        builder.Property(value => value.SquarePaymentLinkUrl).HasMaxLength(500);
         builder.HasIndex(value => value.PublicNumber).IsUnique();
+        builder.HasIndex(value => value.CheckoutAttemptId).IsUnique();
+        builder.HasIndex(value => value.CheckoutReturnTokenHash).IsUnique();
         builder.HasIndex(value => value.TrackingTokenHash).IsUnique().HasFilter("[TrackingTokenHash] IS NOT NULL");
         builder.HasIndex(value => value.SquareOrderId).IsUnique().HasFilter("[SquareOrderId] IS NOT NULL");
         builder.HasIndex(value => new { value.Status, value.CreatedAt });
@@ -313,6 +319,27 @@ public sealed class CommerceRefundConfiguration : IEntityTypeConfiguration<Comme
             .HasForeignKey(value => value.OrderId).OnDelete(DeleteBehavior.Restrict);
         builder.HasOne(value => value.ActorUser).WithMany()
             .HasForeignKey(value => value.ActorUserId).OnDelete(DeleteBehavior.Restrict);
+    }
+}
+
+public sealed class CommerceRefundLineConfiguration : IEntityTypeConfiguration<CommerceRefundLine>
+{
+    public void Configure(EntityTypeBuilder<CommerceRefundLine> builder)
+    {
+        builder.ToTable(table =>
+        {
+            table.HasCheckConstraint("CK_CommerceRefundLines_Quantity", "[Quantity] > 0");
+            table.HasCheckConstraint(
+                "CK_CommerceRefundLines_RestockQuantity",
+                "[RestockQuantity] >= 0 AND [RestockQuantity] <= [Quantity]");
+        });
+        builder.HasIndex(value => new { value.CommerceRefundId, value.OrderItemId }).IsUnique();
+        builder.HasOne(value => value.CommerceRefund).WithMany(value => value.Lines)
+            .HasForeignKey(value => value.CommerceRefundId).OnDelete(DeleteBehavior.Cascade);
+        builder.HasOne(value => value.OrderItem).WithMany()
+            .HasForeignKey(value => value.OrderItemId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne(value => value.InventoryAdjustment).WithMany()
+            .HasForeignKey(value => value.InventoryAdjustmentId).OnDelete(DeleteBehavior.NoAction);
     }
 }
 

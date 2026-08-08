@@ -176,7 +176,8 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
                         modifier.Name,
                         new SquareMoney(modifier.BasePriceMinor, command.Currency))).ToArray())).ToArray(),
                 new SquarePricingOptions(true)),
-            new SquareCheckoutOptions(command.RedirectUrl, false));
+            new SquareCheckoutOptions(command.RedirectUrl, false, false, false),
+            new SquarePrePopulatedData(command.BuyerEmail, command.BuyerPhone));
 
         using var request = Request(HttpMethod.Post, "v2/online-checkout/payment-links");
         request.Content = JsonContent.Create(body);
@@ -190,7 +191,16 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
             throw new SquareIntegrationException("INCOMPLETE_PAYMENT_LINK");
         }
 
-        return new SquarePaymentLinkResult(link.Id, link.OrderId, link.Url);
+        var order = payload.RelatedResources?.Orders?
+            .FirstOrDefault(value => string.Equals(value.Id, link.OrderId, StringComparison.Ordinal));
+        var taxMinor = order?.TotalTaxMoney?.Amount ?? 0;
+        var totalMinor = order?.TotalMoney?.Amount ?? 0;
+        if (totalMinor <= 0)
+        {
+            throw new SquareIntegrationException("MISSING_ORDER_TOTAL");
+        }
+
+        return new SquarePaymentLinkResult(link.Id, link.OrderId, link.Url, taxMinor, totalMinor);
     }
 
     public async Task<SquarePaymentResult> RetrievePaymentAsync(
@@ -211,6 +221,28 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
             amount.Currency);
     }
 
+    public async Task<SquareOrderResult> RetrieveOrderAsync(
+        string orderId,
+        CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+        using var request = Request(HttpMethod.Get, $"v2/orders/{Uri.EscapeDataString(orderId)}");
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var payload = await ReadPayloadAsync<RetrieveOrderResponse>(response, cancellationToken);
+        var order = payload.Order ?? throw new SquareIntegrationException("MISSING_ORDER");
+        var total = order.TotalMoney ?? throw new SquareIntegrationException("MISSING_ORDER_TOTAL");
+        return new SquareOrderResult(
+            order.Id ?? orderId,
+            order.State ?? "UNKNOWN",
+            total.Amount,
+            total.Currency,
+            (order.Tenders ?? []).Select(value => value.PaymentId)
+                .Where(value => !string.IsNullOrWhiteSpace(value))
+                .Cast<string>()
+                .Distinct(StringComparer.Ordinal)
+                .ToList());
+    }
+
     public async Task<SquareRefundResult> RefundPaymentAsync(
         SquareRefundCommand command,
         CancellationToken cancellationToken)
@@ -228,6 +260,35 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
         var refund = payload.Refund ?? throw new SquareIntegrationException("MISSING_REFUND");
         return new SquareRefundResult(
             refund.Id ?? throw new SquareIntegrationException("MISSING_REFUND_ID"),
+            refund.Status ?? "UNKNOWN");
+    }
+
+    public async Task<SquarePaymentLinkDeleteResult> DeletePaymentLinkAsync(
+        string paymentLinkId,
+        CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+        using var request = Request(
+            HttpMethod.Delete,
+            $"v2/online-checkout/payment-links/{Uri.EscapeDataString(paymentLinkId)}");
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var payload = await ReadPayloadAsync<DeletePaymentLinkResponse>(response, cancellationToken);
+        return new SquarePaymentLinkDeleteResult(
+            payload.Id ?? paymentLinkId,
+            payload.CanceledOrderId);
+    }
+
+    public async Task<SquareRefundStatusResult> RetrieveRefundAsync(
+        string refundId,
+        CancellationToken cancellationToken)
+    {
+        EnsureConfigured();
+        using var request = Request(HttpMethod.Get, $"v2/refunds/{Uri.EscapeDataString(refundId)}");
+        using var response = await httpClient.SendAsync(request, cancellationToken);
+        var payload = await ReadPayloadAsync<RefundPaymentResponse>(response, cancellationToken);
+        var refund = payload.Refund ?? throw new SquareIntegrationException("MISSING_REFUND");
+        return new SquareRefundStatusResult(
+            refund.Id ?? refundId,
             refund.Status ?? "UNKNOWN");
     }
 
@@ -480,7 +541,8 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
     private sealed record CreatePaymentLinkRequest(
         [property: JsonPropertyName("idempotency_key")] string IdempotencyKey,
         [property: JsonPropertyName("order")] SquareOrder Order,
-        [property: JsonPropertyName("checkout_options")] SquareCheckoutOptions CheckoutOptions);
+        [property: JsonPropertyName("checkout_options")] SquareCheckoutOptions CheckoutOptions,
+        [property: JsonPropertyName("pre_populated_data")] SquarePrePopulatedData PrePopulatedData);
 
     private sealed record SquareOrder(
         [property: JsonPropertyName("location_id")] string LocationId,
@@ -508,10 +570,25 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
 
     private sealed record SquareCheckoutOptions(
         [property: JsonPropertyName("redirect_url")] string RedirectUrl,
-        [property: JsonPropertyName("allow_tipping")] bool AllowTipping);
+        [property: JsonPropertyName("allow_tipping")] bool AllowTipping,
+        [property: JsonPropertyName("ask_for_shipping_address")] bool AskForShippingAddress,
+        [property: JsonPropertyName("enable_coupon")] bool EnableCoupon);
+
+    private sealed record SquarePrePopulatedData(
+        [property: JsonPropertyName("buyer_email")] string BuyerEmail,
+        [property: JsonPropertyName("buyer_phone_number")] string BuyerPhoneNumber);
 
     private sealed record CreatePaymentLinkResponse(
-        [property: JsonPropertyName("payment_link")] PaymentLink? PaymentLink);
+        [property: JsonPropertyName("payment_link")] PaymentLink? PaymentLink,
+        [property: JsonPropertyName("related_resources")] RelatedResources? RelatedResources);
+
+    private sealed record RelatedResources(
+        [property: JsonPropertyName("orders")] IReadOnlyList<RelatedOrder>? Orders);
+
+    private sealed record RelatedOrder(
+        [property: JsonPropertyName("id")] string? Id,
+        [property: JsonPropertyName("total_tax_money")] SquareMoney? TotalTaxMoney,
+        [property: JsonPropertyName("total_money")] SquareMoney? TotalMoney);
 
     private sealed record PaymentLink(
         [property: JsonPropertyName("id")] string? Id,
@@ -520,6 +597,18 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
 
     private sealed record RetrievePaymentResponse(
         [property: JsonPropertyName("payment")] Payment? Payment);
+
+    private sealed record RetrieveOrderResponse(
+        [property: JsonPropertyName("order")] RetrievedOrder? Order);
+
+    private sealed record RetrievedOrder(
+        [property: JsonPropertyName("id")] string? Id,
+        [property: JsonPropertyName("state")] string? State,
+        [property: JsonPropertyName("total_money")] SquareMoney? TotalMoney,
+        [property: JsonPropertyName("tenders")] IReadOnlyList<SquareTender>? Tenders);
+
+    private sealed record SquareTender(
+        [property: JsonPropertyName("payment_id")] string? PaymentId);
 
     private sealed record Payment(
         [property: JsonPropertyName("id")] string? Id,
@@ -535,6 +624,10 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
 
     private sealed record RefundPaymentResponse(
         [property: JsonPropertyName("refund")] Refund? Refund);
+
+    private sealed record DeletePaymentLinkResponse(
+        [property: JsonPropertyName("id")] string? Id,
+        [property: JsonPropertyName("cancelled_order_id")] string? CanceledOrderId);
 
     private sealed record Refund(
         [property: JsonPropertyName("id")] string? Id,

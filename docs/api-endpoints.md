@@ -25,14 +25,16 @@ The public route returns only active records, ordered by display order and then 
 - Commerce integration health: `GET /health/commerce`
 - Square webhook receiver: `POST /api/webhooks/square`
 
-The webhook route returns `404 Not Found` while `Store:Enabled` is false. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. Checkout and tracking endpoints remain deferred.
+The webhook route returns `404 Not Found` unless both `Store:Enabled` and `Store:CheckoutEnabled` are true. When enabled, it requires Square's exact HMAC signature, rejects oversized bodies, persists only safe event metadata and a payload hash, and deduplicates the Square event ID. The browser redirect is never treated as payment proof.
+
+Square-only order endpoints are `POST /api/public/store/checkout`, `POST /api/public/store/orders/status`, and `POST /api/public/store/orders/cancel`. Public status accepts a random fragment token and never exposes exact stock. Admin order list, detail, transitions, notes, refunds, tracking rotation, email retry, dashboard, and integration health are under `/api/admin/store` with refund and tracking controls restricted to SuperAdmins.
 
 ## Public Store
 
 - `GET /api/public/store/products`
 - `GET /api/public/store/products/{slug}`
 
-Both routes return `404 Not Found` while both `Store:Enabled` and `Store:PublicPreviewEnabled` are false. The preview flag exposes only catalog/configurator reads; it does not enable Square, orders, reservations, webhooks, or commerce workers. The list accepts `search`, `category`, `availability`, `page`, and `pageSize`. Public DTOs expose only published products, active options/variants/media, minor-unit prices, and `InStock`, `LowStock`, or `SoldOut`; exact quantities and SKUs remain private. Cart state is currently browser-local and non-personal, so there is no cart API in this phase.
+Both catalog routes return `404 Not Found` while both `Store:Enabled` and `Store:PublicPreviewEnabled` are false. The preview flag exposes only catalog/configurator reads; it does not enable Square, orders, reservations, webhooks, or commerce workers. The list accepts `search`, `category`, `availability`, `page`, and `pageSize`. Public DTOs expose only published products, active options/variants/media, minor-unit prices, and `InStock`, `LowStock`, or `SoldOut`; exact quantities and SKUs remain private. Cart state remains browser-local and non-personal; customer details are sent only when checkout begins.
 
 ## Admin Store Catalog and Inventory
 

@@ -4,6 +4,7 @@ using El1teSpr1ntTrack.Core.Enums;
 using El1teSpr1ntTrack.Infrastructure.Commerce;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace El1teSpr1ntTrack.Api.Controllers;
 
@@ -13,6 +14,7 @@ namespace El1teSpr1ntTrack.Api.Controllers;
 [Tags("Public Store")]
 public sealed class PublicStoreController(
     IPublicStoreService storeService,
+    IStoreOrderService orderService,
     StoreSettings storeSettings) : ControllerBase
 {
     [HttpGet("products")]
@@ -40,5 +42,46 @@ public sealed class PublicStoreController(
         if (!storeSettings.PublicCatalogEnabled) return NotFound();
         var product = await storeService.GetProductAsync(slug, cancellationToken);
         return product is null ? NotFound() : Ok(product);
+    }
+
+    [HttpPost("checkout")]
+    [EnableRateLimiting("public-write")]
+    public async Task<IActionResult> Checkout(
+        PublicStoreCheckoutRequestDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!storeSettings.CommerceOperationsEnabled) return NotFound();
+        return Ok(await orderService.CheckoutAsync(request, cancellationToken));
+    }
+
+    [HttpPost("orders/status")]
+    [EnableRateLimiting("public-write")]
+    public async Task<IActionResult> OrderStatus(
+        PublicStoreOrderTokenDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!storeSettings.CommerceOperationsEnabled) return NotFound();
+        return Ok(await orderService.GetPublicStatusAsync(request.Token, cancellationToken));
+    }
+
+    [HttpPost("orders/cancel")]
+    [EnableRateLimiting("public-write")]
+    public async Task<IActionResult> CancelOrder(
+        PublicStoreOrderTokenDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!storeSettings.CommerceOperationsEnabled) return NotFound();
+        return Ok(await orderService.CancelPublicOrderAsync(request.Token, cancellationToken));
+    }
+
+    [HttpPost("orders/return-status")]
+    [EnableRateLimiting("public-write")]
+    public async Task<IActionResult> CheckoutReturnStatus(
+        PublicStoreOrderTokenDto request,
+        CancellationToken cancellationToken)
+    {
+        if (!storeSettings.CommerceOperationsEnabled) return NotFound();
+        var result = await orderService.GetReturnStatusAsync(request.Token, cancellationToken);
+        return result is null ? NotFound() : Ok(result);
     }
 }

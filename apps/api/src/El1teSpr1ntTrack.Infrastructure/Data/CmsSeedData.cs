@@ -42,15 +42,15 @@ public static class CmsSeedData
     ];
 
     private static string PrivacyPolicy => """
-        Last updated: August 4, 2026
+        Last updated: August 8, 2026
 
         ## Information we collect
 
-        When you contact El1te Spr1nt Athlet1cs, we collect the name, email address, optional phone number, inquiry details, and message you provide. Store checkout collects the adult buyer's name, email, phone number, delivery address when shipping is required, product selections, order history, fulfillment status, tracking, cancellations, and refunds.
+        When you contact El1te Spr1nt Athlet1cs, we collect the name, email address, optional phone number, inquiry details, and message you provide. Store checkout collects the adult buyer's name, email, phone number, product configuration, order history, practice or event handoff status, cancellations, and refunds.
 
         ## Payments and fulfillment
 
-        Card details are entered on Square and are never received or stored by El1te. Printify receives the customer and order information required to manufacture and deliver Printify items. Delivery carriers receive the information required to deliver packages.
+        Card details are entered on Square and are never received or stored by El1te. Square receives the information required to process payment, configured taxes, receipts, cancellations, and refunds.
 
         Azure hosts the application and supports transactional email. Authorized staff may access submitted information only for club operations, support, security, accounting, safety, and legal obligations.
 
@@ -74,7 +74,7 @@ public static class CmsSeedData
         """.ReplaceLineEndings("\n");
 
     private static string AccessibilityPolicy => """
-        Last updated: August 4, 2026
+        Last updated: August 8, 2026
 
         ## Our commitment
 
@@ -90,7 +90,7 @@ public static class CmsSeedData
 
         ## Third-party services
 
-        Square and Printify provide parts of the payment and fulfillment experience. We do not control every part of those third-party services, but we will help identify a practical alternative when possible.
+        Square provides the hosted payment experience. We do not control every part of that third-party service, but we will help identify a practical alternative when possible.
 
         ## Report a barrier
 
@@ -100,7 +100,7 @@ public static class CmsSeedData
         """.ReplaceLineEndings("\n");
 
     private static string TermsPolicy => """
-        Last updated: August 4, 2026
+        Last updated: August 8, 2026
 
         ## Using this website
 
@@ -116,7 +116,7 @@ public static class CmsSeedData
 
         El1te owns or is authorized to use the website's content and branding. Viewing the website does not grant permission to copy or reuse that material.
 
-        Square, Printify, delivery carriers, sponsors, and linked websites operate under their own terms and policies. We will correct known website errors where practical, but we cannot promise uninterrupted service or guarantee a third party's availability or performance.
+        Square, sponsors, and linked websites operate under their own terms and policies. We will correct known website errors where practical, but we cannot promise uninterrupted service or guarantee a third party's availability or performance.
 
         ## Questions and updates
 
@@ -124,33 +124,31 @@ public static class CmsSeedData
         """.ReplaceLineEndings("\n");
 
     private static string StorePolicy => """
-        Last updated: August 4, 2026
+        Last updated: August 8, 2026
 
-        ## Prices, payment, and delivery
+        ## Prices, payment, and handoff
 
         Prices are in U.S. dollars. Square processes payment and calculates configured taxes. Card details are not stored by El1te.
 
-        Printify products include free standard shipping to valid United States addresses. International and expedited shipping are not available at launch. Club-stock products are delivered through an arranged practice or event handoff and are not shipped by staff. A mixed order is paid together but its items arrive separately.
+        All products are delivered through an arranged practice or event handoff. Staff do not ship launch-store orders.
 
         ## Review and cancellation
 
-        Review the address, size, color, and approved-design choices before payment. You may cancel the complete order and receive a full Square refund from the secure order-status page during the 30-minute production hold. After production release begins, cancellation is not guaranteed.
-
-        Correcting a delivery address after payment requires canceling within the hold window and placing a new order.
+        Review the size, color, approved design, name, and number choices before payment. You may cancel the complete order and receive a full Square refund from the secure order-status page during the 30 minutes following confirmed payment. After that deadline, cancellation requires staff review and is not guaranteed.
 
         ## Returns and product problems
 
-        Printify items are made to order. We do not accept returns because the wrong size or color was selected or because the buyer changed their mind. Report a damaged, misprinted, or incorrect item within 30 days of delivery with the order reference and photographs so we can investigate and arrange an appropriate replacement or refund.
+        Correctly produced name or number items are final sale after the cancellation window, except when an item is damaged, defective, or produced incorrectly by the club.
 
-        Unworn, unwashed club-stock items in original condition may be returned or exchanged within 14 days of handoff, subject to available stock.
+        Unworn, unwashed non-personalized products in original condition may be returned or exchanged within 14 days of handoff, subject to available stock.
 
         Refunds return to the original Square payment method. Processing time after a refund is submitted depends on the buyer's financial institution.
 
-        ## Timing and available choices
+        ## Production and available choices
 
-        Production and delivery dates are estimates. We will help investigate delayed or lost shipments but cannot guarantee carrier timelines.
+        Production and handoff dates are estimates. Staff will contact the buyer when an order is ready for its arranged handoff.
 
-        Launch products offer only the listed size, garment-color, and approved-design choices. Free-form names, numbers, and custom artwork are not available.
+        Launch products offer only listed size, garment-color, approved-design, name, and number choices. Custom artwork and broader special requests are not available.
 
         ## Store support
 

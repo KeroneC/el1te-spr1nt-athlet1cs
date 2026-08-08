@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { validateInventoryOperation } from "../components/admin/store-inventory-workspace";
 import { parseMoneyInput, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
 import type { AdminInventoryVariant } from "../lib/admin/types";
+import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 
 const draft = (overrides: Partial<StoreProductDraft> = {}): StoreProductDraft => ({
   categoryId: null, name: "Team hoodie", shortDescription: "", description: "",
@@ -70,5 +71,24 @@ describe("store inventory workspace", () => {
     expect(validateInventoryOperation("adjust", null, [inventory], { variant: "-1" })).toBe("Choose a variant to adjust.");
     expect(validateInventoryOperation("adjust", "variant", [inventory], { variant: "0" })).toBe("An adjustment cannot be zero.");
     expect(validateInventoryOperation("adjust", "variant", [inventory], { variant: "-1" })).toBeNull();
+  });
+});
+
+describe("store order proxy policy", () => {
+  const id = "11111111-1111-1111-1111-111111111111";
+  const emailId = "22222222-2222-2222-2222-222222222222";
+
+  it("allows only the documented order reads", () => {
+    expect(isAllowedAdminRead(["store", "orders"])).toBe(true);
+    expect(isAllowedAdminRead(["store", "orders", id])).toBe(true);
+    expect(isAllowedAdminRead(["store", "orders", "not-a-guid"])).toBe(false);
+  });
+
+  it("allows guarded order actions without opening a generic mutation proxy", () => {
+    expect(isAllowedAdminMutation(["store", "orders", id, "transitions"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "orders", id, "refunds"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "orders", id, "emails", emailId, "retry"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "orders", id, "refunds", emailId, "retry"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "orders", id], "DELETE")).toBe(false);
   });
 });

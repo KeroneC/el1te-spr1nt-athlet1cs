@@ -18,7 +18,7 @@ public sealed class SquareWebhookPersistenceTests
             dbContext,
             new FixedVerifier(true),
             clock,
-            new StoreSettings { Enabled = true });
+            new StoreSettings { Enabled = true, CheckoutEnabled = true });
         var rawBody =
             """{"event_id":"square-event-1","type":"payment.updated","merchant_id":"merchant-1","created_at":"2026-07-26T04:59:00Z","data":{"object":{"payment":{"id":"payment-1","buyer_email_address":"private@example.com"}}}}""";
 
@@ -57,7 +57,7 @@ public sealed class SquareWebhookPersistenceTests
             dbContext,
             new FixedVerifier(false),
             new FixedClock(DateTimeOffset.UtcNow),
-            new StoreSettings { Enabled = true });
+            new StoreSettings { Enabled = true, CheckoutEnabled = true });
         Assert.Equal(
             SquareWebhookResult.InvalidSignature,
             await enabled.HandleAsync("{}", "invalid", CancellationToken.None));

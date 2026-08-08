@@ -43,6 +43,11 @@ function isAllowedStoreMutation(path: string[], method: "POST" | "PUT" | "DELETE
     return method === "PUT" && path.length === 2 && idPattern.test(id ?? "");
   }
   if (resource === "square-import") return method === "POST" && path.length === 1;
+  if (resource === "orders") {
+    if (!idPattern.test(id ?? "") || method !== "POST") return false;
+    if (path.length === 3) return ["transitions", "notes", "refunds", "tracking-link"].includes(action ?? "");
+    return path.length === 5 && ["emails", "refunds"].includes(action ?? "") && idPattern.test(path[3] ?? "") && path[4] === "retry";
+  }
   if (resource !== "inventory" || method !== "POST") return false;
   if (path.length === 2) return id === "receipts" || id === "stocktakes";
   return path.length === 3 && idPattern.test(id ?? "") && action === "adjustments";
@@ -52,9 +57,10 @@ export function isAllowedAdminRead(path: string[]): boolean {
   if (path[0] !== "store") return false;
   const storePath = path.slice(1);
   if (storePath.length === 1) {
-    return ["dashboard", "products", "categories", "inventory"].includes(storePath[0]);
+    return ["dashboard", "products", "categories", "inventory", "operations-dashboard", "orders", "integration-health"].includes(storePath[0]);
   }
   return (storePath[0] === "products" && storePath.length === 2 && idPattern.test(storePath[1])) ||
+    (storePath[0] === "orders" && storePath.length === 2 && idPattern.test(storePath[1])) ||
     (storePath[0] === "inventory" && storePath.length === 2 && ["adjustments", "stocktakes"].includes(storePath[1])) ||
     (storePath[0] === "square-import" && storePath[1] === "preview" && storePath.length === 2);
 }

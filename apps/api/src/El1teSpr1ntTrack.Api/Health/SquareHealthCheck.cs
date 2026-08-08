@@ -12,9 +12,9 @@ public sealed class SquareHealthCheck(
         HealthCheckContext context,
         CancellationToken cancellationToken = default)
     {
-        if (!storeSettings.Enabled)
+        if (!storeSettings.CommerceOperationsEnabled)
         {
-            return HealthCheckResult.Healthy("Store integration disabled.");
+            return HealthCheckResult.Healthy("Transactional store integration disabled.");
         }
 
         try

@@ -42,6 +42,9 @@ param monitoringAlertEmail string
 @description('Keep false until the final store cutover.')
 param storeEnabled bool = false
 
+@description('Enable transactional checkout only after store content and Square Sandbox configuration are ready.')
+param storeCheckoutEnabled bool = false
+
 @description('Expose the read-only catalog/configurator preview without enabling Square, orders, or workers.')
 param storePublicPreviewEnabled bool = false
 
@@ -178,6 +181,7 @@ module api 'modules/api-app.bicep' = {
     publicBaseUrl: 'https://${apiAppName}.azurewebsites.net'
     releaseSha: releaseSha
     storeEnabled: storeEnabled
+    storeCheckoutEnabled: storeCheckoutEnabled
     storePublicPreviewEnabled: storePublicPreviewEnabled
     squareEnvironment: squareEnvironment
     squareLocationId: squareLocationId
