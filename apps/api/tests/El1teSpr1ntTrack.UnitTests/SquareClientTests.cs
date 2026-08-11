@@ -147,6 +147,29 @@ public sealed class SquareClientTests
         Assert.Equal("/v2/refunds/refund-1", handler.Requests[1].Path);
     }
 
+    [Fact]
+    public async Task CreatePaymentLink_RetainsOnlySafeProviderCodeAndField()
+    {
+        var handler = new ErrorHandler(
+            HttpStatusCode.BadRequest,
+            """{"errors":[{"code":"INVALID_PHONE_NUMBER","field":"pre_populated_data.buyer_phone_number","detail":"must not be retained"}]}""");
+        var client = new SquareClient(
+            new HttpClient(handler) { BaseAddress = new Uri(SquareSettings.SandboxBaseUrl) },
+            new SquareSettings { AccessToken = "token", LocationId = "location-1", ApiVersion = "2026-07-15" });
+
+        var exception = await Assert.ThrowsAsync<SquareIntegrationException>(() =>
+            client.CreatePaymentLinkAsync(new SquarePaymentLinkCommand(
+                "attempt", "ESA-ORDER-1", "https://example.test/return", "USD",
+                "buyer@example.com", "+14125550100",
+                [new SquareCheckoutLineItem("Hoodie", "Large / Red", 1, 5000, [])]),
+                CancellationToken.None));
+
+        Assert.Equal("INVALID_PHONE_NUMBER", exception.SafeCode);
+        Assert.Equal("pre_populated_data.buyer_phone_number", exception.SafeField);
+        Assert.True(exception.IsDeterministicClientFailure);
+        Assert.DoesNotContain("must not be retained", exception.Message);
+    }
+
     private sealed class RecordingHandler(string responseJson) : HttpMessageHandler
     {
         public HttpRequestMessage? Request { get; private set; }
@@ -186,5 +209,15 @@ public sealed class SquareClientTests
                 Content = new StringContent(responses[_index++], Encoding.UTF8, "application/json")
             };
         }
+    }
+
+    private sealed class ErrorHandler(HttpStatusCode statusCode, string responseJson) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken) => Task.FromResult(new HttpResponseMessage(statusCode)
+        {
+            Content = new StringContent(responseJson, Encoding.UTF8, "application/json")
+        });
     }
 }

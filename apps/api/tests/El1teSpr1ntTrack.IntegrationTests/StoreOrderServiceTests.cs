@@ -12,6 +12,125 @@ namespace El1teSpr1ntTrack.IntegrationTests;
 public sealed class StoreOrderServiceTests
 {
     [Fact]
+    public async Task Checkout_NormalizesPhoneBeforePersistenceAndSquarePrepopulation()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient();
+        var service = Service(db, square, new RecordingEmailSender(), new TestClock(DateTimeOffset.UtcNow));
+        var request = Request(product);
+        request = CopyRequest(request, "(412) 555-0100");
+
+        await service.CheckoutAsync(request, CancellationToken.None);
+
+        Assert.Equal("+14125550100", (await db.Orders.SingleAsync()).CustomerPhone);
+        Assert.Equal("+14125550100", square.CreateCommands.Single().BuyerPhone);
+    }
+
+    [Fact]
+    public async Task Checkout_PreservesRequiredLogoColorInSnapshotAndSquareDetailsWithoutSplittingStock()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        var baseRequest = Request(product);
+        var logoColor = new ProductModifierGroup
+        {
+            Product = product,
+            Name = "Logo Color",
+            Type = ProductModifierType.Color,
+            IsRequired = true,
+            MinimumSelections = 1,
+            MaximumSelections = 1,
+            IsActive = true
+        };
+        var white = new ProductModifierValue
+        {
+            ProductModifierGroup = logoColor,
+            Name = "White",
+            PriceAdjustmentMinor = 0,
+            IsActive = true
+        };
+        logoColor.Values.Add(white);
+        product.ModifierGroups.Add(logoColor);
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient();
+        var service = Service(db, square, new RecordingEmailSender(), new TestClock(DateTimeOffset.UtcNow));
+        var line = baseRequest.Lines.Single();
+        var request = new PublicStoreCheckoutRequestDto
+        {
+            CheckoutAttemptId = baseRequest.CheckoutAttemptId,
+            CustomerName = baseRequest.CustomerName,
+            CustomerEmail = baseRequest.CustomerEmail,
+            CustomerPhone = baseRequest.CustomerPhone,
+            ConfirmsAdultBuyer = true,
+            AcceptsStorePolicy = true,
+            Lines = [new PublicStoreCheckoutLineDto
+            {
+                ProductVariantId = line.ProductVariantId,
+                Quantity = line.Quantity,
+                ModifierValueIds = [white.Id],
+                CustomInputs = line.CustomInputs
+            }]
+        };
+
+        await service.CheckoutAsync(request, CancellationToken.None);
+
+        var orderItem = await db.OrderItems.SingleAsync();
+        Assert.Contains("\"label\":\"Logo Color\"", orderItem.ConfigurationJson);
+        Assert.Contains("\"value\":\"White\"", orderItem.ConfigurationJson);
+        Assert.Contains(square.CreateCommands.Single().Items.Single().Modifiers,
+            value => value.Name == "Logo Color: White" && value.BasePriceMinor == 0);
+        Assert.Single(product.Variants);
+    }
+
+    [Fact]
+    public async Task Checkout_RejectsMalformedPhoneBeforeCreatingOrderOrReservation()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var service = Service(db, new FakeSquareClient(), new RecordingEmailSender(), new TestClock(DateTimeOffset.UtcNow));
+
+        var exception = await Assert.ThrowsAsync<El1teSpr1ntTrack.Application.Common.Exceptions.CmsRequestValidationException>(() =>
+            service.CheckoutAsync(CopyRequest(Request(product), "555-0100"), CancellationToken.None));
+
+        Assert.Contains("customerPhone", exception.Errors);
+        Assert.Empty(await db.Orders.ToListAsync());
+        Assert.Equal(0, (await db.ProductVariants.AsNoTracking().SingleAsync()).ReservedQuantity);
+    }
+
+    [Fact]
+    public async Task SquareRejectedPhone_CancelsOrderAndReleasesReservationExactlyOnce()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient
+        {
+            CreateFailure = new SquareIntegrationException(
+                "INVALID_PHONE_NUMBER", 400, "pre_populated_data.buyer_phone_number")
+        };
+        var service = Service(db, square, new RecordingEmailSender(), new TestClock(DateTimeOffset.UtcNow));
+
+        var exception = await Assert.ThrowsAsync<El1teSpr1ntTrack.Application.Common.Exceptions.CmsRequestValidationException>(() =>
+            service.CheckoutAsync(Request(product), CancellationToken.None));
+
+        Assert.Contains("customerPhone", exception.Errors);
+        var order = await db.Orders.Include(value => value.Reservations).SingleAsync();
+        Assert.Equal(StoreOrderStatus.Canceled, order.Status);
+        Assert.Equal(PaymentStatus.Failed, order.PaymentStatus);
+        Assert.Equal(0, (await db.ProductVariants.AsNoTracking().SingleAsync()).ReservedQuantity);
+        Assert.NotNull(order.Reservations.Single().ReleasedAtUtc);
+        Assert.Equal(0, await service.RunMaintenanceAsync(CancellationToken.None));
+        Assert.Equal(0, (await db.ProductVariants.AsNoTracking().SingleAsync()).ReservedQuantity);
+    }
+
+    [Fact]
     public async Task CheckoutPaymentAndCancellation_AreIdempotentAndRestoreStockOnce()
     {
         await using var db = Context();
@@ -199,6 +318,41 @@ public sealed class StoreOrderServiceTests
         Assert.Equal(2, square.DeleteCalls);
     }
 
+    [Fact]
+    public async Task ExpiredCheckout_WithNoLinkAndDeterministicFailure_ReleasesStock()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient { CreateFailuresRemaining = 1 };
+        var clock = new TestClock(new DateTimeOffset(2026, 8, 8, 15, 0, 0, TimeSpan.Zero));
+        var service = Service(db, square, new RecordingEmailSender(), clock);
+
+        await Assert.ThrowsAsync<SquareIntegrationException>(() =>
+            service.CheckoutAsync(Request(product), CancellationToken.None));
+        clock.UtcNow = clock.UtcNow.AddMinutes(31);
+        square.CreateFailure = new SquareIntegrationException("BAD_REQUEST", 400, "order.line_items");
+
+        Assert.Equal(1, await service.RunMaintenanceAsync(CancellationToken.None));
+        var order = await db.Orders.SingleAsync();
+        Assert.Equal(StoreOrderStatus.Canceled, order.Status);
+        Assert.Equal(PaymentStatus.Failed, order.PaymentStatus);
+        Assert.Equal(0, (await db.ProductVariants.AsNoTracking().SingleAsync()).ReservedQuantity);
+    }
+
+    private static PublicStoreCheckoutRequestDto CopyRequest(PublicStoreCheckoutRequestDto source, string phone) => new()
+    {
+        CheckoutAttemptId = source.CheckoutAttemptId,
+        CustomerName = source.CustomerName,
+        CustomerEmail = source.CustomerEmail,
+        CustomerPhone = phone,
+        AthleteTeamNote = source.AthleteTeamNote,
+        ConfirmsAdultBuyer = source.ConfirmsAdultBuyer,
+        AcceptsStorePolicy = source.AcceptsStorePolicy,
+        Lines = source.Lines
+    };
+
     private static PublicStoreCheckoutRequestDto Request(Product product) => new()
     {
         CheckoutAttemptId = Guid.NewGuid().ToString(),
@@ -301,6 +455,7 @@ public sealed class StoreOrderServiceTests
         public int CreateFailuresRemaining { get; set; }
         public int DeleteFailuresRemaining { get; set; }
         public int DeleteCalls { get; private set; }
+        public SquareIntegrationException? CreateFailure { get; set; }
         public IReadOnlyList<string> OrderPaymentIds { get; set; } = ["payment-1"];
         public List<SquarePaymentLinkCommand> CreateCommands { get; } = [];
         public Task<bool> CheckConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(true);
@@ -308,6 +463,12 @@ public sealed class StoreOrderServiceTests
         public Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(SquarePaymentLinkCommand command, CancellationToken cancellationToken)
         {
             CreateCommands.Add(command);
+            if (CreateFailure is not null)
+            {
+                var failure = CreateFailure;
+                CreateFailure = null;
+                throw failure;
+            }
             if (CreateFailuresRemaining-- > 0) throw new SquareIntegrationException("SQUARE_TIMEOUT");
             return Task.FromResult(new SquarePaymentLinkResult("link-1", "square-order-1", "https://square.test/link", 200, 2700));
         }

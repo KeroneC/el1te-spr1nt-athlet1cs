@@ -840,6 +840,8 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .store-consent-panel label { display: grid; grid-template-columns: 1.25rem minmax(0,1fr); gap: .7rem; align-items: start; font-weight: 750; line-height: 1.55; }
 .store-consent-panel input { width: 1.15rem; height: 1.15rem; margin-top: .2rem; accent-color: var(--figma-red); }
 .store-consent-panel a { color: var(--figma-red); text-decoration: underline; }
+.store-field-error { display: block; margin-top: .4rem; color: #991b1b; font-size: .85rem; font-weight: 750; line-height: 1.4; }
+.store-form-grid input[aria-invalid="true"] { border-color: #b91c1c; outline-color: #b91c1c; }
 .store-checkout-error { border-left: 4px solid var(--figma-red); background: #fef2f2; padding: 1rem; color: #7f1d1d; font-size: .88rem; font-weight: 750; }
 .store-checkout-items { display: grid; gap: .75rem; margin: 1.5rem 0; padding: 0; list-style: none; }
 .store-checkout-items li { display: flex; justify-content: space-between; gap: 1rem; border-bottom: 1px solid #d4d4d8; padding-bottom: .75rem; font-size: .82rem; }

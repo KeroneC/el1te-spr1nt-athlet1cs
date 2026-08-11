@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, LockKeyhole, ShieldCheck } from "lucide-react";
 import { SupportReference } from "@/components/shared/support-reference";
 import type { StoreCheckoutResult, StoreProduct, ValidationProblem } from "@/lib/public/types";
@@ -19,7 +19,9 @@ export function StoreCheckout() {
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
-  const [attemptId] = useState(() => crypto.randomUUID());
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [attemptId, setAttemptId] = useState(() => crypto.randomUUID());
+  const phoneInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const cart = readStoreCart();
@@ -48,7 +50,7 @@ export function StoreCheckout() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSubmitting(true); setMessage(null); setReferenceId(null);
+    setSubmitting(true); setMessage(null); setReferenceId(null); setFieldErrors({});
     const data = new FormData(event.currentTarget);
     const payload = {
       checkoutAttemptId: attemptId,
@@ -74,6 +76,14 @@ export function StoreCheckout() {
       });
       const result = await response.json() as StoreCheckoutResult & ValidationProblem & { message?: string };
       if (!response.ok) {
+        const phoneError = checkoutFieldErrors(result).customerPhone;
+        if (phoneError) {
+          setFieldErrors({ customerPhone: phoneError });
+          setMessage("Review the highlighted checkout detail.");
+          setAttemptId(crypto.randomUUID());
+          requestAnimationFrame(() => phoneInput.current?.focus());
+          return;
+        }
         setMessage(result.message ?? result.title ?? "Checkout could not be prepared.");
         setReferenceId(response.status >= 500 ? validSupportReference(result.referenceId) : null);
         return;
@@ -94,12 +104,17 @@ export function StoreCheckout() {
         <Link className="store-back-link" href="/shop/cart"><ArrowLeft size={17}/>Return to your bag</Link>
         {message && <div className="store-checkout-error" role="alert">{message}<SupportReference referenceId={referenceId}/></div>}
         <div className="store-form-panel"><p className="eyebrow">Adult buyer</p><h2 id="buyer-heading">Contact details</h2>
-          <div className="store-form-grid"><label>Full name<input name="customerName" autoComplete="name" required maxLength={200}/></label><label>Email<input name="customerEmail" type="email" autoComplete="email" required maxLength={256}/></label><label>Phone<input name="customerPhone" type="tel" autoComplete="tel" required maxLength={40}/></label><label>Practice or athlete note <span>(optional)</span><input name="athleteTeamNote" maxLength={300}/></label></div>
+          <div className="store-form-grid"><label>Full name<input name="customerName" autoComplete="name" required maxLength={200}/></label><label>Email<input name="customerEmail" type="email" autoComplete="email" required maxLength={256}/></label><label>Phone<input ref={phoneInput} name="customerPhone" type="tel" inputMode="tel" autoComplete="tel" required maxLength={40} aria-invalid={fieldErrors.customerPhone ? "true" : undefined} aria-describedby={fieldErrors.customerPhone ? "checkout-phone-error" : undefined} onInput={() => setFieldErrors(current => { const next = { ...current }; delete next.customerPhone; return next; })}/>{fieldErrors.customerPhone && <span id="checkout-phone-error" className="store-field-error" role="alert">{fieldErrors.customerPhone}</span>}</label><label>Practice or athlete note <span>(optional)</span><input name="athleteTeamNote" maxLength={300}/></label></div>
         </div>
         {inputs.length > 0 && <div className="store-form-panel"><p className="eyebrow">Final configuration</p><h2>Personalization</h2><p>Confirm these details carefully. Correctly produced personalized gear is final sale after the cancellation window.</p><div className="store-form-grid">{inputs.map(input => { const line = lines.find(value => value.id === input.lineId)!; const key = `${input.lineId}:${input.groupId}`; return <label key={key}>{line.productName}: {input.label}<input value={values[key] ?? ""} onChange={event => setValues(current => ({ ...current, [key]: event.target.value }))} required={input.required} inputMode={input.type === "Number" ? "numeric" : undefined} maxLength={40}/></label>; })}</div></div>}
-        <div className="store-form-panel store-consent-panel"><label><input type="checkbox" name="confirmsAdultBuyer" required/>I confirm that I am at least 18 years old and am placing this order.</label><label><input type="checkbox" name="acceptsStorePolicy" required/>I reviewed and accept the <Link href="/store-policy" target="_blank">Store Policy</Link>.</label></div>
+        <div className="store-form-panel store-consent-panel"><label><input type="checkbox" name="confirmsAdultBuyer" required/><span>I confirm that I am at least 18 years old and am placing this order.</span></label><label><input type="checkbox" name="acceptsStorePolicy" required/><span>I reviewed and accept the <Link href="/store-policy" target="_blank">Store Policy</Link>.</span></label></div>
       </section>
       <aside className="store-cart-summary"><p className="eyebrow">Order summary</p><h2>{lines.length} {lines.length === 1 ? "item" : "items"}</h2><ul className="store-checkout-items">{lines.map(line => <li key={line.id}><span>{line.quantity} × {line.productName}<small>{line.variantName}</small></span><strong>{formatStoreMoney(line.unitPriceMinor * line.quantity, line.currency)}</strong></li>)}</ul><dl><div><dt>Merchandise</dt><dd>{formatStoreMoney(total, currency)}</dd></div><div><dt>Tax</dt><dd>Calculated by Square</dd></div><div><dt>Handoff</dt><dd>Free at practice/event</dd></div></dl><button className="button button-primary" disabled={submitting || !!message && inputs.length === 0}>{submitting ? "Opening Square…" : "Continue to Square"}</button><p className="store-secure-note"><ShieldCheck size={18} aria-hidden="true"/>Card details stay with Square.</p><p className="store-secure-note"><LockKeyhole size={18} aria-hidden="true"/>Your bag does not store personal details.</p></aside>
     </form>
   </article>;
+}
+
+export function checkoutFieldErrors(problem: ValidationProblem): Record<string, string> {
+  const phone = problem.errors?.customerPhone?.[0] ?? problem.errors?.CustomerPhone?.[0];
+  return phone ? { customerPhone: phone } : {};
 }

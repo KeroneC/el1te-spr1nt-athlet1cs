@@ -176,6 +176,32 @@ public sealed class StoreAdminServiceTests
         Assert.Empty(await db.Products.ToListAsync());
     }
 
+    [Fact]
+    public async Task CreateProduct_RejectsActiveUntrackedOptionsAndDirectsStaffToCustomizations()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var optionId = Guid.NewGuid();
+        var valueId = Guid.NewGuid();
+        var valid = ProductRequest(optionId, valueId);
+        var request = new StoreProductWriteDto
+        {
+            Name = valid.Name,
+            BasePriceMinor = valid.BasePriceMinor,
+            Status = StoreProductStatus.Draft,
+            Options = [new(optionId, "Logo Color", false, 0, true,
+                [new(valueId, "Red", "#dc2626", null, 0, true)])],
+            Variants = valid.Variants
+        };
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() =>
+            Service(db).CreateProductAsync(request, actor.Id, CancellationToken.None));
+
+        Assert.Contains("Options", exception.Errors);
+        Assert.Contains("Customizations", exception.Errors["Options"].Single());
+        Assert.Empty(await db.Products.ToListAsync());
+    }
+
     private static StoreProductWriteDto ProductRequest(Guid optionId, Guid valueId) => new()
     {
         Name = "Team hoodie",

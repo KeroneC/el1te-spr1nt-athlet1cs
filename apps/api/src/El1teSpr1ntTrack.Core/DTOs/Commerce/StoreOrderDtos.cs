@@ -14,7 +14,7 @@ public sealed class PublicStoreCheckoutRequestDto
     [Required, EmailAddress, MaxLength(256)]
     public string CustomerEmail { get; init; } = string.Empty;
 
-    [Required, Phone, MaxLength(40)]
+    [Required, MaxLength(40)]
     public string CustomerPhone { get; init; } = string.Empty;
 
     [MaxLength(300)]

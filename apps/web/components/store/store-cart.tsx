@@ -53,7 +53,7 @@ export function StoreCart() {
     setHealth(current => Object.fromEntries(Object.entries(current).filter(([key]) => key !== id)));
   }
 
-  if (!ready) return <div className="site-container loading-state" aria-label="Loading cart"><span className="loading-bar" /><span className="loading-bar short" /></div>;
+  if (!ready) return <div className="site-container loading-state" role="status" aria-label="Loading cart"><span className="loading-bar" /><span className="loading-bar short" /></div>;
 
   return <article className="store-cart-page">
     <header className="store-cart-hero">

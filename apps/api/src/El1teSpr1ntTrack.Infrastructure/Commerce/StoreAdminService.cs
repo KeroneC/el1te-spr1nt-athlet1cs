@@ -749,6 +749,8 @@ public sealed class StoreAdminService(
             request.Options.SelectMany(value => value.Values).Select(value => value.Id).Distinct().Count() !=
             request.Options.SelectMany(value => value.Values).Count())
             errors["Variants"] = ["Product option and variant identifiers must be unique."];
+        if (request.Options.Any(value => value.IsActive && !value.IsTracked))
+            errors["Options"] = ["Active product options define physical inventory and must be tracked. Add logo color, logo treatment, name, or number under Customizations instead."];
         if (request.Variants.Select(value => value.Sku.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() != request.Variants.Count)
             errors["Variants"] = ["Variant SKUs must be unique within the product."];
         var allowedValueIds = request.Options.SelectMany(value => value.Values).Select(value => value.Id).ToHashSet();

@@ -1,4 +1,5 @@
 using System.Data;
+using System.Diagnostics;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -47,6 +48,11 @@ public sealed class StoreOrderService(
                     Convert.FromHexString(payloadHash)))
             {
                 throw new CmsConflictException("That checkout attempt was already used for different order details.");
+            }
+
+            if (existing.Status != StoreOrderStatus.AwaitingPayment || existing.PaymentStatus != PaymentStatus.Pending)
+            {
+                throw new CmsConflictException("That checkout attempt can no longer be retried. Start checkout again from your cart.");
             }
 
             var retryToken = Token();
@@ -559,6 +565,18 @@ public sealed class StoreOrderService(
                 {
                     await PrepareSquareCheckoutAsync(order, null, Token(), cancellationToken);
                 }
+                catch (CmsRequestValidationException)
+                {
+                    // Preparation releases deterministic invalid checkouts before surfacing validation.
+                    processed++;
+                    continue;
+                }
+                catch (SquareIntegrationException exception) when (exception.IsDeterministicClientFailure)
+                {
+                    // Preparation releases deterministic provider failures exactly once.
+                    processed++;
+                    continue;
+                }
                 catch (Exception exception) when (exception is not OperationCanceledException)
                 {
                     logger.LogWarning(
@@ -844,7 +862,7 @@ public sealed class StoreOrderService(
                 {
                     modifierTotal += value.PriceAdjustmentMinor;
                     configurations.Add(new ConfigurationValue(group.Name, value.Name));
-                    squareModifiers.Add(new SquareCheckoutModifier(value.Name, value.PriceAdjustmentMinor));
+                    squareModifiers.Add(new SquareCheckoutModifier($"{group.Name}: {value.Name}", value.PriceAdjustmentMinor));
                 }
             }
             if (customInputs.Keys.Any(id => activeGroups.All(group => group.Id != id ||
@@ -973,14 +991,37 @@ public sealed class StoreOrderService(
                 value.Quantity,
                 value.UnitPriceMinor + value.ModifierTotalMinor,
                 [])).ToList();
-        var square = await squareClient.CreatePaymentLinkAsync(new SquarePaymentLinkCommand(
-            order.Id.ToString("N"),
-            order.PublicNumber,
-            BuildReturnUrl(order.PublicNumber),
-            order.Currency,
-            order.CustomerEmail,
-            order.CustomerPhone,
-            lines), cancellationToken);
+        if (!UsPhoneNumber.TryNormalize(order.CustomerPhone, out var normalizedPhone))
+        {
+            await ReleaseFailedCheckoutAsync(order.Id, cancellationToken);
+            throw PhoneValidationException();
+        }
+
+        order.CustomerPhone = normalizedPhone;
+        SquarePaymentLinkResult square;
+        try
+        {
+            square = await squareClient.CreatePaymentLinkAsync(new SquarePaymentLinkCommand(
+                order.Id.ToString("N"),
+                order.PublicNumber,
+                BuildReturnUrl(order.PublicNumber),
+                order.Currency,
+                order.CustomerEmail,
+                normalizedPhone,
+                lines), cancellationToken);
+        }
+        catch (SquareIntegrationException exception) when (exception.IsDeterministicClientFailure)
+        {
+            logger.LogWarning(
+                "Square checkout was deterministically rejected. ProviderCode: {ProviderCode}; ProviderField: {ProviderField}; OperationId: {OperationId}.",
+                exception.SafeCode,
+                exception.SafeField,
+                Activity.Current?.TraceId.ToString());
+            await ReleaseFailedCheckoutAsync(order.Id, cancellationToken);
+            if (string.Equals(exception.SafeCode, "INVALID_PHONE_NUMBER", StringComparison.Ordinal))
+                throw PhoneValidationException();
+            throw;
+        }
 
         if (square.TotalMinor < order.SubtotalMinor ||
             square.TaxMinor != square.TotalMinor - order.SubtotalMinor)
@@ -1020,6 +1061,7 @@ public sealed class StoreOrderService(
         ReleaseReservation(order, clock.UtcNow);
         ChangeStatus(order, StoreOrderStatus.Canceled, null, "Square checkout could not be created.", clock.UtcNow);
         order.PaymentStatus = PaymentStatus.Failed;
+        order.UpdatedAt = clock.UtcNow;
         await dbContext.SaveChangesAsync(cancellationToken);
     }
 
@@ -1121,7 +1163,9 @@ public sealed class StoreOrderService(
         CheckoutAttemptId = request.CheckoutAttemptId.Trim(),
         CustomerName = request.CustomerName.Trim(),
         CustomerEmail = request.CustomerEmail.Trim().ToLowerInvariant(),
-        CustomerPhone = request.CustomerPhone.Trim(),
+        CustomerPhone = UsPhoneNumber.TryNormalize(request.CustomerPhone, out var normalizedPhone)
+            ? normalizedPhone
+            : request.CustomerPhone.Trim(),
         AthleteTeamNote = Clean(request.AthleteTeamNote),
         ConfirmsAdultBuyer = request.ConfirmsAdultBuyer,
         AcceptsStorePolicy = request.AcceptsStorePolicy,
@@ -1146,12 +1190,18 @@ public sealed class StoreOrderService(
         if (!Guid.TryParse(request.CheckoutAttemptId, out _)) errors["checkoutAttemptId"] = ["Start checkout again from your cart."];
         if (request.CustomerName.Length is < 2 or > 200) errors["customerName"] = ["Enter the adult buyer's name."];
         if (!new System.ComponentModel.DataAnnotations.EmailAddressAttribute().IsValid(request.CustomerEmail)) errors["customerEmail"] = ["Enter a valid email address."];
-        if (request.CustomerPhone.Length is < 7 or > 40) errors["customerPhone"] = ["Enter a valid phone number."];
+        if (!UsPhoneNumber.TryNormalize(request.CustomerPhone, out _)) errors["customerPhone"] = ["Enter a valid U.S. phone number."];
         if (!request.ConfirmsAdultBuyer) errors["confirmsAdultBuyer"] = ["An adult buyer must confirm the order."];
         if (!request.AcceptsStorePolicy) errors["acceptsStorePolicy"] = ["Accept the Store Policy to continue."];
         if (request.Lines.Count is < 1 or > 50) errors["lines"] = ["Add at least one valid item to the cart."];
         if (errors.Count > 0) throw new CmsRequestValidationException(errors);
     }
+
+    private static CmsRequestValidationException PhoneValidationException() =>
+        new(new Dictionary<string, string[]>
+        {
+            ["customerPhone"] = ["Enter a valid U.S. phone number."]
+        });
 
     private void EnsureCheckoutEnabled()
     {
