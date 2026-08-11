@@ -1,5 +1,6 @@
 using El1teSpr1ntTrack.Application.Common.Exceptions;
 using El1teSpr1ntTrack.Api.Observability;
+using El1teSpr1ntTrack.Infrastructure.Commerce;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
@@ -51,12 +52,26 @@ public sealed class GlobalExceptionMiddleware(
 
             var referenceId = SupportReference.Create();
             var operationId = Activity.Current?.TraceId.ToString() ?? context.TraceIdentifier;
-            logger.LogError(
-                "Unhandled API exception. ReferenceId: {ReferenceId}; OperationId: {OperationId}; ExceptionType: {ExceptionType}; StackTrace: {StackTrace}",
-                referenceId,
-                operationId,
-                exception.GetType().FullName,
-                exception.StackTrace);
+            if (exception is SquareIntegrationException squareException)
+            {
+                logger.LogError(
+                    "Unhandled Square API exception. ReferenceId: {ReferenceId}; OperationId: {OperationId}; ProviderCode: {ProviderCode}; ProviderField: {ProviderField}; ExceptionType: {ExceptionType}; StackTrace: {StackTrace}",
+                    referenceId,
+                    operationId,
+                    squareException.SafeCode,
+                    squareException.SafeField,
+                    exception.GetType().FullName,
+                    exception.StackTrace);
+            }
+            else
+            {
+                logger.LogError(
+                    "Unhandled API exception. ReferenceId: {ReferenceId}; OperationId: {OperationId}; ExceptionType: {ExceptionType}; StackTrace: {StackTrace}",
+                    referenceId,
+                    operationId,
+                    exception.GetType().FullName,
+                    exception.StackTrace);
+            }
             await WriteUnexpectedProblemAsync(context, referenceId);
         }
     }

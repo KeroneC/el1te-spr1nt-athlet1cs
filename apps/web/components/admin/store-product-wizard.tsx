@@ -69,26 +69,23 @@ export function StoreProductWizard({
       swatchMediaAssetId: null, displayOrder: option.values.length, isActive: true, squareCatalogObjectId: null
     }] });
   }
+  function removeOption(option: AdminProductOption) {
+    const valueIds = new Set(option.values.map(value => value.id));
+    const participatingVariants = draft.variants.filter(variant =>
+      variant.optionValueIds.some(valueId => valueIds.has(valueId)));
+    if (participatingVariants.length > 0 && !window.confirm(
+      `Remove ${option.name}? ${participatingVariants.length} existing variant${participatingVariants.length === 1 ? "" : "s"} will remain as inactive history. Generate replacement variants after removal; their stock will start at zero.`
+    )) return;
+
+    patch({
+      options: draft.options.filter(value => value.id !== option.id),
+      variants: draft.variants.filter(variant => !participatingVariants.includes(variant)),
+      visualizerLayers: draft.visualizerLayers.filter(layer =>
+        !layer.productOptionValueId || !valueIds.has(layer.productOptionValueId))
+    });
+  }
   function generateVariants() {
-    const tracked = draft.options.filter(value => value.isTracked && value.isActive && value.values.some(item => item.isActive));
-    const combinations = tracked.reduce<Array<Array<{ id: string; name: string }>>>(
-      (rows, option) => rows.flatMap(row => option.values.filter(value => value.isActive).map(value => [...row, { id: value.id, name: value.name }])),
-      [[]]
-    );
-    const rows = combinations.length ? combinations : [[]];
-    const byKey = new Map(draft.variants.map(value => [[...value.optionValueIds].sort().join("|"), value]));
-    const prefix = draft.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 18).toUpperCase() || "ITEM";
-    patch({ variants: rows.map((combo, index) => {
-      const key = combo.map(value => value.id).sort().join("|");
-      const existing = byKey.get(key);
-      return existing ?? {
-        id: uid(), name: combo.map(value => value.name).join(" / ") || "Standard",
-        sku: `${prefix}-${String(index + 1).padStart(2, "0")}`, priceOverrideMinor: null,
-        onHandQuantity: 0, reservedQuantity: 0, availableQuantity: 0, lowStockThreshold: 3,
-        isActive: true, squareCatalogObjectId: null, squareCatalogVersion: null, rowVersion: "",
-        optionValueIds: combo.map(value => value.id)
-      };
-    }) });
+    patch({ variants: buildVariantMatrix(draft) });
   }
   function addModifier() {
     patch({ modifierGroups: [...draft.modifierGroups, {
@@ -186,11 +183,10 @@ export function StoreProductWizard({
     </section>}
 
     {step === 2 && <section className="space-y-5">
-      <div className="border border-slate-200 bg-white p-5 sm:p-6"><Heading title="Tracked options" text="Sizes and garment colors create concrete SKUs whose stock is counted."/>
+      <div className="border border-slate-200 bg-white p-5 sm:p-6"><Heading title="Physical inventory options" text="Add only choices that define a physical item on the shelf, such as size and garment color. Every active option here creates tracked stock combinations."/>
         <div className="mt-5 space-y-4">{draft.options.map(option => <article key={option.id} className="border-l-4 border-track-field bg-slate-50 p-4">
           <div className="flex flex-wrap items-end gap-3"><Field label="Option name" value={option.name} onChange={name => updateOption(option.id, { name })} className="min-w-48 flex-1"/>
-            <CheckField label="Tracked inventory option" checked={option.isTracked} onChange={isTracked => updateOption(option.id, { isTracked })}/>
-            <button type="button" onClick={() => patch({ options: draft.options.filter(value => value.id !== option.id) })} className="h-11 px-3 text-red-700" aria-label={`Remove ${option.name}`}><Trash2 size={18}/></button>
+            <button type="button" onClick={() => removeOption(option)} className="h-11 px-3 text-red-700" aria-label={`Remove ${option.name}`}><Trash2 size={18}/></button>
           </div>
           <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">{option.values.map(value => <div key={value.id} className="flex gap-2"><input aria-label={`${option.name} value`} value={value.name} onChange={event => updateOption(option.id, { values: option.values.map(item => item.id === value.id ? { ...item, name: event.target.value } : item) })} className={`${input} mt-0`}/><button type="button" onClick={() => updateOption(option.id, { values: option.values.filter(item => item.id !== value.id) })} aria-label={`Remove ${value.name}`} className="w-11 border border-slate-300"><Trash2 className="mx-auto" size={16}/></button></div>)}</div>
           <button type="button" onClick={() => addOptionValue(option.id)} className="mt-3 inline-flex items-center gap-2 text-sm font-bold text-track-red"><Plus size={16}/>Add value</button>
@@ -205,7 +201,7 @@ export function StoreProductWizard({
     </section>}
 
     {step === 3 && <div className="space-y-5"><section className="border border-slate-200 bg-white p-5 sm:p-6">
-      <Heading title="Untracked customizations" text="Logo treatments and optional name/number choices change configuration and price without splitting inventory."/>
+      <Heading title="Customer customizations" text="Logo color, logo treatment, name, and number choices belong here. They change the order configuration and price without ever splitting physical inventory."/>
       <div className="mt-5 space-y-4">{draft.modifierGroups.map(group => <article key={group.id} className="border-l-4 border-track-red bg-slate-50 p-4">
         <div className="grid gap-3 sm:grid-cols-3"><Field label="Group name" value={group.name} onChange={name => updateModifier(group.id, { name })}/><label className="text-sm font-bold">Type<select value={group.type} onChange={event => updateModifier(group.id, { type: event.target.value as ProductModifierType })} className={input}><option>Choice</option><option>Color</option><option>ShortText</option><option>Number</option></select></label><CheckField label="Required" checked={group.isRequired} onChange={isRequired => updateModifier(group.id, { isRequired, minimumSelections: isRequired ? 1 : 0 })}/></div>
         {group.type === "Choice" || group.type === "Color" ? <div className="mt-4 space-y-2">{group.values.map(value => <div key={value.id} className="grid gap-2 sm:grid-cols-[1fr_160px_44px]"><input aria-label="Customization choice" value={value.name} onChange={event => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, name: event.target.value } : item) })} className={`${input} mt-0`}/><MoneyInput ariaLabel={`Surcharge for ${value.name}`} valueMinor={value.priceAdjustmentMinor} onChange={priceAdjustmentMinor => updateModifier(group.id, { values: group.values.map(item => item.id === value.id ? { ...item, priceAdjustmentMinor: priceAdjustmentMinor ?? 0 } : item) })} className="mt-0"/><button type="button" onClick={() => updateModifier(group.id, { values: group.values.filter(item => item.id !== value.id) })} className="border border-slate-300 text-red-700"><Trash2 className="mx-auto" size={16}/></button></div>)}<button type="button" onClick={() => addModifierValue(group.id)} className="inline-flex items-center gap-2 text-sm font-bold text-track-red"><Plus size={16}/>Add choice</button></div> : <p className="mt-4 text-sm text-slate-600">Customer input will be reviewed before production. Surcharge configuration is finalized in checkout phase.</p>}
@@ -283,6 +279,27 @@ export function validateStoreProductDraft(draft: StoreProductDraft) {
   if (draft.status === "Published" && !draft.media.length) errors.push("Published products need at least one image.");
   if (draft.status === "Published" && !draft.variants.some(value => value.isActive)) errors.push("Published products need an active variant.");
   return errors;
+}
+export function buildVariantMatrix(draft: StoreProductDraft, createId: () => string = uid): AdminProductVariant[] {
+  const tracked = draft.options.filter(value => value.isTracked && value.isActive && value.values.some(item => item.isActive));
+  const combinations = tracked.reduce<Array<Array<{ id: string; name: string }>>>(
+    (rows, option) => rows.flatMap(row => option.values.filter(value => value.isActive).map(value => [...row, { id: value.id, name: value.name }])),
+    [[]]
+  );
+  const rows = combinations.length ? combinations : [[]];
+  const byKey = new Map(draft.variants.map(value => [[...value.optionValueIds].sort().join("|"), value]));
+  const prefix = draft.name.replace(/[^a-z0-9]+/gi, "-").replace(/^-|-$/g, "").slice(0, 18).toUpperCase() || "ITEM";
+  return rows.map((combo, index) => {
+    const key = combo.map(value => value.id).sort().join("|");
+    const existing = byKey.get(key);
+    return existing ?? {
+      id: createId(), name: combo.map(value => value.name).join(" / ") || "Standard",
+      sku: `${prefix}-${String(index + 1).padStart(2, "0")}`, priceOverrideMinor: null,
+      onHandQuantity: 0, reservedQuantity: 0, availableQuantity: 0, lowStockThreshold: 3,
+      isActive: true, squareCatalogObjectId: null, squareCatalogVersion: null, rowVersion: "",
+      optionValueIds: combo.map(value => value.id)
+    };
+  });
 }
 function Heading({ title, text }: { title: string; text: string }) { return <header className="sm:col-span-2"><h2 className="text-xl font-black">{title}</h2><p className="mt-1 text-sm leading-6 text-slate-600">{text}</p></header>; }
 function Field({ label, value, onChange, required, className = "" }: { label: string; value: string; onChange: (value: string) => void; required?: boolean; className?: string }) { return <label className={`text-sm font-bold ${className}`}>{label}{required && <span className="text-track-red"> *</span>}<input value={value} onChange={event => onChange(event.target.value)} className={input}/></label>; }

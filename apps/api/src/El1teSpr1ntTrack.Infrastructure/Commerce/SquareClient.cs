@@ -506,15 +506,15 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
     {
         if (!response.IsSuccessStatusCode)
         {
-            var safeCode = await ReadSafeErrorCodeAsync(response, cancellationToken);
-            throw new SquareIntegrationException(safeCode, (int)response.StatusCode);
+            var failure = await ReadSafeErrorAsync(response, cancellationToken);
+            throw new SquareIntegrationException(failure.Code, (int)response.StatusCode, failure.Field);
         }
 
         return await response.Content.ReadFromJsonAsync<T>(cancellationToken: cancellationToken)
                ?? throw new SquareIntegrationException("EMPTY_RESPONSE");
     }
 
-    private static async Task<string> ReadSafeErrorCodeAsync(
+    private static async Task<SquareSafeError> ReadSafeErrorAsync(
         HttpResponseMessage response,
         CancellationToken cancellationToken)
     {
@@ -527,7 +527,12 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
                 errors.GetArrayLength() > 0 &&
                 errors[0].TryGetProperty("code", out var code))
             {
-                return code.GetString() ?? "SQUARE_REQUEST_FAILED";
+                var safeCode = SafeProviderToken(code.GetString(), "SQUARE_REQUEST_FAILED")
+                    ?? "SQUARE_REQUEST_FAILED";
+                var field = errors[0].TryGetProperty("field", out var fieldElement)
+                    ? SafeProviderToken(fieldElement.GetString(), null)
+                    : null;
+                return new SquareSafeError(safeCode, field);
             }
         }
         catch (JsonException)
@@ -535,8 +540,18 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
             // Only a stable provider code is retained; raw response details are discarded.
         }
 
-        return "SQUARE_REQUEST_FAILED";
+        return new SquareSafeError("SQUARE_REQUEST_FAILED", null);
     }
+
+    private static string? SafeProviderToken(string? value, string? fallback)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length > 100) return fallback;
+        return value.All(character => char.IsAsciiLetterOrDigit(character) || character is '_' or '.' or '[' or ']')
+            ? value
+            : fallback;
+    }
+
+    private sealed record SquareSafeError(string Code, string? Field);
 
     private sealed record CreatePaymentLinkRequest(
         [property: JsonPropertyName("idempotency_key")] string IdempotencyKey,
@@ -660,8 +675,11 @@ public sealed class SquareClient(HttpClient httpClient, SquareSettings settings)
 
 public sealed class SquareIntegrationException(
     string safeCode,
-    int? statusCode = null) : Exception($"Square integration failed with code {safeCode}.")
+    int? statusCode = null,
+    string? safeField = null) : Exception($"Square integration failed with code {safeCode}.")
 {
     public string SafeCode { get; } = safeCode;
     public int? StatusCode { get; } = statusCode;
+    public string? SafeField { get; } = safeField;
+    public bool IsDeterministicClientFailure => StatusCode is >= 400 and < 500;
 }

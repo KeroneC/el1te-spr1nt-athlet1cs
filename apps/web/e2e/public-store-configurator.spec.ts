@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 test("customer can browse live stock, configure gear, and review a privacy-safe cart", async ({ page }) => {
+  test.setTimeout(90_000);
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const productName = `E2E team crewneck ${suffix}`;
   let productId: string | undefined;
@@ -101,8 +102,9 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     await page.getByRole("button", { name: "Add to cart" }).click();
     await expect(page.getByText("1 item added to your cart.")).toBeVisible();
     await page.getByRole("link", { name: "View cart" }).last().click();
+    await expect(page).toHaveURL(/\/shop\/cart$/, { timeout: 15_000 });
 
-    await expect(page.getByRole("heading", { name: "1 configured item" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /1 configured item/i })).toBeVisible({ timeout: 15_000 });
     const cartLine = page.locator("article.store-cart-line").filter({ hasText: productName });
     await expect(cartLine.getByRole("heading", { name: productName })).toBeVisible();
     await expect(cartLine.locator("dt").filter({ hasText: "Size" })).toBeVisible();
@@ -115,6 +117,19 @@ test("customer can browse live stock, configure gear, and review a privacy-safe 
     await expect(page.getByRole("heading", { level: 1, name: "Checkout details" })).toBeVisible();
     await expect(page.getByLabel("Full name")).toBeVisible();
     await expect(page.getByRole("button", { name: "Continue to Square" })).toBeVisible();
+    expect(await page.locator('label:has(input[name="acceptsStorePolicy"]) a').evaluate(link => link.parentElement?.tagName)).toBe("SPAN");
+    await page.getByLabel("Full name").fill("Adult Buyer");
+    await page.getByLabel("Email").fill("buyer@example.test");
+    await page.getByLabel("Phone").fill("555-0100");
+    await page.locator('input[name="confirmsAdultBuyer"]').check();
+    await page.locator('input[name="acceptsStorePolicy"]').check();
+    const invalidPhoneResponse = page.waitForResponse(response =>
+      response.url().endsWith("/api/public/store/checkout") && response.request().method() === "POST");
+    await page.getByRole("button", { name: "Continue to Square" }).click();
+    expect((await invalidPhoneResponse).status()).toBe(400);
+    await expect(page.getByText("Enter a valid U.S. phone number.")).toBeVisible();
+    await expect(page.getByLabel("Phone")).toBeFocused();
+    await expect(page.getByLabel("Phone")).toHaveAttribute("aria-invalid", "true");
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
 
     await page.setViewportSize({ width: 390, height: 844 });

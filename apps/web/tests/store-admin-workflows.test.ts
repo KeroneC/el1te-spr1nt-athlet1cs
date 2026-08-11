@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateInventoryOperation } from "../components/admin/store-inventory-workspace";
-import { parseMoneyInput, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
+import { buildVariantMatrix, parseMoneyInput, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
 import type { AdminInventoryVariant } from "../lib/admin/types";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 
@@ -52,6 +52,38 @@ describe("store product wizard", () => {
     });
     expect(validateStoreProductDraft(draft({ variants: [variant("one", "SKU-1"), variant("two", "sku-1")] })))
       .toContain("Variant SKUs must be unique.");
+  });
+
+  it("builds exactly twenty zero-stock rows from five sizes and four garment colors", () => {
+    let nextId = 0;
+    const option = (id: string, name: string, values: string[]) => ({
+      id, name, isTracked: true, displayOrder: 0, isActive: true,
+      squareCatalogObjectId: null,
+      values: values.map((value, index) => ({
+        id: `${id}-${index}`, name: value, slug: value.toLowerCase(), colorHex: null,
+        swatchMediaAssetId: null, displayOrder: index, isActive: true, squareCatalogObjectId: null
+      }))
+    });
+    const variants = buildVariantMatrix(draft({
+      name: "Demo hoodie",
+      options: [
+        option("size", "Size", ["S", "M", "L", "XL", "XXL"]),
+        option("garment", "Garment Color", ["Red", "Black", "White", "Grey"])
+      ],
+      modifierGroups: [{
+        id: "logo", name: "Logo Color", type: "Color", isRequired: true,
+        minimumSelections: 1, maximumSelections: 1, displayOrder: 0, isActive: true,
+        values: ["Red", "White", "Black"].map((name, index) => ({
+          id: `logo-${index}`, name, priceAdjustmentMinor: 0, colorHex: null,
+          overlayMediaAssetId: null, displayOrder: index, isActive: true
+        }))
+      }]
+    }), () => `variant-${++nextId}`);
+
+    expect(variants).toHaveLength(20);
+    expect(variants.every(value => value.onHandQuantity === 0 && value.reservedQuantity === 0)).toBe(true);
+    expect(new Set(variants.map(value => value.sku))).toHaveLength(20);
+    expect(variants.every(value => value.optionValueIds.length === 2)).toBe(true);
   });
 });
 

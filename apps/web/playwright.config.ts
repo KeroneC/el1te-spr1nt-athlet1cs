@@ -43,6 +43,7 @@ export default defineConfig({
         AdminInvitations__ExpiresHours: "72",
         TransactionalEmail__DevelopmentOutboxPath: "../../../../artifacts/e2e/mail",
         Store__Enabled: "true",
+        Store__CheckoutEnabled: "true",
         MediaStorage__LocalRoot: "../../../../artifacts/e2e/uploads",
         MediaStorage__PublicBaseUrl: apiUrl,
       },

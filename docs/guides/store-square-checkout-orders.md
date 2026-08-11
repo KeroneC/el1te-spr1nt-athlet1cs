@@ -26,7 +26,7 @@ The workflow rejects an enabled deployment when any setting is missing or when t
 ## Customer workflow
 
 1. The browser stores only non-personal cart configuration.
-2. Checkout revalidates every product, variant, modifier, personalization value, price, and available unit in SQL.
+2. Checkout revalidates every product, variant, modifier, personalization value, price, and available unit in SQL. U.S. buyer phone numbers are validated and normalized to `+1XXXXXXXXXX` before an order or reservation is created.
 3. The API reserves club inventory for 30 minutes and creates one idempotent Square payment link.
 4. A short-lived HttpOnly cookie connects the Square return to a processing page; the redirect is never accepted as payment proof.
 5. Signed Square events trigger a fresh payment lookup. Currency, amount, Square order ID, and completed status must match before inventory is sold.
@@ -40,9 +40,12 @@ Use **Admin → Merchandise → Orders** for payment review, production instruct
 
 Expired unpaid orders are reconciled with Square before their payment link is deleted and stock is released. Ambiguous provider responses keep inventory reserved and create visible operational work instead of risking a late paid order or overselling.
 
+Deterministic Square request failures cancel the unpaid local order, mark payment failed, and release its reservation exactly once. `INVALID_PHONE_NUMBER` is returned as inline phone validation; safe telemetry retains only Square's error code and field. Provider response bodies and customer values are never logged.
+
 ## Demo test checklist
 
 - Successful and declined Sandbox cards.
+- Formatted valid U.S. phone numbers plus malformed and Square-rejected phone behavior; invalid attempts must not leave a reservation or generic support-reference error.
 - Abandoned checkout and expired-link stock release.
 - Duplicate and delayed payment webhooks.
 - Final-unit concurrency and sold-out cart changes.

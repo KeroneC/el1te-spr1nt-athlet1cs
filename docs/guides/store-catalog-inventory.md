@@ -11,8 +11,8 @@ All active Admins and SuperAdmins can:
 - create products through the guided Basics, Media, Variants, Customizations, and Preview workflow;
 - duplicate a product into a new draft with new option identifiers, new SKUs, and zero stock;
 - archive products without deleting order or inventory history;
-- configure tracked size/color options and concrete SKUs;
-- configure untracked logo, name, and number choices;
+- configure physical size/garment-color options and concrete SKUs;
+- configure logo color, logo treatment, name, and number choices without splitting stock;
 - position approved transparent visualizer layers with percentage-based coordinates;
 - receive stock, record corrections/damage/returns, and complete physical stocktakes.
 
@@ -46,15 +46,15 @@ The import needs `Square__AccessToken` and `Square__LocationId` even while `Stor
    - `Gallery` to customer-facing photography;
    - `MockupBase` to the garment/base visualizer image;
    - `LogoOverlay` to approved transparent layers.
-5. Add tracked options such as Size and Garment color, add their values, and generate the variant matrix.
+5. Add only physical inventory options such as Size and Garment color, add their values, and generate the variant matrix. Every active option in this step is tracked.
 6. Review every generated SKU and low-stock threshold. Stock is not edited in the product wizard.
-7. Add untracked choices such as logo treatment plus optional name/number input.
+7. Add logo color, logo treatment, and optional name/number input under Customizations. These choices never multiply physical stock.
 8. Add approved overlay media to the visualizer and set X, Y, width, height, and layer order as percentages.
 9. Preview and save.
 
 Drafts may be incomplete and saved for later. Publishing requires at least one image and one active variant. A published record appears in the non-transactional storefront only when `Store:PublicPreviewEnabled` or full commerce is enabled.
 
-Omitting an existing variant while editing deactivates it rather than deleting it. This preserves inventory, reservation, and order references. Modifier and visualizer configuration can be replaced because paid order items will retain immutable configuration snapshots.
+Removing an option that participates in existing variants requires confirmation. Those existing rows are omitted and therefore deactivated rather than deleted, preserving inventory, adjustment, reservation, and order history. Newly generated replacement variants start at zero and require a physical stocktake before purchase. Modifier and visualizer configuration can be replaced because paid order items retain immutable configuration snapshots.
 
 ## Product Image Preparation
 
