@@ -160,8 +160,8 @@ public sealed class StoreAdminService(
         SyncMedia(product, request.Media, now);
         SyncOptions(product, request.Options, now);
         SyncVariants(product, request.Variants, now);
-        ReplaceModifiers(product, request.ModifierGroups, now);
-        ReplaceVisualizerLayers(product, request.VisualizerLayers, now);
+        SyncModifiers(product, request.ModifierGroups, now);
+        SyncVisualizerLayers(product, request.VisualizerLayers, now);
         AddActivity(actorUserId, "store.product.updated", "Product", product.Id, $"Updated product '{product.Name}'.");
         await SaveAsync(cancellationToken);
         return MapProduct((await ProductGraph(product.Id, cancellationToken))!);
@@ -583,11 +583,13 @@ public sealed class StoreAdminService(
             var entity = product.Media.SingleOrDefault(value => value.Id == item.Id);
             if (entity == null)
             {
-                product.Media.Add(new ProductMedia
+                entity = new ProductMedia
                 {
-                    Id = item.Id, MediaAssetId = item.MediaAssetId, Role = item.Role,
+                    Id = item.Id, Product = product, MediaAssetId = item.MediaAssetId, Role = item.Role,
                     AltTextOverride = Clean(item.AltTextOverride), DisplayOrder = item.DisplayOrder, CreatedAt = now
-                });
+                };
+                product.Media.Add(entity);
+                dbContext.ProductMedia.Add(entity);
             }
             else
             {
@@ -609,8 +611,9 @@ public sealed class StoreAdminService(
             var option = product.Options.SingleOrDefault(value => value.Id == item.Id);
             if (option == null)
             {
-                option = new ProductOption { Id = item.Id, CreatedAt = now };
+                option = new ProductOption { Id = item.Id, Product = product, CreatedAt = now };
                 product.Options.Add(option);
+                dbContext.ProductOptions.Add(option);
             }
             option.Name = item.Name.Trim(); option.IsTracked = item.IsTracked;
             option.DisplayOrder = item.DisplayOrder; option.IsActive = item.IsActive; option.UpdatedAt = now;
@@ -621,8 +624,9 @@ public sealed class StoreAdminService(
                 var entity = option.Values.SingleOrDefault(existing => existing.Id == value.Id);
                 if (entity == null)
                 {
-                    entity = new ProductOptionValue { Id = value.Id, CreatedAt = now };
+                    entity = new ProductOptionValue { Id = value.Id, ProductOption = option, CreatedAt = now };
                     option.Values.Add(entity);
+                    dbContext.ProductOptionValues.Add(entity);
                 }
                 entity.Name = value.Name.Trim(); entity.Slug = slugGenerator.Generate(value.Name);
                 entity.ColorHex = Clean(value.ColorHex); entity.SwatchMediaAssetId = value.SwatchMediaAssetId;
@@ -642,6 +646,7 @@ public sealed class StoreAdminService(
             {
                 variant = new ProductVariant { Id = item.Id, Product = product, CreatedAt = now };
                 product.Variants.Add(variant);
+                dbContext.ProductVariants.Add(variant);
             }
             else if (!string.IsNullOrWhiteSpace(item.RowVersion))
             {
@@ -658,22 +663,77 @@ public sealed class StoreAdminService(
             }
             var existingValues = variant.OptionValues.Select(link => link.ProductOptionValueId).ToHashSet();
             foreach (var valueId in requestedValues.Where(valueId => !existingValues.Contains(valueId)))
-                variant.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = variant, ProductOptionValueId = valueId });
+            {
+                var link = new ProductVariantOptionValue { ProductVariant = variant, ProductOptionValueId = valueId };
+                variant.OptionValues.Add(link);
+                dbContext.ProductVariantOptionValues.Add(link);
+            }
         }
     }
 
-    private void ReplaceModifiers(Product product, IReadOnlyList<ProductModifierGroupWriteDto> requested, DateTimeOffset now)
+    private void SyncModifiers(Product product, IReadOnlyList<ProductModifierGroupWriteDto> requested, DateTimeOffset now)
     {
-        dbContext.ProductModifierGroups.RemoveRange(product.ModifierGroups);
-        product.ModifierGroups.Clear();
-        foreach (var item in requested) product.ModifierGroups.Add(NewModifierGroup(item, now));
+        foreach (var existing in product.ModifierGroups.Where(value => requested.All(item => item.Id != value.Id)).ToList())
+        {
+            dbContext.ProductModifierGroups.Remove(existing);
+            product.ModifierGroups.Remove(existing);
+        }
+        foreach (var item in requested)
+        {
+            var group = product.ModifierGroups.SingleOrDefault(value => value.Id == item.Id);
+            if (group == null)
+            {
+                group = new ProductModifierGroup { Id = item.Id, Product = product, CreatedAt = now };
+                product.ModifierGroups.Add(group);
+                dbContext.ProductModifierGroups.Add(group);
+            }
+            group.Name = item.Name.Trim(); group.Type = item.Type; group.IsRequired = item.IsRequired;
+            group.MinimumSelections = item.MinimumSelections; group.MaximumSelections = item.MaximumSelections;
+            group.DisplayOrder = item.DisplayOrder; group.IsActive = item.IsActive; group.UpdatedAt = now;
+
+            foreach (var existing in group.Values.Where(value => item.Values.All(requestValue => requestValue.Id != value.Id)).ToList())
+            {
+                dbContext.ProductModifierValues.Remove(existing);
+                group.Values.Remove(existing);
+            }
+            foreach (var value in item.Values)
+            {
+                var entity = group.Values.SingleOrDefault(existing => existing.Id == value.Id);
+                if (entity == null)
+                {
+                    entity = new ProductModifierValue { Id = value.Id, ProductModifierGroup = group, CreatedAt = now };
+                    group.Values.Add(entity);
+                    dbContext.ProductModifierValues.Add(entity);
+                }
+                entity.Name = value.Name.Trim(); entity.PriceAdjustmentMinor = value.PriceAdjustmentMinor;
+                entity.ColorHex = Clean(value.ColorHex); entity.OverlayMediaAssetId = value.OverlayMediaAssetId;
+                entity.DisplayOrder = value.DisplayOrder; entity.IsActive = value.IsActive; entity.UpdatedAt = now;
+            }
+        }
     }
 
-    private void ReplaceVisualizerLayers(Product product, IReadOnlyList<ProductVisualizerLayerWriteDto> requested, DateTimeOffset now)
+    private void SyncVisualizerLayers(Product product, IReadOnlyList<ProductVisualizerLayerWriteDto> requested, DateTimeOffset now)
     {
-        dbContext.ProductVisualizerLayers.RemoveRange(product.VisualizerLayers);
-        product.VisualizerLayers.Clear();
-        foreach (var item in requested) product.VisualizerLayers.Add(NewLayer(item, now));
+        foreach (var existing in product.VisualizerLayers.Where(value => requested.All(item => item.Id != value.Id)).ToList())
+        {
+            dbContext.ProductVisualizerLayers.Remove(existing);
+            product.VisualizerLayers.Remove(existing);
+        }
+        foreach (var item in requested)
+        {
+            var layer = product.VisualizerLayers.SingleOrDefault(value => value.Id == item.Id);
+            if (layer == null)
+            {
+                layer = new ProductVisualizerLayer { Id = item.Id, Product = product, CreatedAt = now };
+                product.VisualizerLayers.Add(layer);
+                dbContext.ProductVisualizerLayers.Add(layer);
+            }
+            layer.MediaAssetId = item.MediaAssetId; layer.ProductOptionValueId = item.ProductOptionValueId;
+            layer.ProductModifierValueId = item.ProductModifierValueId; layer.XPercent = item.XPercent;
+            layer.YPercent = item.YPercent; layer.WidthPercent = item.WidthPercent;
+            layer.HeightPercent = item.HeightPercent; layer.ZIndex = item.ZIndex;
+            layer.BlendMode = item.BlendMode.Trim(); layer.UpdatedAt = now;
+        }
     }
 
     private static ProductModifierGroup NewModifierGroup(ProductModifierGroupWriteDto value, DateTimeOffset now)
