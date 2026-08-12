@@ -35,7 +35,7 @@ export function StoreProductWizard({
 }) {
   const router = useRouter();
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<StoreProductDraft>(() => fromItem(item));
+  const [draft, setDraft] = useState<StoreProductDraft>(() => storeProductDraftFromItem(item));
   const [showMedia, setShowMedia] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [referenceId, setReferenceId] = useState<string | null>(null);
@@ -245,14 +245,33 @@ export function StoreProductWizard({
   </div>;
 }
 
-function fromItem(item?: AdminStoreProduct): StoreProductDraft {
-  return item ? {
-    categoryId: item.categoryId, name: item.name, shortDescription: item.shortDescription ?? "",
-    description: item.description ?? "", basePriceMinor: item.basePriceMinor, status: item.status,
-    isFeatured: item.isFeatured, displayOrder: item.displayOrder, allowsSpecialRequests: item.allowsSpecialRequests,
-    media: item.media, options: item.options, variants: item.variants,
-    modifierGroups: item.modifierGroups, visualizerLayers: item.visualizerLayers
-  } : {
+export function storeProductDraftFromItem(item?: AdminStoreProduct): StoreProductDraft {
+  if (item) {
+    const options = item.options
+      .filter(option => option.isActive)
+      .map(option => ({ ...option, values: option.values.filter(value => value.isActive) }));
+    const optionValueIds = new Set(options.flatMap(option => option.values.map(value => value.id)));
+    const modifierGroups = item.modifierGroups
+      .filter(group => group.isActive)
+      .map(group => ({ ...group, values: group.values.filter(value => value.isActive) }));
+    const modifierValueIds = new Set(modifierGroups.flatMap(group => group.values.map(value => value.id)));
+
+    return {
+      categoryId: item.categoryId, name: item.name, shortDescription: item.shortDescription ?? "",
+      description: item.description ?? "", basePriceMinor: item.basePriceMinor, status: item.status,
+      isFeatured: item.isFeatured, displayOrder: item.displayOrder, allowsSpecialRequests: item.allowsSpecialRequests,
+      media: item.media,
+      options,
+      variants: item.variants.filter(variant =>
+        variant.isActive && variant.optionValueIds.every(valueId => optionValueIds.has(valueId))),
+      modifierGroups,
+      visualizerLayers: item.visualizerLayers.filter(layer =>
+        (!layer.productOptionValueId || optionValueIds.has(layer.productOptionValueId)) &&
+        (!layer.productModifierValueId || modifierValueIds.has(layer.productModifierValueId)))
+    };
+  }
+
+  return {
     categoryId: null, name: "", shortDescription: "", description: "", basePriceMinor: 0,
     status: "Draft", isFeatured: false, displayOrder: 0, allowsSpecialRequests: false,
     media: [], options: [], variants: [], modifierGroups: [], visualizerLayers: []

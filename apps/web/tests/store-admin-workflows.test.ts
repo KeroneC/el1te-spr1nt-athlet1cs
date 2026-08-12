@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { validateInventoryOperation } from "../components/admin/store-inventory-workspace";
-import { buildVariantMatrix, parseMoneyInput, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
-import type { AdminInventoryVariant } from "../lib/admin/types";
+import { buildVariantMatrix, parseMoneyInput, storeProductDraftFromItem, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
+import type { AdminInventoryVariant, AdminStoreProduct } from "../lib/admin/types";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 
 const draft = (overrides: Partial<StoreProductDraft> = {}): StoreProductDraft => ({
@@ -84,6 +84,55 @@ describe("store product wizard", () => {
     expect(variants.every(value => value.onHandQuantity === 0 && value.reservedQuantity === 0)).toBe(true);
     expect(new Set(variants.map(value => value.sku))).toHaveLength(20);
     expect(variants.every(value => value.optionValueIds.length === 2)).toBe(true);
+  });
+
+  it("keeps inactive catalog history out of the normal editing workflow", () => {
+    const product = {
+      id: "product", categoryId: null, name: "Team hoodie", slug: "team-hoodie",
+      shortDescription: null, description: null, basePriceMinor: 5000, currency: "USD",
+      status: "Published", isFeatured: false, displayOrder: 0, allowsSpecialRequests: false,
+      squareCatalogObjectId: null, squareCatalogVersion: null, importedAtUtc: null, media: [],
+      options: [
+        {
+          id: "size", name: "Size", isTracked: true, displayOrder: 0, isActive: true,
+          squareCatalogObjectId: null, values: [
+            { id: "size-m", name: "M", slug: "m", colorHex: null, swatchMediaAssetId: null, displayOrder: 0, isActive: true, squareCatalogObjectId: null },
+            { id: "size-old", name: "Legacy", slug: "legacy", colorHex: null, swatchMediaAssetId: null, displayOrder: 1, isActive: false, squareCatalogObjectId: null }
+          ]
+        },
+        {
+          id: "old-logo", name: "Logo Color", isTracked: true, displayOrder: 1, isActive: false,
+          squareCatalogObjectId: null, values: [
+            { id: "old-logo-red", name: "Red", slug: "red", colorHex: null, swatchMediaAssetId: null, displayOrder: 0, isActive: false, squareCatalogObjectId: null }
+          ]
+        }
+      ],
+      variants: [
+        { id: "active", name: "M", sku: "HOOD-M", priceOverrideMinor: null, onHandQuantity: 0, reservedQuantity: 0, availableQuantity: 0, lowStockThreshold: 3, isActive: true, squareCatalogObjectId: null, squareCatalogVersion: null, rowVersion: "", optionValueIds: ["size-m"] },
+        { id: "historical", name: "M / Red", sku: "HOOD-M-RED", priceOverrideMinor: null, onHandQuantity: 4, reservedQuantity: 1, availableQuantity: 3, lowStockThreshold: 3, isActive: false, squareCatalogObjectId: null, squareCatalogVersion: null, rowVersion: "", optionValueIds: ["size-m", "old-logo-red"] }
+      ],
+      modifierGroups: [{
+        id: "logo", name: "Logo Color", type: "Choice", isRequired: true,
+        minimumSelections: 1, maximumSelections: 1, displayOrder: 0, isActive: true,
+        values: [
+          { id: "logo-red", name: "Red", priceAdjustmentMinor: 0, colorHex: null, overlayMediaAssetId: null, displayOrder: 0, isActive: true },
+          { id: "logo-old", name: "Legacy", priceAdjustmentMinor: 0, colorHex: null, overlayMediaAssetId: null, displayOrder: 1, isActive: false }
+        ]
+      }],
+      visualizerLayers: [
+        { id: "active-layer", mediaAssetId: "media", productOptionValueId: "size-m", productModifierValueId: "logo-red", xPercent: 0, yPercent: 0, widthPercent: 50, heightPercent: 50, zIndex: 1, blendMode: "normal" },
+        { id: "old-layer", mediaAssetId: "media", productOptionValueId: "old-logo-red", productModifierValueId: null, xPercent: 0, yPercent: 0, widthPercent: 50, heightPercent: 50, zIndex: 2, blendMode: "normal" }
+      ],
+      createdAtUtc: "2026-08-01T00:00:00Z", updatedAtUtc: null
+    } satisfies AdminStoreProduct;
+
+    const result = storeProductDraftFromItem(product);
+
+    expect(result.options.map(value => value.name)).toEqual(["Size"]);
+    expect(result.options[0].values.map(value => value.name)).toEqual(["M"]);
+    expect(result.variants.map(value => value.sku)).toEqual(["HOOD-M"]);
+    expect(result.modifierGroups[0].values.map(value => value.name)).toEqual(["Red"]);
+    expect(result.visualizerLayers.map(value => value.id)).toEqual(["active-layer"]);
   });
 });
 
