@@ -202,6 +202,86 @@ public sealed class StoreAdminServiceTests
         Assert.Empty(await db.Products.ToListAsync());
     }
 
+    [Fact]
+    public async Task UpdateProduct_ReplacesInventoryDimensionsWithoutDeletingVariantHistory()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var product = new Product
+        {
+            Name = "Team hoodie", Slug = "team-hoodie", BasePriceMinor = 5000,
+            Status = StoreProductStatus.Draft
+        };
+        var size = new ProductOption { Product = product, Name = "Size", IsTracked = true, DisplayOrder = 0 };
+        var color = new ProductOption { Product = product, Name = "Garment Color", IsTracked = true, DisplayOrder = 1 };
+        var logo = new ProductOption { Product = product, Name = "Logo Color", IsTracked = true, DisplayOrder = 2 };
+        var small = new ProductOptionValue { ProductOption = size, Name = "Small", Slug = "small", DisplayOrder = 0 };
+        var red = new ProductOptionValue { ProductOption = color, Name = "Red", Slug = "red", DisplayOrder = 0 };
+        var whiteLogo = new ProductOptionValue { ProductOption = logo, Name = "White", Slug = "white", DisplayOrder = 0 };
+        size.Values.Add(small);
+        color.Values.Add(red);
+        logo.Values.Add(whiteLogo);
+        product.Options.Add(size);
+        product.Options.Add(color);
+        product.Options.Add(logo);
+        var historical = new ProductVariant
+        {
+            Product = product, Name = "Small / Red / White", Sku = "HOOD-OLD",
+            OnHandQuantity = 4, ReservedQuantity = 1, LowStockThreshold = 2
+        };
+        historical.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = historical, ProductOptionValue = small });
+        historical.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = historical, ProductOptionValue = red });
+        historical.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = historical, ProductOptionValue = whiteLogo });
+        product.Variants.Add(historical);
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        db.ChangeTracker.Clear();
+
+        var replacementId = Guid.NewGuid();
+        var request = new StoreProductWriteDto
+        {
+            Name = product.Name,
+            BasePriceMinor = product.BasePriceMinor,
+            Status = StoreProductStatus.Draft,
+            Options =
+            [
+                new(size.Id, "Size", true, 0, true, [new(small.Id, "Small", null, null, 0, true)]),
+                new(color.Id, "Garment Color", true, 1, true, [new(red.Id, "Red", null, null, 0, true)])
+            ],
+            Variants = [new(replacementId, "Small / Red", "HOOD-S-RED", null, 2, true, null, [small.Id, red.Id])],
+            ModifierGroups =
+            [
+                new(Guid.NewGuid(), "Logo Color", ProductModifierType.Color, true, 1, 1, 0, true,
+                [
+                    new(Guid.NewGuid(), "Red", 0, null, null, 0, true),
+                    new(Guid.NewGuid(), "White", 0, null, null, 1, true),
+                    new(Guid.NewGuid(), "Black", 0, null, null, 2, true)
+                ])
+            ]
+        };
+
+        await Service(db).UpdateProductAsync(product.Id, request, actor.Id, CancellationToken.None);
+
+        db.ChangeTracker.Clear();
+        var saved = await db.Products
+            .Include(value => value.Options).ThenInclude(value => value.Values)
+            .Include(value => value.Variants)
+            .Include(value => value.ModifierGroups).ThenInclude(value => value.Values)
+            .SingleAsync(value => value.Id == product.Id);
+        var oldVariant = saved.Variants.Single(value => value.Id == historical.Id);
+        var replacement = saved.Variants.Single(value => value.Id == replacementId);
+        Assert.False(oldVariant.IsActive);
+        Assert.Equal(4, oldVariant.OnHandQuantity);
+        Assert.Equal(1, oldVariant.ReservedQuantity);
+        Assert.True(replacement.IsActive);
+        Assert.Equal(0, replacement.OnHandQuantity);
+        Assert.Equal(0, replacement.ReservedQuantity);
+        Assert.False(saved.Options.Single(value => value.Id == logo.Id).IsActive);
+        var logoColors = saved.ModifierGroups.Single(value => value.Name == "Logo Color");
+        Assert.True(logoColors.IsRequired);
+        Assert.Equal(["Red", "White", "Black"], logoColors.Values.OrderBy(value => value.DisplayOrder).Select(value => value.Name));
+    }
+
     private static StoreProductWriteDto ProductRequest(Guid optionId, Guid valueId) => new()
     {
         Name = "Team hoodie",
