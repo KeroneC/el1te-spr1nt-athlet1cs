@@ -9,7 +9,10 @@ export const metadata: Metadata = {
     template: "%s | El1te Spr1nt Athlet1cs"
   },
   description: "Youth track and field training, competition, and community.",
-  robots: robotsForEnvironment(process.env.DEPLOYMENT_ENVIRONMENT),
+  robots: robotsForEnvironment(process.env.DEPLOYMENT_ENVIRONMENT, process.env.PUBLIC_INDEXING_ENABLED),
+  // Next resolves ./ against the active route, so every page receives its own
+  // canonical URL instead of inheriting the homepage URL.
+  alternates: { canonical: "./" },
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png"

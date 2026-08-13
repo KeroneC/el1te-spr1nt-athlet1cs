@@ -56,6 +56,9 @@ jobs:
       - name: Restore
         run: dotnet restore apps/api/El1teSpr1ntTrack.sln --configfile NuGet.Config
 
+      - name: Scan NuGet dependencies for known vulnerabilities
+        run: dotnet list apps/api/El1teSpr1ntTrack.sln package --vulnerable --include-transitive --no-restore
+
       - name: Install EF Core CLI
         run: dotnet tool install --global dotnet-ef --version 10.0.9
 
@@ -121,7 +124,9 @@ jobs:
         working-directory: apps/web
     env:
       API_BASE_URL: https://api.example.invalid
-      SITE_URL: https://el1tesprint-demo-neauu2-web.azurewebsites.net
+      # The immutable artifact uses the final canonical origin for absolute metadata.
+      # Demo and prelaunch production remain protected by runtime robots/noindex controls.
+      SITE_URL: https://www.el1tespr1ntathlet1cs.org
 
     steps:
       - name: Checkout
@@ -136,6 +141,9 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
 
       - name: Lint
         run: npm run lint
@@ -233,6 +241,10 @@ jobs:
       - name: Test Azure artifact publishing retries
         shell: bash
         run: bash scripts/deployment/test-deploy-webapp-artifact.sh
+
+      - name: Compile Azure infrastructure
+        shell: bash
+        run: az bicep build --file infra/main.bicep --stdout >/dev/null
 
       - name: Validate documentation links and paths
         shell: pwsh

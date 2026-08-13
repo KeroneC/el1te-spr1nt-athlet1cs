@@ -6,7 +6,7 @@ import { hasUsableSponsorLogo, SponsorLogoTile } from "../components/public/spon
 import { SponsorTierSection } from "../components/public/sponsor-tier-section";
 import { getHallOfFameInductees, PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
-import { robotsForEnvironment } from "../lib/public/deployment";
+import { canonicalHostRedirect, robotsForEnvironment } from "../lib/public/deployment";
 import { HEADER_NAV_ITEMS, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import { SCHOLARSHIP_COPY } from "../lib/public/scholarship";
 import type { Sponsor } from "../lib/public/types";
@@ -20,8 +20,15 @@ function json(value: unknown, status = 200) {
 
 describe("Phase 8 public CMS helpers", () => {
   it("keeps the public demo out of search indexes", () => {
-    expect(robotsForEnvironment("demo")).toEqual({ index: false, follow: false, nocache: true });
-    expect(robotsForEnvironment("production")).toBeUndefined();
+    expect(robotsForEnvironment("demo", "true")).toEqual({ index: false, follow: false, nocache: true });
+    expect(robotsForEnvironment("production", "false")).toEqual({ index: false, follow: false, nocache: true });
+    expect(robotsForEnvironment("production", "true")).toBeUndefined();
+  });
+
+  it("redirects the apex host to the canonical www host without losing the path", () => {
+    expect(canonicalHostRedirect("http://el1tespr1ntathlet1cs.org/shop?featured=true", "el1tespr1ntathlet1cs.org")?.toString())
+      .toBe("https://www.el1tespr1ntathlet1cs.org/shop?featured=true");
+    expect(canonicalHostRedirect("https://www.el1tespr1ntathlet1cs.org/shop", "www.el1tespr1ntathlet1cs.org")).toBeNull();
   });
 
   it("keeps secondary public pages discoverable without crowding the header", () => {

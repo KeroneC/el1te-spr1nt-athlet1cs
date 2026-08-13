@@ -2,6 +2,7 @@ param name string
 param location string
 param appServicePlanId string
 param apiBaseUrl string
+param siteUrl string
 param applicationInsightsConnectionString string
 param tags object = {}
 param releaseSha string
@@ -9,6 +10,7 @@ param browserAnalyticsEnabled bool = false
 @allowed(['internal', 'external'])
 param storeNavigationMode string = 'external'
 param deploymentEnvironment string = 'demo'
+param publicIndexingEnabled bool = false
 @allowed(['off', 'report-only', 'enforce'])
 param cspMode string = 'report-only'
 
@@ -39,7 +41,7 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'SITE_URL'
-          value: 'https://${name}.azurewebsites.net'
+          value: siteUrl
         }
         {
           name: 'PORT'
@@ -56,6 +58,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'DEPLOYMENT_ENVIRONMENT'
           value: deploymentEnvironment
+        }
+        {
+          name: 'PUBLIC_INDEXING_ENABLED'
+          value: string(publicIndexingEnabled)
         }
         {
           name: 'STORE_NAVIGATION_MODE'

@@ -25,4 +25,10 @@ The first July 2026 launch required two operational hardening fixes now captured
 
 Promote a selected successful `main` CI run with `bootstrap_admin=false`. Never deploy an unverified branch artifact. To roll back code, rerun a retained earlier successful release bundle. Do not downgrade the database; deploy corrective forward migrations. Record URLs, commit SHA, CI/deployment run IDs, observed monthly cost, and incidents in the release notes.
 
-Custom domains, slots, automatic deployment, and production promotion remain deferred until the demo proves stable.
+## Production environment
+
+Create a separate `production` resource group, OIDC federated credential, and protected GitHub Environment. Do not reuse demo identifiers or secrets. Configure the same base Azure variables with production values plus the Square Production URLs/Key Vault secret URIs and the promotion variables documented by the workflow. Require manual approval on the Environment before the first production run.
+
+Run **Deploy Azure Production** in infrastructure-only mode first. The workflow keeps custom URLs, custom email, store preview, checkout, and indexing independently disabled. Follow [Production cutover operations](production-cutover-operations.md) for managed identity, DNS/TLS, email DNS, data promotion, restore testing, stocktake, and final launch gates.
+
+Deployment slots remain deferred. Production content promotion is deliberately reviewed and idempotent rather than automatic.

@@ -1,0 +1,133 @@
+name: Promote Reviewed Production Content
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: Export a review manifest or apply a reviewed manifest committed through PR
+        required: true
+        type: choice
+        options: [export, apply]
+        default: export
+      manifest_path:
+        description: Repository path used for apply; export writes a downloadable artifact
+        required: true
+        type: string
+        default: launch/manifests/production-promotion-manifest.json
+      apply_acknowledged:
+        description: The committed include selections, dependency graph, counts, and hashes were reviewed
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: promote-production-content
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      PROMOTION_SOURCE_CONNECTION: ${{ vars.PROMOTION_SOURCE_CONNECTION }}
+      PROMOTION_DESTINATION_CONNECTION: ${{ vars.PROMOTION_DESTINATION_CONNECTION }}
+      PROMOTION_SOURCE_BLOB_SERVICE_URI: ${{ vars.PROMOTION_SOURCE_BLOB_SERVICE_URI }}
+      PROMOTION_DESTINATION_BLOB_SERVICE_URI: ${{ vars.PROMOTION_DESTINATION_BLOB_SERVICE_URI }}
+      PROMOTION_SOURCE_RESOURCE_GROUP: ${{ vars.PROMOTION_SOURCE_RESOURCE_GROUP }}
+      PROMOTION_SOURCE_SQL_SERVER: ${{ vars.PROMOTION_SOURCE_SQL_SERVER }}
+      PROMOTION_DESTINATION_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      PROMOTION_DESTINATION_SQL_SERVER: ${{ vars.PROMOTION_DESTINATION_SQL_SERVER }}
+      PRODUCTION_BOOTSTRAP_USER_ID: ${{ vars.PRODUCTION_BOOTSTRAP_USER_ID }}
+
+    steps:
+      - name: Validate request
+        shell: bash
+        run: |
+          [[ "${{ inputs.manifest_path }}" == launch/manifests/*.json ]] || { echo "Manifest must be under launch/manifests."; exit 1; }
+          required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID PROMOTION_SOURCE_CONNECTION PROMOTION_SOURCE_BLOB_SERVICE_URI PROMOTION_SOURCE_RESOURCE_GROUP PROMOTION_SOURCE_SQL_SERVER)
+          if [[ "${{ inputs.command }}" == "apply" ]]; then
+            [[ "${{ inputs.apply_acknowledged }}" == "true" ]] || { echo "Apply requires explicit review acknowledgement."; exit 1; }
+            required+=(PROMOTION_DESTINATION_CONNECTION PROMOTION_DESTINATION_BLOB_SERVICE_URI PROMOTION_DESTINATION_RESOURCE_GROUP PROMOTION_DESTINATION_SQL_SERVER PRODUCTION_BOOTSTRAP_USER_ID)
+          fi
+          for name in "${required[@]}"; do [[ -n "${!name}" ]] || { echo "Missing promotion configuration: $name"; exit 1; }; done
+
+      - uses: actions/checkout@v7
+        with: { ref: main }
+
+      - uses: actions/setup-dotnet@v5
+        with: { global-json-file: global.json }
+
+      - uses: azure/login@v3
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Allow temporary SQL access
+        id: firewall
+        shell: bash
+        run: |
+          runner_ip=$(curl --fail --silent --show-error --max-time 10 https://api.ipify.org)
+          az sql server firewall-rule create --resource-group "$PROMOTION_SOURCE_RESOURCE_GROUP" --server "$PROMOTION_SOURCE_SQL_SERVER" \
+            --name "content-promotion-${GITHUB_RUN_ID}" --start-ip-address "$runner_ip" --end-ip-address "$runner_ip" --output none
+          if [[ "${{ inputs.command }}" == "apply" ]]; then
+            az sql server firewall-rule create --resource-group "$PROMOTION_DESTINATION_RESOURCE_GROUP" --server "$PROMOTION_DESTINATION_SQL_SERVER" \
+              --name "content-promotion-${GITHUB_RUN_ID}" --start-ip-address "$runner_ip" --end-ip-address "$runner_ip" --output none
+          fi
+
+      - name: Restore promotion tool
+        run: dotnet restore apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --configfile NuGet.Config
+
+      - name: Export review manifest
+        if: ${{ inputs.command == 'export' }}
+        shell: bash
+        run: |
+          mkdir -p "$(dirname '${{ inputs.manifest_path }}')"
+          dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
+            export --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
+            --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
+            --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI"
+
+      - name: Upload review manifest
+        if: ${{ inputs.command == 'export' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: production-promotion-manifest-${{ github.run_id }}
+          path: ${{ inputs.manifest_path }}
+          retention-days: 30
+
+      - name: Dry-run reviewed manifest
+        if: ${{ inputs.command == 'apply' }}
+        shell: bash
+        run: |
+          test -f "${{ inputs.manifest_path }}"
+          dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
+            import --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
+            --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
+            --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI" --destination-blob-service-uri "$PROMOTION_DESTINATION_BLOB_SERVICE_URI" \
+            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID"
+
+      - name: Apply reviewed manifest
+        if: ${{ inputs.command == 'apply' }}
+        shell: bash
+        run: |
+          dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
+            import --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
+            --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
+            --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI" --destination-blob-service-uri "$PROMOTION_DESTINATION_BLOB_SERVICE_URI" \
+            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID" --apply --confirm production
+
+      - name: Remove temporary SQL access
+        if: ${{ always() && steps.firewall.outcome == 'success' }}
+        shell: bash
+        run: |
+          az sql server firewall-rule delete --resource-group "$PROMOTION_SOURCE_RESOURCE_GROUP" --server "$PROMOTION_SOURCE_SQL_SERVER" --name "content-promotion-${GITHUB_RUN_ID}" --output none 2>/dev/null || true
+          az sql server firewall-rule delete --resource-group "$PROMOTION_DESTINATION_RESOURCE_GROUP" --server "$PROMOTION_DESTINATION_SQL_SERVER" --name "content-promotion-${GITHUB_RUN_ID}" --output none 2>/dev/null || true
