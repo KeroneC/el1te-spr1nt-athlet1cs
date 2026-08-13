@@ -6,6 +6,10 @@ This runbook covers the isolated production environment and the reversible launc
 
 The GitHub `production` Environment owns production-only Azure OIDC values, database migration access, bootstrap credentials, Square Production identifiers, and Key Vault secret URIs. Do not copy demo tokens, webhook keys, users, orders, or connection strings into it. The **Deploy Azure Production** workflow accepts only a successful immutable artifact from a `main` push and requires Environment approval. The empty production resource group and its scoped OIDC identity must be created once before the first run; the workflow then provisions the isolated resources and a separate `$125` monthly budget with 50%, 75%, 90%, and 100% notifications.
 
+Configure these Environment **variables** before the first infrastructure run: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_LOCATION`, `RESOURCE_NAME_PREFIX`, `SQL_ADMIN_LOGIN`, `BUDGET_CONTACT_EMAIL`, `BOOTSTRAP_ADMIN_FIRST_NAME`, and `BOOTSTRAP_ADMIN_LAST_NAME`. Add `SQUARE_LOCATION_ID`, `SQUARE_WEBHOOK_NOTIFICATION_URL`, `SQUARE_CHECKOUT_RETURN_URL`, `SQUARE_ACCESS_TOKEN_SECRET_URI`, and `SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI` only from the independent Square Production setup; the last two values point to production Key Vault and never contain credentials.
+
+Configure these Environment **secrets**: `SQL_ADMIN_PASSWORD`, `DATABASE_MIGRATION_CONNECTION_STRING`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD`. After bootstrap, rotate/remove the bootstrap password according to the launch record. The promotion workflow additionally needs the non-password Azure AD connection/Blob values named `PROMOTION_SOURCE_CONNECTION`, `PROMOTION_DESTINATION_CONNECTION`, `PROMOTION_SOURCE_BLOB_SERVICE_URI`, `PROMOTION_DESTINATION_BLOB_SERVICE_URI`, `PROMOTION_SOURCE_RESOURCE_GROUP`, `PROMOTION_SOURCE_SQL_SERVER`, `PROMOTION_DESTINATION_SQL_SERVER`, and `PRODUCTION_BOOTSTRAP_USER_ID`.
+
 Deploy in stages:
 
 1. Run `infrastructure_only=true`. Leave custom domains, custom email, preview, checkout, and indexing disabled.
