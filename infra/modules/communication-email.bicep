@@ -67,7 +67,8 @@ resource emailDeliveryAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' 
     evaluationFrequency: 'PT5M'
     windowSize: 'PT15M'
     scopes: [logAnalyticsWorkspaceId]
-    autoMitigate: true
+    // Azure requires auto mitigation to be disabled when muteActionsDuration is configured.
+    autoMitigate: false
     muteActionsDuration: 'PT30M'
     skipQueryValidation: true
     criteria: {
