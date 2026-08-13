@@ -48,6 +48,10 @@ param storeCheckoutEnabled bool = false
 @description('Expose the read-only catalog/configurator preview without enabling Square, orders, or workers.')
 param storePublicPreviewEnabled bool = false
 
+@allowed(['internal', 'external'])
+@description('Controls whether global navigation points to the internal shop or the legacy external Square storefront.')
+param storeNavigationMode string = 'external'
+
 @allowed([
   'Sandbox'
   'Production'
@@ -160,6 +164,8 @@ module communicationEmail 'modules/communication-email.bicep' = {
   params: {
     baseName: baseName
     keyVaultName: vaultName
+    logAnalyticsWorkspaceId: monitoring.outputs.workspaceId
+    monitoringActionGroupId: monitoring.outputs.actionGroupId
     tags: tags
   }
   dependsOn: [deploymentSecretsOfficer]
@@ -209,6 +215,8 @@ module web 'modules/web-app.bicep' = {
     releaseSha: releaseSha
     browserAnalyticsEnabled: true
     cspMode: 'report-only'
+    deploymentEnvironment: environmentName
+    storeNavigationMode: storeNavigationMode
     tags: tags
   }
 }

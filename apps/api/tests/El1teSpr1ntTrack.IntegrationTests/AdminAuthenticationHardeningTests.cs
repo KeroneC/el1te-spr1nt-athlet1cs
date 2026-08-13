@@ -92,10 +92,10 @@ public sealed class AdminAuthenticationHardeningTests
     {
         public List<TransactionalEmail> Messages { get; } = [];
         public bool ThrowOnSend { get; set; }
-        public Task SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
+        public Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
         {
             if (ThrowOnSend) throw new InvalidOperationException("Simulated delivery failure.");
-            Messages.Add(message); return Task.CompletedTask;
+            Messages.Add(message); return Task.FromResult(new TransactionalEmailSendResult("provider-message-1"));
         }
     }
     private sealed class TestClock : IClock { public DateTimeOffset UtcNow { get; } = new(2026, 8, 1, 12, 0, 0, TimeSpan.Zero); }

@@ -16,10 +16,14 @@ Implemented:
 - Responsive public CMS website for home, about, programs, news, events, coaches, sponsors, FAQs, registration information, and contact submissions
 - Protected JPEG/PNG/WebP media library, reusable CMS image picker, gallery administration, and public gallery
 - Azure Blob media provider with private storage and API-streamed public delivery
+- Admin lockout, password recovery, SuperAdmin email verification, and security-version session revocation
+- Hall of Fame, sponsor, policy, and merchandise catalog/inventory management through the Admin portal
+- Feature-gated public shop with size/color inventory, customizations, Square-hosted payment, customer tracking, cancellation/refund, and practice/event handoff operations
+- Privacy-safe support references, server/browser telemetry controls, Azure workbook, and operational alerts
 - Manually approved Azure demo delivery through GitHub OIDC, Bicep, immutable artifacts, EF migration bundles, and smoke tests
-- Backend unit/integration tests, focused frontend tests, and a Playwright cross-stack media/gallery workflow
+- Backend unit/integration tests, frontend tests, and Playwright/axe workflows
 
-Intentionally not implemented yet: password reset/refresh/revocation, parent or athlete portals, online athlete registration, payments, private documents, a custom production domain, deployment slots, automatic production promotion, and iOS code.
+Intentionally deferred from the lean launch: Parent/athlete portals, online athlete registration, private documents, Printify/shipping, staff-entered store tender, feedback triage, trusted-device MFA, deployment slots, automatic production promotion, and iOS code. Production domain, isolated infrastructure, branded email, selective content promotion, and public cutover remain launch work.
 
 ## Documentation
 

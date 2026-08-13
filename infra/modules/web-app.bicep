@@ -6,6 +6,9 @@ param applicationInsightsConnectionString string
 param tags object = {}
 param releaseSha string
 param browserAnalyticsEnabled bool = false
+@allowed(['internal', 'external'])
+param storeNavigationMode string = 'external'
+param deploymentEnvironment string = 'demo'
 @allowed(['off', 'report-only', 'enforce'])
 param cspMode string = 'report-only'
 
@@ -52,7 +55,11 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         }
         {
           name: 'DEPLOYMENT_ENVIRONMENT'
-          value: 'demo'
+          value: deploymentEnvironment
+        }
+        {
+          name: 'STORE_NAVIGATION_MODE'
+          value: storeNavigationMode
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

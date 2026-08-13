@@ -193,6 +193,8 @@ public sealed class StoreOrderServiceTests
 
         var confirmation = await db.CommerceEmailMessages.SingleAsync(value => value.TemplateName == "PaymentConfirmation");
         await service.SendOrderEmailAsync(confirmation.Id, CancellationToken.None);
+        Assert.Equal("provider-message-1", confirmation.ProviderMessageId);
+        Assert.Equal(CommerceEmailStatus.Sent, confirmation.Status);
         var token = email.Last!.PlainText.Split("#token=", StringSplitOptions.None)[1]
             .Split('\n', StringSplitOptions.RemoveEmptyEntries)[0];
 
@@ -443,10 +445,10 @@ public sealed class StoreOrderServiceTests
     private sealed class RecordingEmailSender : ITransactionalEmailSender
     {
         public TransactionalEmail? Last { get; private set; }
-        public Task SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
+        public Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
         {
             Last = message;
-            return Task.CompletedTask;
+            return Task.FromResult(new TransactionalEmailSendResult("provider-message-1"));
         }
     }
 

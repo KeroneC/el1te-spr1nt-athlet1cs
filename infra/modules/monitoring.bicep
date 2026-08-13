@@ -181,7 +181,7 @@ resource supportWorkbook 'Microsoft.Insights/workbooks@2023-06-01' = {
     sourceId: insights.id
     serializedData: string({
       version: 'Notebook/1.0'
-      fallbackResourceIds: [insights.id]
+      fallbackResourceIds: [insights.id, workspace.id]
       items: [
         {
           type: 1
@@ -262,6 +262,58 @@ resource supportWorkbook 'Microsoft.Insights/workbooks@2023-06-01' = {
           }
         }
         {
+          type: 1
+          name: 'email-heading'
+          content: {
+            json: '## Transactional email delivery\nApplication status means Azure accepted a message. Recipient delivery outcomes below come from Azure Communication Services and exclude recipient addresses.'
+          }
+        }
+        {
+          type: 3
+          name: 'email-delivery-summary'
+          content: {
+            version: 'KqlItem/1.0'
+            title: 'Email delivery outcomes — last 24 hours'
+            query: 'ACSEmailStatusUpdateOperational | where TimeGenerated >= ago(24h) | summarize Messages=count() by DeliveryStatus=tostring(DeliveryStatus) | order by Messages desc'
+            size: 0
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+          }
+        }
+        {
+          type: 9
+          name: 'email-message-parameter'
+          content: {
+            version: 'KqlParameterItem/1.0'
+            parameters: [
+              {
+                id: 'email-message-id'
+                version: 'KqlParameterItem/1.0'
+                name: 'EmailMessageId'
+                label: 'Email provider message ID'
+                type: 1
+                isRequired: false
+                value: ''
+              }
+            ]
+            style: 'pills'
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+          }
+        }
+        {
+          type: 3
+          name: 'email-message-results'
+          content: {
+            version: 'KqlItem/1.0'
+            title: 'Email delivery timeline'
+            query: 'let messageId = trim(" ", "{EmailMessageId}"); union ACSEmailSendMailOperational, ACSEmailStatusUpdateOperational | where isnotempty(messageId) | where tostring(CorrelationId) == messageId | project TimeGenerated, OperationCategory, DeliveryStatus, ResultType, SmtpStatusCode, EnhancedSmtpStatusCode | order by TimeGenerated asc'
+            size: 0
+            queryType: 0
+            resourceType: 'microsoft.operationalinsights/workspaces'
+          }
+        }
+        {
           type: 9
           name: 'reference-parameter'
           content: {
@@ -301,3 +353,5 @@ resource supportWorkbook 'Microsoft.Insights/workbooks@2023-06-01' = {
 
 output connectionString string = insights.properties.ConnectionString
 output workbookId string = supportWorkbook.id
+output workspaceId string = workspace.id
+output actionGroupId string = actionGroup.id

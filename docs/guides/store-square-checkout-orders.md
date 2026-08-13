@@ -6,6 +6,7 @@ This release completes the Square-only launch workflow for physically counted cl
 
 The catalog and payments have separate controls:
 
+- `STORE_NAVIGATION_MODE=internal|external` controls whether global Shop links use `/shop` or the legacy Square storefront. It is deliberately independent of API health so a transient catalog failure cannot send a customer to the wrong store.
 - `Store__Enabled=true` exposes the full internal store.
 - `Store__CheckoutEnabled=true` enables order creation, Square webhooks, reconciliation, refunds, and order email.
 - Both values must be true for transactional operations. Disable `Store__CheckoutEnabled` first during an incident; public catalog browsing can remain available.
@@ -38,6 +39,10 @@ The workflow rejects an enabled deployment when any setting is missing or when t
 
 Use **Admin → Merchandise → Orders** for payment review, production instructions, internal notes, customer-information requests, ready-for-handoff updates, and completion. Only SuperAdmins may issue refunds or rotate secure tracking links. Every refund requires a reason and line-by-line restock quantities.
 
+Rotating a tracking link immediately invalidates the previous secret. The replacement URL is returned once in the Admin and must be copied through a trusted channel; the plain secret is not logged or stored.
+
+An email marked **Accepted by email provider** has completed the Azure send operation, but that does not prove inbox delivery. The Admin stores Azure's provider message ID. Authorized operators use the support workbook's email section to distinguish delivered, bounced, suppressed, quarantined, and spam-filtered results. Engagement/open/click tracking stays disabled.
+
 Expired unpaid orders are reconciled with Square before their payment link is deleted and stock is released. Ambiguous provider responses keep inventory reserved and create visible operational work instead of risking a late paid order or overselling.
 
 Deterministic Square request failures cancel the unpaid local order, mark payment failed, and release its reservation exactly once. `INVALID_PHONE_NUMBER` is returned as inline phone validation; safe telemetry retains only Square's error code and field. Provider response bodies and customer values are never logged.
@@ -53,6 +58,9 @@ Deterministic Square request failures cancel the unpaid local order, mark paymen
 - Customer cancellation just before and after the 30-minute boundary.
 - Full and partial SuperAdmin refunds with zero, partial, and full restocking.
 - Failed email retry and tracking-link rotation.
+- Azure provider-message correlation and delivery-status lookup, including a spam-filtered or test failure outcome.
 - Keyboard-only checkout, narrow screens, reduced motion, and policy links.
 
-Rollback sets `Store__CheckoutEnabled=false`, then restores the external Square-store navigation if required. Do not delete local orders, inventory adjustments, refunds, or reconciliation history.
+The club has intentionally configured Square merchandise tax as zero. The application never hardcodes a tax rate and continues accepting Square's calculated tax and total snapshots.
+
+Rollback sets `Store__CheckoutEnabled=false`, then sets `STORE_NAVIGATION_MODE=external` if the legacy Square store must be restored. Do not delete local orders, inventory adjustments, refunds, or reconciliation history.

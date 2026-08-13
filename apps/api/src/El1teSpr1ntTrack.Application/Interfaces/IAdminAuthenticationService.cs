@@ -17,7 +17,9 @@ public sealed record TransactionalEmail(
     string PlainText,
     string Html);
 
+public sealed record TransactionalEmailSendResult(string? ProviderMessageId);
+
 public interface ITransactionalEmailSender
 {
-    Task SendAsync(TransactionalEmail message, CancellationToken cancellationToken);
+    Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken);
 }
