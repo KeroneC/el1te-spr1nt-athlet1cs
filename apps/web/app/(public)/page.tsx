@@ -26,7 +26,14 @@ export default async function HomePage() {
     <section className="home-hero">
       <div className="site-container hero-content">
         <div className="hero-logo-panel">
-          <img src="/images/brand/el1te-full-black.png" alt={`${BRAND.name}. ${BRAND.slogan}`} />
+          <img
+            src="/images/brand/el1te-full-black.png"
+            alt={`${BRAND.name}. ${BRAND.slogan}`}
+            width="1000"
+            height="1000"
+            loading="eager"
+            fetchPriority="high"
+          />
         </div>
         <div className="button-row">
           <Link className="button button-primary" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link>

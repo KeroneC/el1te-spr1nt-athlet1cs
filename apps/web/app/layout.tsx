@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import { Inter, Oswald } from "next/font/google";
 import { robotsForEnvironment } from "@/lib/public/deployment";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "optional",
+  variable: "--font-inter"
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  display: "optional",
+  variable: "--font-oswald"
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
@@ -32,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className={`${inter.variable} ${oswald.variable} antialiased`}>{children}</body>
     </html>
   );
 }

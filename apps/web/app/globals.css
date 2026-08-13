@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Oswald:wght@500;700&display=swap');
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -14,8 +12,8 @@
   --figma-muted: #f4f4f5;
   --figma-border: #e4e4e7;
   --figma-gray: #71717a;
-  --font-display: "Oswald", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: var(--font-oswald), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 * {
@@ -290,7 +288,7 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .site-footer { background: #111820; color: #fff; padding-top: 4rem; }
 .footer-grid { display: grid; grid-template-columns: 1.2fr 0.7fr 0.7fr 1fr; gap: 3rem; padding-bottom: 3rem; }
 .footer-brand { margin: 0; font-size: 1.4rem; font-weight: 900; }
-.footer-logo { width: min(13rem, 75vw); height: auto; margin-bottom: 1rem; object-fit: contain; }
+.footer-logo { width: min(13rem, 75vw); height: min(13rem, 75vw); margin-bottom: 1rem; object-fit: contain; }
 .footer-slogan { color: #bac6d1; line-height: 1.6; }
 .footer-shop-link { display: inline-flex; align-items: center; gap: 0.4rem; margin-top: 0.75rem; color: #ef4444; font-weight: 850; }
 .site-footer h2 { margin: 0 0 1rem; font-size: 0.9rem; color: #ffffff; text-transform: uppercase; }
@@ -349,7 +347,7 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .home-hero::after { content: ""; position: absolute; z-index: -1; top: 0; right: 25%; width: 24%; height: 100%; background: #7f1d1d; opacity: 0.48; clip-path: polygon(58% 0, 100% 0, 42% 100%, 0 100%); }
 .hero-logo { display: none; }
 .hero-content { min-height: clamp(37rem, 76svh, 46rem); padding-block: clamp(2.5rem, 6vw, 4rem); }
-.hero-logo-panel { position: relative; width: min(35rem, 68vw); isolation: isolate; animation: heroReveal 420ms ease-out both; }
+.hero-logo-panel { position: relative; width: min(35rem, 68vw); isolation: isolate; }
 .hero-logo-panel::before, .hero-logo-panel::after { content: ""; position: absolute; z-index: 0; inset: 0; pointer-events: none; -webkit-mask: url("/images/brand/el1te-full-black.png") center / 100% 100% no-repeat; mask: url("/images/brand/el1te-full-black.png") center / 100% 100% no-repeat; }
 .hero-logo-panel::before { background: #7f1d1d; opacity: 0.34; transform: scale(1.16); }
 .hero-logo-panel::after { background: var(--figma-red); opacity: 0.1; transform: scale(1.23); }
