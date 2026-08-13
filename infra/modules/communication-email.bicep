@@ -1,6 +1,8 @@
 param baseName string
 param keyVaultName string
 param tags object = {}
+param logAnalyticsWorkspaceId string
+param monitoringActionGroupId string
 
 var emailServiceName = take('${baseName}-email', 63)
 var communicationServiceName = take('${baseName}-communication', 63)
@@ -31,6 +33,60 @@ resource communicationService 'Microsoft.Communication/communicationServices@202
   properties: {
     dataLocation: 'United States'
     linkedDomains: [managedDomain.id]
+  }
+}
+
+resource emailDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
+  scope: communicationService
+  name: 'transactional-email-operations'
+  properties: {
+    workspaceId: logAnalyticsWorkspaceId
+    logs: [
+      {
+        category: 'EmailSendMailOperational'
+        enabled: true
+      }
+      {
+        category: 'EmailStatusUpdateOperational'
+        enabled: true
+      }
+    ]
+  }
+}
+
+resource emailDeliveryAlert 'Microsoft.Insights/scheduledQueryRules@2023-12-01' = {
+  name: '${baseName}-email-delivery-failures'
+  location: resourceGroup().location
+  tags: tags
+  kind: 'LogAlert'
+  properties: {
+    displayName: 'Transactional email delivery failures'
+    description: 'At least three transactional emails were failed, bounced, suppressed, quarantined, or filtered as spam within fifteen minutes.'
+    severity: 2
+    enabled: true
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    scopes: [logAnalyticsWorkspaceId]
+    autoMitigate: true
+    muteActionsDuration: 'PT30M'
+    skipQueryValidation: true
+    criteria: {
+      allOf: [
+        {
+          query: 'ACSEmailStatusUpdateOperational | where DeliveryStatus in~ ("Failed", "Bounced", "Suppressed", "Quarantined", "FilteredSpam")'
+          timeAggregation: 'Count'
+          operator: 'GreaterThanOrEqual'
+          threshold: 3
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [monitoringActionGroupId]
+    }
   }
 }
 

@@ -524,8 +524,9 @@ public sealed class StoreOrderService(
         var message = ComposeEmail(email, trackingUrl);
         try
         {
-            await emailSender.SendAsync(message, cancellationToken);
+            var sendResult = await emailSender.SendAsync(message, cancellationToken);
             email.Status = CommerceEmailStatus.Sent;
+            email.ProviderMessageId = sendResult.ProviderMessageId;
             email.SentAtUtc = clock.UtcNow;
             email.SafeFailureCode = null;
             email.UpdatedAt = clock.UtcNow;
@@ -1288,7 +1289,7 @@ public sealed class StoreOrderService(
             value.Id, value.Note, value.CreatedAt)).ToList(),
         order.Refunds.OrderByDescending(value => value.CreatedAt).Select(MapRefund).ToList(),
         order.EmailHistory.OrderByDescending(value => value.CreatedAt).Select(value => new AdminStoreEmailDto(
-            value.Id, value.TemplateName, value.Status, value.SafeFailureCode, value.CreatedAt, value.SentAtUtc)).ToList(),
+            value.Id, value.TemplateName, value.Status, value.ProviderMessageId, value.SafeFailureCode, value.CreatedAt, value.SentAtUtc)).ToList(),
         order.CreatedAt,
         order.UpdatedAt);
 

@@ -52,9 +52,9 @@ Delivery status: the server-side support foundation is implemented. Next.js and 
 
 - Provision production separately from demo with explicit cost review, custom domain and TLS, backup/restore checks, secure email through Azure Communication Services, and release/rollback runbooks.
 - Import only reviewed public CMS and media. Exclude users, contact/feedback records, credentials, and other private or test data.
-- Keep the previous Squarespace site as a temporary read-only archive for 60 to 90 days after cutover.
+- Keep the previous Squarespace site as a temporary read-only archive for 30 days after cutover.
 
-Delivery status: the launch-hardening foundation is implemented for demo review. It includes Admin lockout, email MFA, password recovery, security-version session revocation, Azure-managed demo email, responsive WebP derivatives and backfill, policy drafts, security headers, accessibility automation dependencies, and a dry-run-first selective promotion CLI. Production provisioning, custom-domain email, final content selection, Blob-copy rehearsal, physical inventory, Square checkout, and public cutover remain pending.
+Delivery status: the launch-hardening foundation and Square-only checkout are implemented on demo. Admin lockout, email MFA, password recovery, session revocation, responsive media, policies, security headers, accessibility automation, selective promotion, Square payment, cancellation, refund, tracking, and inventory restoration are available. Production provisioning, custom-domain email, final content selection, Blob-copy rehearsal, physical inventory, and public cutover remain pending.
 
 ## Stage 3: Winter Registration Pilot
 
@@ -73,17 +73,17 @@ Delivery status: the launch-hardening foundation is implemented for demo review.
 - Provide an Admin product wizard, inventory matrix, order workboard, production sheets, staff-entered sales, audited refunds, and integration health.
 - Defer shipping, customer accounts, discounts, loyalty, custom-artwork uploads, advanced reporting, and other unproven complexity.
 
-Delivery status: the first three disabled-by-default phases are implemented. The foundation establishes the expanded commerce schema, minor-unit money snapshots, Square client boundary, raw-body signature validation, event idempotency, SQL outbox worker, commerce health check, Key Vault configuration path, and rollback flag. The private Admin phase adds a one-time idempotent Square draft import, category and product workflows, tracked variants, customizations, visualizer placement, append-only inventory adjustments, bulk receipts, and audited physical stocktakes. The public phase adds feature-gated catalog/search, safe availability DTOs, a deterministic layered configurator, sold-out combination handling, and a non-personal revalidated cart. Checkout/order operations and cutover remain sequentially gated. The existing Square storefront stays live until final approval.
+Delivery status: the Square-only club-inventory workflow is implemented through checkout and order operations. It includes the Admin catalog and inventory workspace, public configurator/cart, inventory reservations, hosted Square payment, verified webhooks, customer tracking and cancellation, audited refunds/restocking, order emails, and fulfillment workboard. Printify is paused on its unmerged WIP branch; shipping and staff-entered tender remain deferred. The existing Square storefront remains the rollback path until public cutover.
 
-## Stage 5: Full Launch
+## Stage 5: Lean Public Launch
 
-Full launch follows a successful registration pilot and requires:
+The club has chosen to launch the public CMS and Square-only merchandise workflow before the Parent registration pilot. Launch requires:
 
 - Accepted accessibility review and critical-flow browser tests.
 - Approved public content and production data import.
 - Tested monitoring, support, backup, email, incident, release, and rollback procedures.
-- Board/staff readiness for registration review, feedback triage, content updates, and inventory operations.
-- A scheduled cutover communicated at least four weeks before the registration window.
+- Club/staff readiness for content updates, inventory operations, handoff, cancellation, and refunds.
+- Parent registration, feedback triage, Printify, shipping, and staff-entered sales remain disabled.
 
 ## Deferred Until Prior Stages Prove The Need
 

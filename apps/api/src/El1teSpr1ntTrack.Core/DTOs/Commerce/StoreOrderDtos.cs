@@ -175,6 +175,7 @@ public sealed record AdminStoreEmailDto(
     Guid Id,
     string TemplateName,
     CommerceEmailStatus Status,
+    string? ProviderMessageId,
     string? SafeFailureCode,
     DateTimeOffset CreatedAtUtc,
     DateTimeOffset? SentAtUtc);

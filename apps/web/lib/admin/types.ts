@@ -290,7 +290,7 @@ export interface AdminStoreOrder {
   timeline: Array<{ fromStatus: AdminStoreOrderStatus; toStatus: AdminStoreOrderStatus; note: string | null; createdAtUtc: string }>;
   notes: Array<{ id: string; note: string; createdAtUtc: string }>;
   refunds: Array<{ id: string; amountMinor: number; status: string; reason: string; safeFailureCode: string | null; createdAtUtc: string }>;
-  emails: Array<{ id: string; templateName: string; status: string; safeFailureCode: string | null; createdAtUtc: string; sentAtUtc: string | null }>;
+  emails: Array<{ id: string; templateName: string; status: string; providerMessageId: string | null; safeFailureCode: string | null; createdAtUtc: string; sentAtUtc: string | null }>;
   createdAtUtc: string; updatedAtUtc: string | null;
 }
 export interface AdminCommerceIntegrationHealth { checkoutEnabled: boolean; squareConfigured: boolean; squareReachable: boolean; pendingOutboxMessages: number; failedRefunds: number; failedEmails: number; }

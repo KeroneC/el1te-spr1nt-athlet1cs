@@ -7,7 +7,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Security;
 
 public sealed class DevelopmentFileEmailSender(TransactionalEmailSettings settings) : ITransactionalEmailSender
 {
-    public async Task SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
+    public async Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
     {
         var directory = Path.GetFullPath(settings.DevelopmentOutboxPath);
         Directory.CreateDirectory(directory);
@@ -17,6 +17,7 @@ public sealed class DevelopmentFileEmailSender(TransactionalEmailSettings settin
         var body = $"To: {message.Recipient}\nSubject: {message.Subject}\n\n{message.PlainText}\n";
         await File.WriteAllTextAsync(file, body, cancellationToken);
         if (!OperatingSystem.IsWindows()) File.SetUnixFileMode(file, UnixFileMode.UserRead | UnixFileMode.UserWrite);
+        return new TransactionalEmailSendResult(null);
     }
 }
 
@@ -25,14 +26,15 @@ public sealed class AzureCommunicationEmailSender(TransactionalEmailSettings set
     private readonly EmailClient _client = new(settings.ConnectionString ??
         throw new InvalidOperationException("TransactionalEmail:ConnectionString is required."));
 
-    public async Task SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
+    public async Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
     {
-        await _client.SendAsync(
+        var operation = await _client.SendAsync(
             WaitUntil.Completed,
             settings.SenderAddress,
             message.Recipient,
             message.Subject,
             message.Html,
             cancellationToken: cancellationToken);
+        return new TransactionalEmailSendResult(operation.Id);
     }
 }

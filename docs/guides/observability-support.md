@@ -49,10 +49,19 @@ Operational alerts use the same email recipient configured for grant-budget noti
 | Server failures | Five 5xx responses in 10 minutes | Review failure trend, references, role, and release SHA |
 | Dependency failures | Five failures in 10 minutes | Identify SQL, Blob, or HTTP dependency and verify its Azure health |
 | Request latency | p95 above five seconds with at least 10 requests, sustained twice | Check B1 cold starts, dependencies, request volume, and recent releases |
+| Transactional email | Three failed, bounced, suppressed, quarantined, or spam-filtered outcomes in 15 minutes | Open the workbook email section, compare the provider message ID, and confirm sender-domain authentication |
 
 Alerts evaluate every five minutes and use Azure Monitor's stateful auto-mitigation. The action group is notified when an incident becomes active, is not notified on every evaluation while that incident remains active, and the alert auto-resolves after recovery. A later recurrence can open a new incident. A single transient B1 cold start should not trigger a notification.
 
 Record confirmed incidents with start/end time, impact, affected safe route templates, reference IDs, release SHA, cause, resolution, and follow-up. Do not copy raw private telemetry into GitHub issues or public channels.
+
+## Investigate an order email
+
+1. Open the order in **Admin → Merchandise → Orders** and copy its provider message ID. A status of **Accepted by email provider** means Azure accepted the send request, not that the message reached the inbox.
+2. In **El1te Platform Support**, enter the ID under **Email provider message ID**.
+3. Review only timestamp, operation category, delivery status, and SMTP status. The workbook intentionally omits the recipient address.
+4. Treat `Delivered` as transfer to the recipient mail system. Treat `FilteredSpam`, `Quarantined`, `Bounced`, `Suppressed`, and `Failed` as follow-up conditions.
+5. Retry an application email only when its application status is Failed. For an accepted message that was filtered, use the one-time tracking-link rotation workflow and a trusted delivery channel.
 
 ## Telemetry privacy boundary
 
