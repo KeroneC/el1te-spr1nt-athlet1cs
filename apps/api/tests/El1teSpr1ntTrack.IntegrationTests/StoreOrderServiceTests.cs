@@ -169,7 +169,7 @@ public sealed class StoreOrderServiceTests
         Assert.Equal(checkout.OrderReference, retry.OrderReference);
         Assert.Single(await db.Orders.ToListAsync());
         Assert.Equal(1, variant.ReservedQuantity);
-        Assert.Equal(2700, checkout.TotalMinor);
+        Assert.Equal(2500, checkout.TotalMinor);
 
         var order = await db.Orders.SingleAsync();
         var webhook = new SquareWebhookEvent
@@ -231,6 +231,92 @@ public sealed class StoreOrderServiceTests
         Assert.Equal(PaymentStatus.Refunded, order.PaymentStatus);
         Assert.Equal(StoreOrderStatus.Refunded, order.Status);
         Assert.Equal(3, variant.OnHandQuantity);
+    }
+
+    [Fact]
+    public async Task CustomerCancellation_IsRejectedAtTheServerDeadline()
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient();
+        var email = new RecordingEmailSender();
+        var clock = new TestClock(new DateTimeOffset(2026, 8, 8, 15, 0, 0, TimeSpan.Zero));
+        var service = Service(db, square, email, clock);
+
+        await service.CheckoutAsync(Request(product), CancellationToken.None);
+        var webhook = new SquareWebhookEvent
+        {
+            SquareEventId = "deadline-payment",
+            EventType = "payment.updated",
+            ObjectId = "payment-1",
+            PayloadSha256 = new string('C', 64),
+            CreatedAt = clock.UtcNow
+        };
+        db.SquareWebhookEvents.Add(webhook);
+        await db.SaveChangesAsync();
+        await service.ProcessSquareWebhookAsync(webhook.Id, CancellationToken.None);
+        var confirmation = await db.CommerceEmailMessages.SingleAsync(value => value.TemplateName == "PaymentConfirmation");
+        await service.SendOrderEmailAsync(confirmation.Id, CancellationToken.None);
+        var token = email.Last!.PlainText.Split("#token=", StringSplitOptions.None)[1]
+            .Split('\n', StringSplitOptions.RemoveEmptyEntries)[0];
+        var order = await db.Orders.SingleAsync();
+        clock.UtcNow = order.CustomerCancellationExpiresAtUtc!.Value;
+
+        await Assert.ThrowsAsync<El1teSpr1ntTrack.Application.Common.Exceptions.CmsConflictException>(() =>
+            service.CancelPublicOrderAsync(token, CancellationToken.None));
+
+        Assert.Equal(StoreOrderStatus.NeedsReview, order.Status);
+        Assert.Equal(PaymentStatus.Paid, order.PaymentStatus);
+        Assert.Equal(2, product.Variants.Single().OnHandQuantity);
+        Assert.Empty(order.Refunds);
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 2)]
+    [InlineData(2, 3)]
+    public async Task AdminFullRefund_RestocksExactlyTheSelectedQuantity(int restockQuantity, int expectedOnHand)
+    {
+        await using var db = Context();
+        var product = ProductGraph();
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+        var square = new FakeSquareClient();
+        var clock = new TestClock(new DateTimeOffset(2026, 8, 8, 15, 0, 0, TimeSpan.Zero));
+        var service = Service(db, square, new RecordingEmailSender(), clock);
+
+        await service.CheckoutAsync(Request(product, quantity: 2), CancellationToken.None);
+        var webhook = new SquareWebhookEvent
+        {
+            SquareEventId = $"refund-payment-{restockQuantity}",
+            EventType = "payment.updated",
+            ObjectId = "payment-1",
+            PayloadSha256 = new string('D', 64),
+            CreatedAt = clock.UtcNow
+        };
+        db.SquareWebhookEvents.Add(webhook);
+        await db.SaveChangesAsync();
+        await service.ProcessSquareWebhookAsync(webhook.Id, CancellationToken.None);
+        var order = await db.Orders.Include(value => value.OrderItems).SingleAsync();
+        var item = order.OrderItems.Single();
+
+        var refund = await service.RefundAsync(order.Id, new AdminStoreRefundWriteDto
+        {
+            AmountMinor = order.TotalMinor,
+            Reason = "Launch refund restock verification.",
+            Lines = [new AdminStoreRefundLineWriteDto(item.Id, item.Quantity, restockQuantity)]
+        }, Guid.NewGuid(), CancellationToken.None);
+        await service.ProcessRefundAsync(refund.Id, CancellationToken.None);
+        await service.ProcessRefundAsync(refund.Id, CancellationToken.None);
+
+        Assert.Equal(PaymentStatus.Refunded, order.PaymentStatus);
+        Assert.Equal(StoreOrderStatus.Refunded, order.Status);
+        Assert.Equal(expectedOnHand, product.Variants.Single().OnHandQuantity);
+        Assert.Equal(restockQuantity, (await db.CommerceRefundLines.SingleAsync()).RestockQuantity);
+        Assert.Equal(restockQuantity > 0 ? 1 : 0,
+            await db.InventoryAdjustments.CountAsync(value => value.Reason == InventoryAdjustmentReason.ReturnRestock));
     }
 
     [Fact]
@@ -355,7 +441,7 @@ public sealed class StoreOrderServiceTests
         Lines = source.Lines
     };
 
-    private static PublicStoreCheckoutRequestDto Request(Product product) => new()
+    private static PublicStoreCheckoutRequestDto Request(Product product, int quantity = 1) => new()
     {
         CheckoutAttemptId = Guid.NewGuid().ToString(),
         CustomerName = "Adult Buyer",
@@ -366,7 +452,7 @@ public sealed class StoreOrderServiceTests
         Lines = [new PublicStoreCheckoutLineDto
         {
             ProductVariantId = product.Variants.Single().Id,
-            Quantity = 1,
+            Quantity = quantity,
             CustomInputs = [new PublicStoreCustomInputDto
             {
                 ModifierGroupId = product.ModifierGroups.Single().Id,
@@ -460,6 +546,7 @@ public sealed class StoreOrderServiceTests
         public SquareIntegrationException? CreateFailure { get; set; }
         public IReadOnlyList<string> OrderPaymentIds { get; set; } = ["payment-1"];
         public List<SquarePaymentLinkCommand> CreateCommands { get; } = [];
+        private long CurrentTotalMinor { get; set; } = 2700;
         public Task<bool> CheckConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(true);
         public Task<SquareCatalogSnapshot> GetCatalogSnapshotAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(SquarePaymentLinkCommand command, CancellationToken cancellationToken)
@@ -472,12 +559,14 @@ public sealed class StoreOrderServiceTests
                 throw failure;
             }
             if (CreateFailuresRemaining-- > 0) throw new SquareIntegrationException("SQUARE_TIMEOUT");
-            return Task.FromResult(new SquarePaymentLinkResult("link-1", "square-order-1", "https://square.test/link", 200, 2700));
+            CurrentTotalMinor = command.Items.Sum(item =>
+                item.Quantity * (item.BasePriceMinor + item.Modifiers.Sum(modifier => modifier.BasePriceMinor)));
+            return Task.FromResult(new SquarePaymentLinkResult("link-1", "square-order-1", "https://square.test/link", 0, CurrentTotalMinor));
         }
         public Task<SquarePaymentResult> RetrievePaymentAsync(string paymentId, CancellationToken cancellationToken) =>
-            Task.FromResult(new SquarePaymentResult(paymentId, "COMPLETED", "square-order-1", 2700, "USD"));
+            Task.FromResult(new SquarePaymentResult(paymentId, "COMPLETED", "square-order-1", CurrentTotalMinor, "USD"));
         public Task<SquareOrderResult> RetrieveOrderAsync(string orderId, CancellationToken cancellationToken) =>
-            Task.FromResult(new SquareOrderResult(orderId, "COMPLETED", 2700, "USD", OrderPaymentIds));
+            Task.FromResult(new SquareOrderResult(orderId, "COMPLETED", CurrentTotalMinor, "USD", OrderPaymentIds));
         public Task<SquarePaymentLinkDeleteResult> DeletePaymentLinkAsync(string paymentLinkId, CancellationToken cancellationToken)
         {
             DeleteCalls++;

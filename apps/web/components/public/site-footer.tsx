@@ -19,7 +19,7 @@ export function SiteFooter({ settings, storeNavigationMode = "external" }: { set
       <div className="site-container footer-grid">
         <div className="footer-brand-panel">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={BRAND.logoWhite} alt="" className="footer-logo" />
+          <img src={BRAND.logoWhite} alt="" className="footer-logo" width="1000" height="1000" loading="lazy" decoding="async" />
           <p className="footer-brand">{settings.clubName}</p>
           <p className="footer-slogan">{BRAND.slogan}</p>
           {storeNavigationMode === "internal"

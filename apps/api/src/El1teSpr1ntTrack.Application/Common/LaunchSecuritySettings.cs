@@ -18,6 +18,7 @@ public sealed class TransactionalEmailSettings
     public string Provider { get; set; } = "DevelopmentFile";
     public string? ConnectionString { get; set; }
     public string SenderAddress { get; set; } = "DoNotReply@localhost";
+    public string? ReplyToAddress { get; set; }
     public string DevelopmentOutboxPath { get; set; } = "App_Data/dev-mail";
     public string AdminSiteUrl { get; set; } = "http://localhost:3000";
 }

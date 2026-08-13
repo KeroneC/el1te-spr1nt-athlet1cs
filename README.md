@@ -20,10 +20,10 @@ Implemented:
 - Hall of Fame, sponsor, policy, and merchandise catalog/inventory management through the Admin portal
 - Feature-gated public shop with size/color inventory, customizations, Square-hosted payment, customer tracking, cancellation/refund, and practice/event handoff operations
 - Privacy-safe support references, server/browser telemetry controls, Azure workbook, and operational alerts
-- Manually approved Azure demo delivery through GitHub OIDC, Bicep, immutable artifacts, EF migration bundles, and smoke tests
+- Manually approved, isolated Azure demo and production delivery through GitHub OIDC, Bicep, immutable artifacts, EF migration bundles, recovery controls, and smoke tests
 - Backend unit/integration tests, frontend tests, and Playwright/axe workflows
 
-Intentionally deferred from the lean launch: Parent/athlete portals, online athlete registration, private documents, Printify/shipping, staff-entered store tender, feedback triage, trusted-device MFA, deployment slots, automatic production promotion, and iOS code. Production domain, isolated infrastructure, branded email, selective content promotion, and public cutover remain launch work.
+Intentionally deferred from the lean launch: Parent/athlete portals, online athlete registration, private documents, Printify/shipping, staff-entered store tender, feedback triage, trusted-device MFA, deployment slots, automatic unreviewed production promotion, and iOS code. Production provisioning, DNS validation, branded-email verification, reviewed content selection, stocktake, Square Production secrets, and the public switch remain supervised launch operations.
 
 ## Documentation
 

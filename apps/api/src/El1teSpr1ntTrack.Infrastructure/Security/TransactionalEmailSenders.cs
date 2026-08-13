@@ -28,12 +28,20 @@ public sealed class AzureCommunicationEmailSender(TransactionalEmailSettings set
 
     public async Task<TransactionalEmailSendResult> SendAsync(TransactionalEmail message, CancellationToken cancellationToken)
     {
+        var content = new EmailContent(message.Subject)
+        {
+            PlainText = message.PlainText,
+            Html = message.Html
+        };
+        var emailMessage = new EmailMessage(
+            settings.SenderAddress,
+            new EmailRecipients([new EmailAddress(message.Recipient)]),
+            content);
+        if (!string.IsNullOrWhiteSpace(settings.ReplyToAddress))
+            emailMessage.ReplyTo.Add(new EmailAddress(settings.ReplyToAddress));
         var operation = await _client.SendAsync(
             WaitUntil.Completed,
-            settings.SenderAddress,
-            message.Recipient,
-            message.Subject,
-            message.Html,
+            emailMessage,
             cancellationToken: cancellationToken);
         return new TransactionalEmailSendResult(operation.Id);
     }

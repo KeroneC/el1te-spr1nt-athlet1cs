@@ -1,0 +1,335 @@
+name: Deploy Azure Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      ci_run_id:
+        description: Successful main CI run containing immutable release artifacts
+        required: true
+        type: string
+      infrastructure_only:
+        description: Provision isolated production infrastructure without deploying application artifacts
+        required: true
+        type: boolean
+        default: true
+      managed_identity_sql_ready:
+        description: Production API identity exists as a contained Azure SQL user
+        required: true
+        type: boolean
+        default: false
+      bootstrap_admin:
+        description: Bootstrap the fresh production SuperAdmin
+        required: true
+        type: boolean
+        default: false
+      use_custom_domains:
+        description: DNS validation is complete; configure canonical web/API URLs and managed TLS
+        required: true
+        type: boolean
+        default: false
+      use_verified_email_domain:
+        description: ACS ownership, SPF, and DKIM verification are complete
+        required: true
+        type: boolean
+        default: false
+      enforce_csp:
+        description: Enforce CSP after demo report-only violations have been cleared
+        required: true
+        type: boolean
+        default: false
+      enable_browser_analytics:
+        description: Enable cookie-free public performance telemetry
+        required: true
+        type: boolean
+        default: false
+      enable_store_preview:
+        description: Expose the internal read-only production catalog
+        required: true
+        type: boolean
+        default: false
+      enable_checkout:
+        description: Enable Square Production checkout
+        required: true
+        type: boolean
+        default: false
+      enable_indexing:
+        description: Remove production noindex after every launch gate passes
+        required: true
+        type: boolean
+        default: false
+      run_sql_restore_test:
+        description: Create and remove a disposable point-in-time restored database
+        required: true
+        type: boolean
+        default: false
+      final_launch_acknowledged:
+        description: Club approvals, stocktake, Square, policies, monitoring, and rollback gates are complete
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-azure-production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Promote verified release to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    environment: production
+    env:
+      AZURE_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      AZURE_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      AZURE_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID: ${{ vars.AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION }}
+      RESOURCE_NAME_PREFIX: ${{ vars.RESOURCE_NAME_PREFIX }}
+      SQL_ADMIN_LOGIN: ${{ vars.SQL_ADMIN_LOGIN }}
+      SQL_ADMIN_PASSWORD: ${{ secrets.SQL_ADMIN_PASSWORD }}
+      DATABASE_MIGRATION_CONNECTION_STRING: ${{ secrets.DATABASE_MIGRATION_CONNECTION_STRING }}
+      BOOTSTRAP_ADMIN_EMAIL: ${{ secrets.BOOTSTRAP_ADMIN_EMAIL }}
+      BOOTSTRAP_ADMIN_PASSWORD: ${{ secrets.BOOTSTRAP_ADMIN_PASSWORD }}
+      BOOTSTRAP_ADMIN_FIRST_NAME: ${{ vars.BOOTSTRAP_ADMIN_FIRST_NAME }}
+      BOOTSTRAP_ADMIN_LAST_NAME: ${{ vars.BOOTSTRAP_ADMIN_LAST_NAME }}
+      BUDGET_CONTACT_EMAIL: ${{ vars.BUDGET_CONTACT_EMAIL }}
+      SQUARE_LOCATION_ID: ${{ vars.SQUARE_LOCATION_ID }}
+      SQUARE_WEBHOOK_NOTIFICATION_URL: ${{ vars.SQUARE_WEBHOOK_NOTIFICATION_URL }}
+      SQUARE_CHECKOUT_RETURN_URL: ${{ vars.SQUARE_CHECKOUT_RETURN_URL }}
+      SQUARE_ACCESS_TOKEN_SECRET_URI: ${{ vars.SQUARE_ACCESS_TOKEN_SECRET_URI }}
+      SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI: ${{ vars.SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI }}
+
+    steps:
+      - name: Validate gated production request
+        shell: bash
+        run: |
+          required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID AZURE_RESOURCE_GROUP AZURE_LOCATION RESOURCE_NAME_PREFIX SQL_ADMIN_LOGIN SQL_ADMIN_PASSWORD BUDGET_CONTACT_EMAIL)
+          for name in "${required[@]}"; do [[ -n "${!name}" ]] || { echo "Missing production configuration: $name"; exit 1; }; done
+          [[ "${{ inputs.infrastructure_only }}" == "true" || "${{ inputs.managed_identity_sql_ready }}" == "true" ]] || { echo "Full deployment requires production SQL managed-identity readiness."; exit 1; }
+          if [[ "${{ inputs.infrastructure_only }}" != "true" ]]; then
+            [[ -n "$DATABASE_MIGRATION_CONNECTION_STRING" ]] || { echo "Missing production migration connection string."; exit 1; }
+          fi
+          if [[ "${{ inputs.bootstrap_admin }}" == "true" ]]; then
+            required_admin=(BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD BOOTSTRAP_ADMIN_FIRST_NAME BOOTSTRAP_ADMIN_LAST_NAME)
+            for name in "${required_admin[@]}"; do [[ -n "${!name}" ]] || { echo "Missing production admin bootstrap configuration: $name"; exit 1; }; done
+          fi
+          if [[ "${{ inputs.enable_checkout }}" == "true" || "${{ inputs.enable_indexing }}" == "true" ]]; then
+            [[ "${{ inputs.final_launch_acknowledged }}" == "true" ]] || { echo "Checkout or indexing requires the final launch acknowledgement."; exit 1; }
+            [[ "${{ inputs.use_custom_domains }}" == "true" ]] || { echo "Checkout or indexing requires canonical domains and TLS."; exit 1; }
+          fi
+          if [[ "${{ inputs.enable_checkout }}" == "true" ]]; then
+            [[ "${{ inputs.infrastructure_only }}" != "true" ]] || { echo "Checkout cannot be enabled by an infrastructure-only run."; exit 1; }
+            [[ "${{ inputs.enable_store_preview }}" == "true" ]] || { echo "Checkout requires the internal store navigation and catalog."; exit 1; }
+            [[ "${{ inputs.use_verified_email_domain }}" == "true" ]] || { echo "Checkout requires the verified production email domain."; exit 1; }
+            [[ "${{ inputs.enforce_csp }}" == "true" ]] || { echo "Checkout requires enforced CSP."; exit 1; }
+            [[ "${{ inputs.enable_browser_analytics }}" == "true" ]] || { echo "Checkout requires production monitoring to be enabled."; exit 1; }
+            required_square=(SQUARE_LOCATION_ID SQUARE_WEBHOOK_NOTIFICATION_URL SQUARE_CHECKOUT_RETURN_URL SQUARE_ACCESS_TOKEN_SECRET_URI SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI)
+            for name in "${required_square[@]}"; do [[ -n "${!name}" ]] || { echo "Missing Square Production configuration: $name"; exit 1; }; done
+            [[ "$SQUARE_WEBHOOK_NOTIFICATION_URL" == "https://api.el1tespr1ntathlet1cs.org/api/webhooks/square" ]] || { echo "Unexpected production Square webhook URL."; exit 1; }
+            [[ "$SQUARE_CHECKOUT_RETURN_URL" == "https://www.el1tespr1ntathlet1cs.org/shop/order-confirmation" ]] || { echo "Unexpected production Square return URL."; exit 1; }
+          fi
+
+      - name: Verify selected immutable main release
+        id: release
+        env: { GH_TOKEN: "${{ github.token }}" }
+        shell: bash
+        run: |
+          run=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${{ inputs.ci_run_id }}")
+          [[ "$(jq -r .conclusion <<< "$run")" == "success" ]] || { echo "CI run did not succeed."; exit 1; }
+          [[ "$(jq -r .head_branch <<< "$run")" == "main" && "$(jq -r .event <<< "$run")" == "push" ]] || { echo "Release must be a successful main push."; exit 1; }
+          echo "sha=$(jq -r .head_sha <<< "$run")" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout exact release commit
+        uses: actions/checkout@v7
+        with: { ref: "${{ steps.release.outputs.sha }}" }
+
+      - name: Download immutable release bundle
+        if: ${{ ! inputs.infrastructure_only }}
+        uses: actions/download-artifact@v8
+        with:
+          run-id: ${{ inputs.ci_run_id }}
+          github-token: ${{ github.token }}
+          pattern: release-*
+          path: release
+          merge-multiple: true
+
+      - name: Verify artifact checksums
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          [[ "$(jq -r .commitSha release/manifest.json)" == "${{ steps.release.outputs.sha }}" ]] || { echo "Artifact SHA mismatch."; exit 1; }
+          (cd release && sha256sum --check SHA256SUMS)
+          chmod +x release/efbundle
+
+      - name: Authenticate to isolated production Azure subscription context
+        uses: azure/login@v3
+        with:
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Register required Azure resource providers
+        shell: bash
+        run: |
+          communication_state="$(az provider show --namespace Microsoft.Communication --query registrationState --output tsv)"
+          if [[ "$communication_state" == "Registered" ]]; then
+            echo "Microsoft.Communication is already registered."
+          else
+            az provider register --namespace Microsoft.Communication --wait
+          fi
+
+      - name: Validate and preview production infrastructure
+        shell: bash
+        run: |
+          az bicep build --file infra/main.bicep
+          az deployment group what-if --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
+            --parameters environmentName=production location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
+              deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
+              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" \
+              webPublicUrl="${{ inputs.use_custom_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.use_custom_domains && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
+              frontendAllowedOrigin="${{ inputs.use_custom_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
+              transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
+              storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
+              storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI"
+
+      - name: Apply production infrastructure
+        id: infrastructure
+        shell: bash
+        run: |
+          outputs=$(az deployment group create --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
+            --parameters environmentName=production location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
+              deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
+              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" \
+              webPublicUrl="${{ inputs.use_custom_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.use_custom_domains && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
+              frontendAllowedOrigin="${{ inputs.use_custom_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
+              transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
+              storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
+              storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" \
+              tags="{\"project\":\"el1te-platform\",\"environment\":\"production\",\"funding\":\"nonprofit-grant\"}" \
+            --query properties.outputs --output json)
+          for key in apiUrl webUrl apiAppName webAppName sqlServerName sqlDatabaseName apiPrincipalId keyVaultName storageAccountName canonicalWebUrl canonicalApiUrl communicationServiceName customEmailDomainResourceId; do
+            echo "$(tr '[:upper:]' '[:lower:]' <<< "$key")=$(jq -r ".${key}.value" <<< "$outputs")" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Initialize independent production JWT secret
+        shell: bash
+        run: |
+          vault="${{ steps.infrastructure.outputs.keyvaultname }}"
+          if ! az keyvault secret show --vault-name "$vault" --name jwt-signing-key --query id -o tsv >/dev/null 2>&1; then
+            az keyvault secret set --vault-name "$vault" --name jwt-signing-key --value "$(openssl rand -base64 48)" --output none
+          fi
+
+      - name: Configure independent production monthly budget
+        shell: bash
+        run: |
+          scope="/subscriptions/$AZURE_SUBSCRIPTION_ID/resourceGroups/$AZURE_RESOURCE_GROUP"
+          budget_url="https://management.azure.com${scope}/providers/Microsoft.Consumption/budgets/el1te-production-monthly?api-version=2024-08-01"
+          if existing_budget="$(az rest --method get --url "$budget_url" --output json 2>/dev/null)"; then
+            start="$(jq -er '.properties.timePeriod.startDate' <<< "$existing_budget")"
+            end="$(jq -er '.properties.timePeriod.endDate' <<< "$existing_budget")"
+          else
+            start="$(date -u +%Y-%m-01T00:00:00Z)"
+            end="$(date -u -d '+10 years' +%Y-%m-01T00:00:00Z)"
+          fi
+          body=$(jq -n --arg start "$start" --arg end "$end" --arg email "$BUDGET_CONTACT_EMAIL" '{properties:{category:"Cost",amount:125,timeGrain:"Monthly",timePeriod:{startDate:$start,endDate:$end},notifications:{Actual50:{enabled:true,operator:"GreaterThan",threshold:50,thresholdType:"Actual",contactEmails:[$email]},Actual75:{enabled:true,operator:"GreaterThan",threshold:75,thresholdType:"Actual",contactEmails:[$email]},Actual90:{enabled:true,operator:"GreaterThan",threshold:90,thresholdType:"Actual",contactEmails:[$email]},Actual100:{enabled:true,operator:"GreaterThan",threshold:100,thresholdType:"Actual",contactEmails:[$email]}}}}')
+          az rest --method put --url "$budget_url" --body "$body" --output none
+
+      - name: Production infrastructure bootstrap summary
+        if: ${{ inputs.infrastructure_only }}
+        run: |
+          echo "## Production infrastructure prepared" >> "$GITHUB_STEP_SUMMARY"
+          echo "API principal: ${{ steps.infrastructure.outputs.apiprincipalid }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Database: ${{ steps.infrastructure.outputs.sqldatabasename }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Create this identity as a least-privilege contained SQL user before a full deployment." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Configure canonical domains and managed TLS
+        if: ${{ inputs.use_custom_domains }}
+        shell: bash
+        run: |
+          bind() {
+            local app="$1" host="$2"
+            az webapp config hostname add --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --hostname "$host"
+            thumb=$(az webapp config ssl create --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --hostname "$host" --query thumbprint -o tsv)
+            az webapp config ssl bind --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --certificate-thumbprint "$thumb" --ssl-type SNI
+          }
+          bind "${{ steps.infrastructure.outputs.webappname }}" www.el1tespr1ntathlet1cs.org
+          bind "${{ steps.infrastructure.outputs.webappname }}" el1tespr1ntathlet1cs.org
+          bind "${{ steps.infrastructure.outputs.apiappname }}" api.el1tespr1ntathlet1cs.org
+
+      - name: Allow the migration runner temporary SQL access
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          runner_ip=$(curl --fail --silent --show-error --max-time 10 https://api.ipify.org)
+          az sql server firewall-rule create --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
+            --name "github-actions-${GITHUB_RUN_ID}" --start-ip-address "$runner_ip" --end-ip-address "$runner_ip" --output none
+
+      - name: Apply production migrations
+        if: ${{ ! inputs.infrastructure_only }}
+        run: release/efbundle --connection "$DATABASE_MIGRATION_CONNECTION_STRING"
+
+      - name: Deploy and verify immutable applications
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          bash scripts/deployment/deploy-webapp-artifact.sh "$AZURE_RESOURCE_GROUP" "${{ steps.infrastructure.outputs.apiappname }}" release/api.zip
+          bash scripts/smoke-tests/check-api.sh "${{ steps.infrastructure.outputs.apiurl }}"
+          bash scripts/deployment/deploy-webapp-artifact.sh "$AZURE_RESOURCE_GROUP" "${{ steps.infrastructure.outputs.webappname }}" release/web.zip
+          bash scripts/smoke-tests/check-web.sh "${{ steps.infrastructure.outputs.weburl }}"
+
+      - name: Bootstrap fresh production SuperAdmin
+        if: ${{ ! inputs.infrastructure_only && inputs.bootstrap_admin }}
+        shell: bash
+        run: |
+          mkdir -p /tmp/el1te-production-api && unzip -q release/api.zip -d /tmp/el1te-production-api
+          jwt_key=$(az keyvault secret show --vault-name "${{ steps.infrastructure.outputs.keyvaultname }}" --name jwt-signing-key --query value -o tsv)
+          ASPNETCORE_ENVIRONMENT=Production Database__UseManagedIdentity=false ConnectionStrings__DefaultConnection="$DATABASE_MIGRATION_CONNECTION_STRING" \
+            Jwt__Issuer="${{ steps.infrastructure.outputs.apiurl }}" Jwt__Audience="${{ steps.infrastructure.outputs.weburl }}" Jwt__ExpiresMinutes=60 Jwt__Key="$jwt_key" \
+            Cors__AllowedOrigins__0="${{ steps.infrastructure.outputs.weburl }}" MediaStorage__Provider=AzureBlob \
+            MediaStorage__BlobServiceUri="https://${{ steps.infrastructure.outputs.storageaccountname }}.blob.core.windows.net" MediaStorage__ContainerName=media \
+            MediaStorage__PublicBaseUrl="${{ steps.infrastructure.outputs.apiurl }}" MediaStorage__MaxFileSizeBytes=10485760 \
+            TransactionalEmail__Provider=AzureCommunicationServices TransactionalEmail__ConnectionString="endpoint=https://bootstrap.invalid/;accesskey=bootstrap" \
+            TransactionalEmail__SenderAddress=DoNotReply@bootstrap.invalid TransactionalEmail__AdminSiteUrl="${{ steps.infrastructure.outputs.weburl }}" \
+            BootstrapAdmin__Email="$BOOTSTRAP_ADMIN_EMAIL" BootstrapAdmin__Password="$BOOTSTRAP_ADMIN_PASSWORD" \
+            BootstrapAdmin__FirstName="$BOOTSTRAP_ADMIN_FIRST_NAME" BootstrapAdmin__LastName="$BOOTSTRAP_ADMIN_LAST_NAME" \
+            dotnet /tmp/el1te-production-api/El1teSpr1ntTrack.Api.dll --bootstrap-admin
+
+      - name: Test disposable SQL point-in-time restore
+        if: ${{ inputs.run_sql_restore_test && ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          restore_name="${{ steps.infrastructure.outputs.sqldatabasename }}-restore-${GITHUB_RUN_ID}"
+          restore_time=$(date -u -d '-5 minutes' +%Y-%m-%dT%H:%M:%SZ)
+          az sql db restore --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
+            --name "${{ steps.infrastructure.outputs.sqldatabasename }}" --dest-name "$restore_name" --time "$restore_time" --output none
+          az sql db show --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" --name "$restore_name" --query status -o tsv
+          az sql db delete --yes --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" --name "$restore_name"
+
+      - name: Production deployment summary
+        run: |
+          echo "## Azure production deployment" >> "$GITHUB_STEP_SUMMARY"
+          echo "Commit: ${{ steps.release.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Checkout enabled: ${{ inputs.enable_checkout }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Indexing enabled: ${{ inputs.enable_indexing }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "CSP enforced: ${{ inputs.enforce_csp }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Browser analytics enabled: ${{ inputs.enable_browser_analytics }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Custom domains configured: ${{ inputs.use_custom_domains }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Custom email domain linked: ${{ inputs.use_verified_email_domain }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Custom email domain resource: ${{ steps.infrastructure.outputs.customemaildomainresourceid }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Remove temporary SQL firewall access
+        if: ${{ always() && ! inputs.infrastructure_only && steps.infrastructure.outcome == 'success' }}
+        shell: bash
+        run: |
+          az sql server firewall-rule delete --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" \
+            --name "github-actions-${GITHUB_RUN_ID}" --output none 2>/dev/null || true

@@ -1,6 +1,6 @@
 # Azure Demo Continuous Delivery
 
-Phase 6B operates a public, search-excluded demo in Central US. East US 2 and East US did not offer the selected Azure SQL SKU during initial provisioning, so Central US is the validated fallback. The demo uses Azure hostnames and manual promotion; custom domains and automatic production deployment remain deferred.
+Phase 6B operates a public, search-excluded demo in Central US. East US 2 and East US did not offer the selected Azure SQL SKU during initial provisioning, so Central US is the validated fallback. Production is provisioned independently through a protected, manually approved workflow and remains no-index, checkout-disabled, and off the public DNS until every cutover gate passes.
 
 ```mermaid
 flowchart LR
@@ -12,6 +12,8 @@ flowchart LR
   Web --> AI["Capped Application Insights"]
   API --> AI
 ```
+
+Production repeats this topology in a separate resource group with independent SQL, Blob, Key Vault, App Services, monitoring, Communication Services Email, identities, and secrets. It adds Blob versioning/soft delete, explicit SQL retention, CSP enforcement, custom-domain readiness, and a reviewed content-promotion workflow. No demo order, user, credential, or test inventory crosses that boundary.
 
 The API system-assigned identity has Blob contributor access only on the media account, secret-read access only on the application vault, and contained-user SQL read/write access. Media remains private and is streamed through `/media/{id}`. Development continues to use `LocalMediaStorage`.
 

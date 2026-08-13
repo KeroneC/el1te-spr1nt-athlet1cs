@@ -3,6 +3,12 @@ param keyVaultName string
 param tags object = {}
 param logAnalyticsWorkspaceId string
 param monitoringActionGroupId string
+@description('Customer-managed email domain to create for DNS verification. Leave empty in demo.')
+param customEmailDomainName string = ''
+@description('Link the verified customer-managed domain instead of the Azure-managed demo domain.')
+param useCustomEmailDomain bool = false
+@description('Local part of the transactional sender when a custom domain is linked.')
+param senderUsername string = 'orders'
 
 var emailServiceName = take('${baseName}-email', 63)
 var communicationServiceName = take('${baseName}-communication', 63)
@@ -26,13 +32,23 @@ resource managedDomain 'Microsoft.Communication/emailServices/domains@2023-03-31
   }
 }
 
+resource customDomain 'Microsoft.Communication/emailServices/domains@2023-03-31' = if (!empty(customEmailDomainName)) {
+  parent: emailService
+  name: customEmailDomainName
+  location: 'global'
+  properties: {
+    domainManagement: 'CustomerManaged'
+    userEngagementTracking: 'Disabled'
+  }
+}
+
 resource communicationService 'Microsoft.Communication/communicationServices@2023-03-31' = {
   name: communicationServiceName
   location: 'global'
   tags: tags
   properties: {
     dataLocation: 'United States'
-    linkedDomains: [managedDomain.id]
+    linkedDomains: useCustomEmailDomain ? [customDomain.id] : [managedDomain.id]
   }
 }
 
@@ -101,5 +117,8 @@ resource connectionSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
 }
 
 output communicationServiceName string = communicationService.name
-output senderAddress string = 'DoNotReply@${managedDomain.properties.fromSenderDomain}'
+output senderAddress string = useCustomEmailDomain
+  ? '${senderUsername}@${customEmailDomainName}'
+  : 'DoNotReply@${managedDomain.properties.fromSenderDomain}'
 output connectionSecretUri string = connectionSecret.properties.secretUri
+output customEmailDomainResourceId string = empty(customEmailDomainName) ? '' : customDomain.id

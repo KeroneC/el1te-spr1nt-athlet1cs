@@ -13,7 +13,7 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 ## Production isolation and recovery
 
 - [ ] Production has its own resource group, SQL database, Blob account, Key Vault, App Services, monitoring, identities, secrets, and protected GitHub environment.
-- [ ] SQL point-in-time recovery and Blob/container recovery are enabled and a disposable restore has succeeded.
+- [ ] SQL has explicit 14-day point-in-time retention; Blob/container soft delete is 30 days; Blob versioning and 90-day old-version cleanup are enabled; a disposable restore has succeeded.
 - [ ] The selective promotion manifest was reviewed; it excludes users, invitations, submissions, athletes, documents, orders, refunds, webhooks, outbox records, telemetry, and secrets.
 - [ ] Every selected media object matches its SHA-256 manifest hash and every promoted variant has zero on-hand/reserved stock before stocktake.
 - [ ] A fresh production SuperAdmin is bootstrapped; demo and test users are absent.
@@ -25,6 +25,7 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 - [ ] `updates.el1tespr1ntathlet1cs.org` passes Azure ownership, SPF, and DKIM checks; order mail uses `orders@updates.el1tespr1ntathlet1cs.org` with the club Gmail as Reply-To.
 - [ ] Email operational logs, delivery-status workbook queries, and failure alerts work without engagement tracking.
 - [ ] Production Square credentials are in production Key Vault; production return/webhook URLs and signatures are verified independently from Sandbox.
+- [ ] Production Square shows the club-approved `$0.00` merchandise tax result for the supervised test order; El1te contains no hardcoded tax rate.
 
 ## Final verification and cutover
 
@@ -33,3 +34,5 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 - [ ] CSP enforcement, cookie-free public analytics, readiness, 5xx/dependency/latency/email alerts, and the support workbook are verified.
 - [ ] Production is initially `noindex`; indexing is enabled only after DNS, HTTPS, content, policy, and commerce checks pass.
 - [ ] Cutover sets `STORE_NAVIGATION_MODE=internal` and enables checkout. Rollback disables checkout, sets navigation to `external`, and restores DNS without deleting order history.
+
+Follow the staged procedure in [Production cutover operations](production-cutover-operations.md). Record the immutable CI run ID, release SHA, approver, stocktake sign-off, tax approval, policy approval, test-order reference, restore-test result, DNS change time, and rollback owner in the launch record.

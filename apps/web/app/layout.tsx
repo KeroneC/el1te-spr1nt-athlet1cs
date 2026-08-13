@@ -1,6 +1,19 @@
 import type { Metadata } from "next";
+import { Inter, Oswald } from "next/font/google";
 import { robotsForEnvironment } from "@/lib/public/deployment";
 import "./globals.css";
+
+const inter = Inter({
+  subsets: ["latin"],
+  display: "optional",
+  variable: "--font-inter"
+});
+
+const oswald = Oswald({
+  subsets: ["latin"],
+  display: "optional",
+  variable: "--font-oswald"
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL ?? "http://localhost:3000"),
@@ -9,7 +22,10 @@ export const metadata: Metadata = {
     template: "%s | El1te Spr1nt Athlet1cs"
   },
   description: "Youth track and field training, competition, and community.",
-  robots: robotsForEnvironment(process.env.DEPLOYMENT_ENVIRONMENT),
+  robots: robotsForEnvironment(process.env.DEPLOYMENT_ENVIRONMENT, process.env.PUBLIC_INDEXING_ENABLED),
+  // Next resolves ./ against the active route, so every page receives its own
+  // canonical URL instead of inheriting the homepage URL.
+  alternates: { canonical: "./" },
   icons: {
     icon: "/favicon.png",
     apple: "/favicon.png"
@@ -29,7 +45,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className={`${inter.variable} ${oswald.variable} antialiased`}>{children}</body>
     </html>
   );
 }
