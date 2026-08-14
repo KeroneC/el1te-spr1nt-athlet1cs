@@ -27,6 +27,20 @@ if [[ ! "$publish_attempts" =~ ^[1-9][0-9]*$ ]]; then
   echo "DEPLOYMENT_PUBLISH_ATTEMPTS must be a positive integer."
   exit 2
 fi
+publish_command_timeout_seconds="${DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS:-180}"
+if [[ ! "$publish_command_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS must be a positive integer."
+  exit 2
+fi
+publish_timeout_attempts="${DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS:-2}"
+if [[ ! "$publish_timeout_attempts" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS must be a positive integer."
+  exit 2
+fi
+if ! command -v timeout >/dev/null 2>&1; then
+  echo "The coreutils timeout command is required for bounded Azure publishing."
+  exit 2
+fi
 
 is_transient_azure_deployment_response()
 {
@@ -77,9 +91,10 @@ for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++))
 done
 
 publish_succeeded=false
+publish_timeout_count=0
 for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt++)); do
   set +e
-  publish_output=$(az webapp deploy \
+  publish_output=$(timeout --signal=TERM --kill-after=15 "${publish_command_timeout_seconds}s" az webapp deploy \
     --resource-group "$resource_group" \
     --name "$app_name" \
     --src-path "$artifact_path" \
@@ -94,6 +109,20 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
   if [[ "$publish_exit_code" -eq 0 ]]; then
     publish_succeeded=true
     break
+  fi
+
+  if [[ "$publish_exit_code" -eq 124 || "$publish_exit_code" -eq 137 ]]; then
+    publish_timeout_count=$((publish_timeout_count + 1))
+    if [[ "$publish_timeout_count" -ge "$publish_timeout_attempts" ]]; then
+      echo "Azure publishing timed out ${publish_timeout_count} times for $app_name; stopping before the deployment window is exhausted." >&2
+      exit "$publish_exit_code"
+    fi
+
+    retry_delay="$(retry_delay_for_attempt "$publish_attempt")"
+    echo "Azure publishing exceeded ${publish_command_timeout_seconds}s for $app_name; restarting the App Service and retrying in ${retry_delay}s (timeout $publish_timeout_count/$publish_timeout_attempts)."
+    az webapp restart --resource-group "$resource_group" --name "$app_name" --output none
+    sleep "$retry_delay"
+    continue
   fi
 
   if ! is_transient_azure_deployment_response <<< "$publish_output"; then
