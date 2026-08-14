@@ -52,11 +52,34 @@ printf '%s\n' \
   '  touch "$state_dir/published"' \
   '  exit 0' \
   'fi' \
-  'if [[ "$command_line" == "webapp restart "* ]]; then exit 0; fi' \
+  'if [[ "$command_line" == "webapp restart "* ]]; then' \
+  '  count_file="$state_dir/restart-count"' \
+  '  count=0' \
+  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
+  '  printf "%s" "$((count + 1))" > "$count_file"' \
+  '  exit 0' \
+  'fi' \
   'echo "Unexpected mock Azure CLI call: $command_line" >&2' \
   'exit 99' \
   > "$fake_bin/az"
 chmod +x "$fake_bin/az"
+
+printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -euo pipefail' \
+  'state_dir="${MOCK_AZ_STATE_DIR:?}"' \
+  'shift 3' \
+  'if [[ "$*" == "az webapp deploy "* ]]; then' \
+  '  count_file="$state_dir/timeout-count"' \
+  '  count=0' \
+  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
+  '  count=$((count + 1))' \
+  '  printf "%s" "$count" > "$count_file"' \
+  '  if (( count <= MOCK_TIMEOUT_FAILURES )); then exit 124; fi' \
+  'fi' \
+  'exec "$@"' \
+  > "$fake_bin/timeout"
+chmod +x "$fake_bin/timeout"
 
 run_deployment()
 {
@@ -68,6 +91,7 @@ run_deployment()
   local deploy_error="${6:-}"
   local post_list_failures="${7:-0}"
   local post_list_status="${8:-503}"
+  local timeout_failures="${9:-0}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
@@ -79,8 +103,10 @@ run_deployment()
     MOCK_AZ_LIST_STATUS="$list_status" \
     MOCK_AZ_POST_LIST_FAILURES="$post_list_failures" \
     MOCK_AZ_POST_LIST_STATUS="$post_list_status" \
+    MOCK_TIMEOUT_FAILURES="$timeout_failures" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
     DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS=0 \
+    DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS=1 \
     bash "$script_dir/deploy-webapp-artifact.sh" test-resource-group test-app test-artifact.zip
 }
 
@@ -108,6 +134,23 @@ scm_restart_state="$test_root/scm-restart"
 scm_restart_output=$(run_deployment "$scm_restart_state" 1 500 0 502 "Deployment has been stopped due to SCM container restart.")
 [[ "$(<"$scm_restart_state/deploy-count")" == "2" ]]
 grep -q "Azure publishing returned a transient response" <<< "$scm_restart_output"
+
+timeout_retry_state="$test_root/timeout-retry"
+timeout_retry_output=$(run_deployment "$timeout_retry_state" 0 502 0 502 "" 0 503 1)
+[[ "$(<"$timeout_retry_state/timeout-count")" == "2" ]]
+[[ "$(<"$timeout_retry_state/deploy-count")" == "1" ]]
+[[ "$(<"$timeout_retry_state/restart-count")" == "2" ]]
+grep -q "publishing exceeded 1s" <<< "$timeout_retry_output"
+
+timeout_exhausted_state="$test_root/timeout-exhausted"
+set +e
+timeout_exhausted_output=$(DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS=2 run_deployment "$timeout_exhausted_state" 0 502 0 502 "" 0 503 2 2>&1)
+timeout_exhausted_exit=$?
+set -e
+[[ "$timeout_exhausted_exit" -ne 0 ]]
+[[ "$(<"$timeout_exhausted_state/timeout-count")" == "2" ]]
+[[ "$(<"$timeout_exhausted_state/restart-count")" == "1" ]]
+grep -q "timed out 2 times" <<< "$timeout_exhausted_output"
 
 non_retry_state="$test_root/non-retry"
 set +e
