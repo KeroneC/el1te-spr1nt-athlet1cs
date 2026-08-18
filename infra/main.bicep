@@ -291,6 +291,9 @@ resource productionStorageDeleteLock 'Microsoft.Authorization/locks@2020-05-01' 
     level: 'CanNotDelete'
     notes: 'Remove only during an approved production decommission or recovery operation.'
   }
+  // The scoped resource is declared as existing, so Bicep cannot infer the
+  // storage module dependency during a first-time environment deployment.
+  dependsOn: [storage]
 }
 
 resource productionSqlDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (environmentName == 'production') {
@@ -300,6 +303,7 @@ resource productionSqlDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if
     level: 'CanNotDelete'
     notes: 'Remove only during an approved production decommission or recovery operation.'
   }
+  dependsOn: [sqlDatabase]
 }
 
 resource productionVaultDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = if (environmentName == 'production') {
@@ -309,6 +313,7 @@ resource productionVaultDeleteLock 'Microsoft.Authorization/locks@2020-05-01' = 
     level: 'CanNotDelete'
     notes: 'Remove only during an approved production decommission or recovery operation.'
   }
+  dependsOn: [vault]
 }
 
 resource blobContributor 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
@@ -329,6 +334,7 @@ resource deploymentBlobContributor 'Microsoft.Authorization/roleAssignments@2022
     principalType: 'ServicePrincipal'
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'ba92f5b4-2d11-453d-a403-e96b0029c9fe')
   }
+  dependsOn: [storage]
 }
 
 resource keyVaultSecretsUser 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
