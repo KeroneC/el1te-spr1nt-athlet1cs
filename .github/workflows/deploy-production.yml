@@ -224,7 +224,7 @@ jobs:
               squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" \
               tags="{\"project\":\"el1te-platform\",\"environment\":\"production\",\"funding\":\"nonprofit-grant\"}" \
             --query properties.outputs --output json)
-          for key in apiUrl webUrl apiAppName webAppName sqlServerName sqlDatabaseName apiPrincipalId keyVaultName storageAccountName canonicalWebUrl canonicalApiUrl communicationServiceName customEmailDomainResourceId; do
+          for key in apiUrl webUrl apiAppName webAppName appServicePlanName sqlServerName sqlDatabaseName apiPrincipalId keyVaultName storageAccountName canonicalWebUrl canonicalApiUrl communicationServiceName customEmailDomainResourceId; do
             echo "$(tr '[:upper:]' '[:lower:]' <<< "$key")=$(jq -r ".${key}.value" <<< "$outputs")" >> "$GITHUB_OUTPUT"
           done
 
@@ -299,6 +299,17 @@ jobs:
         if: ${{ ! inputs.infrastructure_only }}
         run: release/efbundle --connection "$DATABASE_MIGRATION_CONNECTION_STRING"
 
+      - name: Temporarily scale the publishing worker
+        id: publishing_scale
+        if: ${{ ! inputs.infrastructure_only }}
+        shell: bash
+        run: |
+          # B1 is the approved steady-state tier. Azure's Kudu worker repeatedly
+          # stalled on large immutable ZIP uploads at B1, while B2 completed the
+          # same verified packages promptly. Limit B2 to the deployment window.
+          az appservice plan update --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "${{ steps.infrastructure.outputs.appserviceplanname }}" --sku B2 --output none
+
       - name: Deploy and verify immutable applications
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
@@ -339,6 +350,13 @@ jobs:
             --name "${{ steps.infrastructure.outputs.sqldatabasename }}" --dest-name "$restore_name" --time "$restore_time" --output none
           az sql db show --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" --name "$restore_name" --query status -o tsv
           az sql db delete --yes --resource-group "$AZURE_RESOURCE_GROUP" --server "${{ steps.infrastructure.outputs.sqlservername }}" --name "$restore_name"
+
+      - name: Restore the approved App Service tier
+        if: ${{ always() && ! inputs.infrastructure_only && steps.publishing_scale.outcome == 'success' }}
+        shell: bash
+        run: |
+          az appservice plan update --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "${{ steps.infrastructure.outputs.appserviceplanname }}" --sku B1 --output none
 
       - name: Production deployment summary
         run: |

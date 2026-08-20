@@ -361,6 +361,7 @@ resource deploymentSecretsOfficer 'Microsoft.Authorization/roleAssignments@2022-
 output apiAppName string = api.outputs.name
 output apiPrincipalId string = api.outputs.principalId
 output apiUrl string = api.outputs.url
+output appServicePlanName string = plan.outputs.name
 output sqlDatabaseName string = sqlDatabase.outputs.name
 output sqlServerName string = sqlServer.outputs.name
 output webAppName string = web.outputs.name

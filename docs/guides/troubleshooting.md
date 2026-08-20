@@ -65,6 +65,7 @@ Additional clues:
 - **Symptom:** `az webapp deploy` reported that the API worker failed to start within 10 minutes, so the workflow skipped the web artifact.
 - **Finding:** Kudu marked the new API ZIP deployment active and successful, the new invitation endpoint was live, and App Service logs showed the application listening on port 8080 with a successful platform startup probe. The CLI continued polling stale container-timeout state and eventually returned exit code 1.
 - **Resolution:** deployment now disables the unreliable Linux startup tracker, waits for a new active Kudu deployment ID with success status, relies on ZIP deployment's single managed restart, and then runs the API or web smoke tests. Production readiness receives a longer bounded allowance for the first managed-identity SQL connection on the Basic plan.
+- **Production publishing capacity:** production remains on the approved B1 tier during normal operation. The protected deployment workflow temporarily scales the shared App Service plan to B2 only for immutable ZIP publishing and its smoke/bootstrap/restore sequence, then restores B1 with an `always()` cleanup guard even when a later step fails or is canceled.
 - **Safety:** the temporary SQL firewall rule was removed by the workflow's unconditional cleanup even though the deployment step failed.
 
 ### 2026-07-26: Kudu Publishing Endpoint Returned 502
