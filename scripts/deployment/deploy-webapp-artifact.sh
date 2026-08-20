@@ -11,7 +11,9 @@ if [[ -z "$resource_group" || -z "$app_name" || -z "$artifact_path" ]]; then
 fi
 
 # Linux startup tracking can retain a stale container timeout even after the new
-# worker is healthy. Track the immutable Kudu deployment, then restart and probe.
+# worker is healthy. Track the immutable Kudu deployment before probing it. The
+# ZIP deployment already restarts App Service, so a second restart here would
+# create an unnecessary second cold start on the Basic production plan.
 publish_retry_base_seconds="${DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS:-10}"
 if [[ ! "$publish_retry_base_seconds" =~ ^[0-9]+$ ]]; then
   echo "DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS must be a non-negative integer."
@@ -207,4 +209,4 @@ if [[ -z "$deployment_id" ]]; then
   exit 1
 fi
 
-az webapp restart --resource-group "$resource_group" --name "$app_name" --output none
+echo "Deployment $deployment_id finished for $app_name; the ZIP deployment-managed restart will be verified by application smoke tests."

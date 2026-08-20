@@ -302,6 +302,10 @@ jobs:
       - name: Deploy and verify immutable applications
         if: ${{ ! inputs.infrastructure_only }}
         shell: bash
+        env:
+          # Basic-tier App Service can need more than ten minutes to make its
+          # first managed-identity SQL connection after a deployment restart.
+          SMOKE_TEST_READINESS_ATTEMPTS: '60'
         run: |
           bash scripts/deployment/deploy-webapp-artifact.sh "$AZURE_RESOURCE_GROUP" "${{ steps.infrastructure.outputs.apiappname }}" release/api.zip
           bash scripts/smoke-tests/check-api.sh "${{ steps.infrastructure.outputs.apiurl }}"
