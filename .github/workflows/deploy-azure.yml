@@ -251,6 +251,10 @@ jobs:
             Jwt__Issuer="${{ steps.infrastructure.outputs.apiurl }}" Jwt__Audience="${{ steps.infrastructure.outputs.weburl }}" Jwt__ExpiresMinutes=60 Jwt__Key="$(cat /tmp/jwt)" \
             Cors__AllowedOrigins__0="${{ steps.infrastructure.outputs.weburl }}" MediaStorage__Provider=AzureBlob \
             MediaStorage__BlobServiceUri="https://invalid.blob.core.windows.net" MediaStorage__ContainerName=media MediaStorage__PublicBaseUrl="${{ steps.infrastructure.outputs.apiurl }}" MediaStorage__MaxFileSizeBytes=10485760 \
+            AdminInvitations__SiteUrl="${{ steps.infrastructure.outputs.weburl }}" AdminInvitations__ExpiresHours=72 \
+            AuthFeatures__AllowPublicRegistration=false TransactionalEmail__Provider=AzureCommunicationServices \
+            TransactionalEmail__ConnectionString="endpoint=https://bootstrap.invalid/;accesskey=bootstrap" \
+            TransactionalEmail__SenderAddress=DoNotReply@bootstrap.invalid TransactionalEmail__AdminSiteUrl="${{ steps.infrastructure.outputs.weburl }}" \
             BootstrapAdmin__Email="$BOOTSTRAP_ADMIN_EMAIL" BootstrapAdmin__Password="$BOOTSTRAP_ADMIN_PASSWORD" \
             BootstrapAdmin__FirstName="$BOOTSTRAP_ADMIN_FIRST_NAME" BootstrapAdmin__LastName="$BOOTSTRAP_ADMIN_LAST_NAME" \
             dotnet /tmp/el1te-api/El1teSpr1ntTrack.Api.dll --bootstrap-admin
