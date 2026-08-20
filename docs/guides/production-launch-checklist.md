@@ -25,12 +25,13 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 - [ ] `updates.el1tespr1ntathlet1cs.org` passes Azure ownership, SPF, and DKIM checks; order mail uses `orders@updates.el1tespr1ntathlet1cs.org` with the club Gmail as Reply-To.
 - [ ] Email operational logs, delivery-status workbook queries, and failure alerts work without engagement tracking.
 - [ ] Production Square credentials are in production Key Vault; production return/webhook URLs and signatures are verified independently from Sandbox.
+- [ ] A supervised noindex checkout uses the Azure web return URL and canonical API webhook; checkout is disabled again after the `$1` payment/refund test.
 - [ ] Production Square shows the club-approved `$0.00` merchandise tax result for the supervised test order; El1te contains no hardcoded tax rate.
 
 ## Final verification and cutover
 
 - [ ] CI, Bicep, migrations, vulnerability scans, Playwright/axe, keyboard/narrow-screen checks, and performance budgets pass for the immutable release SHA.
-- [ ] A private production purchase completes payment, webhook, email, tracking, cancellation/refund, and exact inventory restoration.
+- [ ] A temporary `$1` product completes payment, webhook, email, tracking, cancellation/refund, and exact inventory restoration; it is then unpublished with zero stock while its audit history remains.
 - [ ] CSP enforcement, cookie-free public analytics, readiness, 5xx/dependency/latency/email alerts, and the support workbook are verified.
 - [ ] Production is initially `noindex`; indexing is enabled only after DNS, HTTPS, content, policy, and commerce checks pass.
 - [ ] Cutover sets `STORE_NAVIGATION_MODE=internal` and enables checkout. Rollback disables checkout, sets navigation to `external`, and restores DNS without deleting order history.

@@ -242,6 +242,10 @@ jobs:
         shell: bash
         run: bash scripts/deployment/test-deploy-webapp-artifact.sh
 
+      - name: Test production deployment gates
+        shell: bash
+        run: bash scripts/deployment/test-validate-production-request.sh
+
       - name: Compile Azure infrastructure
         shell: bash
         run: az bicep build --file infra/main.bicep --stdout >/dev/null
