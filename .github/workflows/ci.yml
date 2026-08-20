@@ -250,6 +250,10 @@ jobs:
         shell: bash
         run: bash scripts/deployment/test-production-publish-scaling.sh
 
+      - name: Test deployment bootstrap configuration
+        shell: bash
+        run: bash scripts/deployment/test-bootstrap-configuration.sh
+
       - name: Compile Azure infrastructure
         shell: bash
         run: az bicep build --file infra/main.bicep --stdout >/dev/null
