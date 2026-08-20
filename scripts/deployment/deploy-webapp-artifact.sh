@@ -32,11 +32,6 @@ if [[ ! "$publish_command_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
   echo "DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS must be a positive integer."
   exit 2
 fi
-publish_timeout_attempts="${DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS:-2}"
-if [[ ! "$publish_timeout_attempts" =~ ^[1-9][0-9]*$ ]]; then
-  echo "DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS must be a positive integer."
-  exit 2
-fi
 if ! command -v timeout >/dev/null 2>&1; then
   echo "The coreutils timeout command is required for bounded Azure publishing."
   exit 2
@@ -45,6 +40,11 @@ fi
 is_transient_azure_deployment_response()
 {
   grep -Eiq "status code ['\"]?(502|503|504)|HTTP[^0-9]*(502|503|504)|Bad Gateway|Service Unavailable|Gateway Timeout|Deployment has been stopped due to SCM container restart"
+}
+
+is_deployment_in_progress_response()
+{
+  grep -Eiq "DeploymentInProgress|deployment (is )?currently in progress|Kudu Status[[:space:]]*:[[:space:]]*409"
 }
 
 retry_delay_for_attempt()
@@ -91,7 +91,6 @@ for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++))
 done
 
 publish_succeeded=false
-publish_timeout_count=0
 for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt++)); do
   set +e
   publish_output=$(timeout --signal=TERM --kill-after=15 "${publish_command_timeout_seconds}s" az webapp deploy \
@@ -112,17 +111,19 @@ for ((publish_attempt = 1; publish_attempt <= publish_attempts; publish_attempt+
   fi
 
   if [[ "$publish_exit_code" -eq 124 || "$publish_exit_code" -eq 137 ]]; then
-    publish_timeout_count=$((publish_timeout_count + 1))
-    if [[ "$publish_timeout_count" -ge "$publish_timeout_attempts" ]]; then
-      echo "Azure publishing timed out ${publish_timeout_count} times for $app_name; stopping before the deployment window is exhausted." >&2
-      exit "$publish_exit_code"
-    fi
+    # The Azure CLI can time out after Kudu has accepted the asynchronous ZIP
+    # deployment. Restarting or resubmitting here races the accepted deployment
+    # and produces DeploymentInProgress (409). Observe Kudu instead; the status
+    # loop below will fail safely if no new deployment ever appears.
+    echo "Azure publishing exceeded ${publish_command_timeout_seconds}s for $app_name; the request may still be running, so deployment status will be observed without restarting or resubmitting."
+    publish_succeeded=true
+    break
+  fi
 
-    retry_delay="$(retry_delay_for_attempt "$publish_attempt")"
-    echo "Azure publishing exceeded ${publish_command_timeout_seconds}s for $app_name; restarting the App Service and retrying in ${retry_delay}s (timeout $publish_timeout_count/$publish_timeout_attempts)."
-    az webapp restart --resource-group "$resource_group" --name "$app_name" --output none
-    sleep "$retry_delay"
-    continue
+  if is_deployment_in_progress_response <<< "$publish_output"; then
+    echo "Azure reports a deployment already in progress for $app_name; waiting for its Kudu status instead of resubmitting."
+    publish_succeeded=true
+    break
   fi
 
   if ! is_transient_azure_deployment_response <<< "$publish_output"; then
