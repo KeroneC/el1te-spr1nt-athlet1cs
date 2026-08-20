@@ -70,6 +70,20 @@ printf '%s\n' \
   'set -euo pipefail' \
   'state_dir="${MOCK_AZ_STATE_DIR:?}"' \
   'shift 3' \
+  'if [[ "$*" == "az webapp log deployment list "* ]]; then' \
+  '  if [[ -f "$state_dir/published" ]]; then' \
+  '    count_file="$state_dir/post-status-timeout-count"' \
+  '    failure_limit="$MOCK_POST_STATUS_TIMEOUT_FAILURES"' \
+  '  else' \
+  '    count_file="$state_dir/initial-status-timeout-count"' \
+  '    failure_limit="$MOCK_INITIAL_STATUS_TIMEOUT_FAILURES"' \
+  '  fi' \
+  '  count=0' \
+  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
+  '  count=$((count + 1))' \
+  '  printf "%s" "$count" > "$count_file"' \
+  '  if (( count <= failure_limit )); then exit 124; fi' \
+  'fi' \
   'if [[ "$*" == "az webapp deploy "* ]]; then' \
   '  count_file="$state_dir/timeout-count"' \
   '  count=0' \
@@ -98,6 +112,8 @@ run_deployment()
   local timeout_failures="${9:-0}"
   local timeout_starts_deployment="${10:-true}"
   local deploy_error_starts_deployment="${11:-false}"
+  local initial_status_timeout_failures="${12:-0}"
+  local post_status_timeout_failures="${13:-0}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
@@ -112,9 +128,13 @@ run_deployment()
     MOCK_TIMEOUT_FAILURES="$timeout_failures" \
     MOCK_TIMEOUT_STARTS_DEPLOYMENT="$timeout_starts_deployment" \
     MOCK_AZ_DEPLOY_ERROR_STARTS_DEPLOYMENT="$deploy_error_starts_deployment" \
+    MOCK_INITIAL_STATUS_TIMEOUT_FAILURES="$initial_status_timeout_failures" \
+    MOCK_POST_STATUS_TIMEOUT_FAILURES="$post_status_timeout_failures" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
     DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS=0 \
     DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS=1 \
+    DEPLOYMENT_STATUS_COMMAND_TIMEOUT_SECONDS=1 \
+    DEPLOYMENT_STATUS_RETRY_SECONDS=0 \
     bash "$script_dir/deploy-webapp-artifact.sh" test-resource-group test-app test-artifact.zip
 }
 
@@ -133,6 +153,16 @@ post_status_retry_output=$(run_deployment "$post_status_retry_state" 0 502 0 502
 [[ "$(<"$post_status_retry_state/list-count")" == "5" ]]
 [[ "$(<"$post_status_retry_state/post-list-count")" == "4" ]]
 grep -q "status remained transient" <<< "$post_status_retry_output"
+
+initial_status_timeout_state="$test_root/initial-status-timeout"
+initial_status_timeout_output=$(run_deployment "$initial_status_timeout_state" 0 502 0 502 "" 0 503 0 true false 2 0)
+[[ "$(<"$initial_status_timeout_state/initial-status-timeout-count")" == "3" ]]
+grep -q "status lookup timed out" <<< "$initial_status_timeout_output"
+
+post_status_timeout_state="$test_root/post-status-timeout"
+post_status_timeout_output=$(run_deployment "$post_status_timeout_state" 0 502 0 502 "" 0 503 0 true false 0 2)
+[[ "$(<"$post_status_timeout_state/post-status-timeout-count")" == "3" ]]
+grep -q "status polling timed out" <<< "$post_status_timeout_output"
 
 retry_state="$test_root/retry"
 run_deployment "$retry_state" 2 502
