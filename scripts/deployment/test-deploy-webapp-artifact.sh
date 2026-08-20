@@ -53,13 +53,6 @@ printf '%s\n' \
   '  touch "$state_dir/published"' \
   '  exit 0' \
   'fi' \
-  'if [[ "$command_line" == "webapp restart "* ]]; then' \
-  '  count_file="$state_dir/restart-count"' \
-  '  count=0' \
-  '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
-  '  printf "%s" "$((count + 1))" > "$count_file"' \
-  '  exit 0' \
-  'fi' \
   'echo "Unexpected mock Azure CLI call: $command_line" >&2' \
   'exit 99' \
   > "$fake_bin/az"
@@ -177,7 +170,7 @@ timeout_retry_state="$test_root/timeout-retry"
 timeout_retry_output=$(run_deployment "$timeout_retry_state" 0 502 0 502 "" 0 503 1)
 [[ "$(<"$timeout_retry_state/timeout-count")" == "1" ]]
 [[ ! -f "$timeout_retry_state/deploy-count" ]]
-[[ "$(<"$timeout_retry_state/restart-count")" == "1" ]]
+[[ ! -f "$timeout_retry_state/restart-count" ]]
 grep -q "without restarting or resubmitting" <<< "$timeout_retry_output"
 
 timeout_without_deployment_state="$test_root/timeout-without-deployment"
@@ -193,7 +186,7 @@ grep -q "Timed out waiting for a new active deployment" <<< "$timeout_without_de
 deployment_in_progress_state="$test_root/deployment-in-progress"
 deployment_in_progress_output=$(run_deployment "$deployment_in_progress_state" 1 409 0 502 "ERROR: DeploymentInProgress: There is a deployment currently in progress." 0 503 0 true true)
 [[ "$(<"$deployment_in_progress_state/deploy-count")" == "1" ]]
-[[ "$(<"$deployment_in_progress_state/restart-count")" == "1" ]]
+[[ ! -f "$deployment_in_progress_state/restart-count" ]]
 grep -q "waiting for its Kudu status instead of resubmitting" <<< "$deployment_in_progress_output"
 
 non_retry_state="$test_root/non-retry"

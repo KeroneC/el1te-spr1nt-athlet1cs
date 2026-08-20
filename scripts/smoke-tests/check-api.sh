@@ -27,6 +27,7 @@ request() {
 }
 
 request "/health" '"status":"healthy"'
-request "/health/ready" '"status":"healthy"'
+SMOKE_TEST_ATTEMPTS="${SMOKE_TEST_READINESS_ATTEMPTS:-${SMOKE_TEST_ATTEMPTS:-40}}" \
+  request "/health/ready" '"status":"healthy"'
 request "/api/public/site-settings"
 request "/api/public/announcements?page=1&pageSize=1"
