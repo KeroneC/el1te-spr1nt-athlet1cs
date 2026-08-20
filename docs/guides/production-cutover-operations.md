@@ -6,7 +6,7 @@ This runbook covers the isolated production environment and the reversible launc
 
 The GitHub `production` Environment owns production-only Azure OIDC values, database migration access, bootstrap credentials, Square Production identifiers, and Key Vault secret URIs. Do not copy demo tokens, webhook keys, users, orders, or connection strings into it. The **Deploy Azure Production** workflow accepts only a successful immutable artifact from a `main` push and requires Environment approval. The empty production resource group and its scoped OIDC identity must be created once before the first run; the workflow then provisions the isolated resources and a separate `$125` monthly budget with 50%, 75%, 90%, and 100% notifications.
 
-Configure these Environment **variables** before the first infrastructure run: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_LOCATION`, `RESOURCE_NAME_PREFIX`, `SQL_ADMIN_LOGIN`, `BUDGET_CONTACT_EMAIL`, `BOOTSTRAP_ADMIN_FIRST_NAME`, and `BOOTSTRAP_ADMIN_LAST_NAME`. Add `SQUARE_LOCATION_ID`, `SQUARE_WEBHOOK_NOTIFICATION_URL`, `SQUARE_CHECKOUT_RETURN_URL`, `SQUARE_ACCESS_TOKEN_SECRET_URI`, and `SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI` only from the independent Square Production setup; the last two values point to production Key Vault and never contain credentials.
+Configure these Environment **variables** before the first infrastructure run: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID`, `AZURE_RESOURCE_GROUP`, `AZURE_LOCATION`, `RESOURCE_NAME_PREFIX`, `SQL_ADMIN_LOGIN`, `BUDGET_CONTACT_EMAIL`, `BOOTSTRAP_ADMIN_FIRST_NAME`, and `BOOTSTRAP_ADMIN_LAST_NAME`. Add `SQUARE_LOCATION_ID`, `SQUARE_WEBHOOK_NOTIFICATION_URL`, `SQUARE_CHECKOUT_RETURN_URL`, `SQUARE_PRELAUNCH_CHECKOUT_RETURN_URL`, `SQUARE_ACCESS_TOKEN_SECRET_URI`, and `SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI` only from the independent Square Production setup; the last two values point to production Key Vault and never contain credentials. The prelaunch return URL must use the production Azure web hostname. The final return URL is `https://www.el1tespr1ntathlet1cs.org/shop/order-confirmation`.
 
 Configure these Environment **secrets**: `SQL_ADMIN_PASSWORD`, `DATABASE_MIGRATION_CONNECTION_STRING`, `BOOTSTRAP_ADMIN_EMAIL`, and `BOOTSTRAP_ADMIN_PASSWORD`. After bootstrap, rotate/remove the bootstrap password according to the launch record. The promotion workflow additionally needs the non-password Azure AD connection/Blob values named `PROMOTION_SOURCE_CONNECTION`, `PROMOTION_DESTINATION_CONNECTION`, `PROMOTION_SOURCE_BLOB_SERVICE_URI`, `PROMOTION_DESTINATION_BLOB_SERVICE_URI`, `PROMOTION_SOURCE_RESOURCE_GROUP`, `PROMOTION_SOURCE_SQL_SERVER`, `PROMOTION_DESTINATION_SQL_SERVER`, and `PRODUCTION_BOOTSTRAP_USER_ID`.
 
@@ -16,9 +16,10 @@ Deploy in stages:
 2. Create the production API managed-identity SQL user and rerun with `managed_identity_sql_ready=true`.
 3. Bootstrap one fresh production SuperAdmin. Do not promote demo users.
 4. Verify `updates.el1tespr1ntathlet1cs.org` ownership, SPF, and both DKIM records in Azure before selecting `use_verified_email_domain`.
-5. Create DNS validation records for `www`, apex, and `api`; then select `use_custom_domains` to add App Service hostnames and managed TLS.
-6. Promote reviewed public data, enter physical inventory, and complete private smoke testing. Leave CSP report-only and indexing disabled until demo violations are cleared.
-7. Enable enforced CSP, cookie-free browser analytics, checkout, and indexing only at the supervised final cutover. The workflow rejects checkout unless the internal catalog, verified email domain, custom domains, monitoring, and final acknowledgement are all enabled.
+5. Create the `api` CNAME and `asuid.api` TXT validation record while `www` and the apex remain on Squarespace. Select `configure_api_domain` to bind only the API hostname and managed TLS.
+6. Promote reviewed public data, enter physical inventory, and complete private smoke testing. Leave indexing disabled.
+7. For the single supervised Square Production test, select `prelaunch_checkout_test`, `configure_api_domain`, verified email, enforced CSP, browser analytics, internal store preview, and checkout. The workflow requires the Azure web return URL, rejects indexing and public web-domain changes, and does not accept the final launch acknowledgement in this mode. Disable checkout again after the refund test.
+8. At cutover, move `www` and the apex to Azure and select `configure_public_web_domains`. Public checkout and indexing require both API and web domains, monitoring, verified email, enforced CSP, and the final launch acknowledgement.
 
 ## DNS and archive sequence
 
@@ -27,7 +28,7 @@ Deploy in stages:
 - `api.el1tespr1ntathlet1cs.org` binds only to the API app; Square Production uses its exact `/api/webhooks/square` URL.
 - Move the current Squarespace site to `archive.el1tespr1ntathlet1cs.org` before changing `www`. Retain it for 30 days, then remove it after launch acceptance.
 
-App Service must show every hostname as validated before managed certificates are requested. Do not enable canonical URLs early: the Azure hostnames are intentionally retained for private pre-DNS verification.
+App Service must show each hostname as validated before its managed certificate is requested. The API domain is staged independently so Square webhooks can be tested without moving the public website. The Azure web hostname remains the private-test origin until the supervised `www`/apex cutover.
 
 ## Data promotion
 

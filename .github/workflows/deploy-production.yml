@@ -22,8 +22,13 @@ on:
         required: true
         type: boolean
         default: false
-      use_custom_domains:
-        description: DNS validation is complete; configure canonical web/API URLs and managed TLS
+      configure_api_domain:
+        description: API DNS validation is complete; configure api.el1tespr1ntathlet1cs.org and managed TLS
+        required: true
+        type: boolean
+        default: false
+      configure_public_web_domains:
+        description: Final web DNS validation is complete; configure www/apex and managed TLS
         required: true
         type: boolean
         default: false
@@ -49,6 +54,11 @@ on:
         default: false
       enable_checkout:
         description: Enable Square Production checkout
+        required: true
+        type: boolean
+        default: false
+      prelaunch_checkout_test:
+        description: Allow a supervised noindex checkout test using the Azure web hostname
         required: true
         type: boolean
         default: false
@@ -102,38 +112,35 @@ jobs:
       SQUARE_LOCATION_ID: ${{ vars.SQUARE_LOCATION_ID }}
       SQUARE_WEBHOOK_NOTIFICATION_URL: ${{ vars.SQUARE_WEBHOOK_NOTIFICATION_URL }}
       SQUARE_CHECKOUT_RETURN_URL: ${{ vars.SQUARE_CHECKOUT_RETURN_URL }}
+      SQUARE_PRELAUNCH_CHECKOUT_RETURN_URL: ${{ vars.SQUARE_PRELAUNCH_CHECKOUT_RETURN_URL }}
       SQUARE_ACCESS_TOKEN_SECRET_URI: ${{ vars.SQUARE_ACCESS_TOKEN_SECRET_URI }}
       SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI: ${{ vars.SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI }}
+      EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL: ${{ inputs.prelaunch_checkout_test && vars.SQUARE_PRELAUNCH_CHECKOUT_RETURN_URL || vars.SQUARE_CHECKOUT_RETURN_URL }}
+      INFRASTRUCTURE_ONLY: ${{ inputs.infrastructure_only }}
+      MANAGED_IDENTITY_SQL_READY: ${{ inputs.managed_identity_sql_ready }}
+      BOOTSTRAP_ADMIN: ${{ inputs.bootstrap_admin }}
+      CONFIGURE_API_DOMAIN: ${{ inputs.configure_api_domain }}
+      CONFIGURE_PUBLIC_WEB_DOMAINS: ${{ inputs.configure_public_web_domains }}
+      USE_VERIFIED_EMAIL_DOMAIN: ${{ inputs.use_verified_email_domain }}
+      ENFORCE_CSP: ${{ inputs.enforce_csp }}
+      ENABLE_BROWSER_ANALYTICS: ${{ inputs.enable_browser_analytics }}
+      ENABLE_STORE_PREVIEW: ${{ inputs.enable_store_preview }}
+      ENABLE_CHECKOUT: ${{ inputs.enable_checkout }}
+      PRELAUNCH_CHECKOUT_TEST: ${{ inputs.prelaunch_checkout_test }}
+      ENABLE_INDEXING: ${{ inputs.enable_indexing }}
+      RUN_SQL_RESTORE_TEST: ${{ inputs.run_sql_restore_test }}
+      FINAL_LAUNCH_ACKNOWLEDGED: ${{ inputs.final_launch_acknowledged }}
 
     steps:
+      - name: Checkout current production deployment controls
+        uses: actions/checkout@v7
+        with:
+          ref: main
+          path: .deployment-control
+
       - name: Validate gated production request
         shell: bash
-        run: |
-          required=(AZURE_CLIENT_ID AZURE_TENANT_ID AZURE_SUBSCRIPTION_ID AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID AZURE_RESOURCE_GROUP AZURE_LOCATION RESOURCE_NAME_PREFIX SQL_ADMIN_LOGIN SQL_ADMIN_PASSWORD BUDGET_CONTACT_EMAIL)
-          for name in "${required[@]}"; do [[ -n "${!name}" ]] || { echo "Missing production configuration: $name"; exit 1; }; done
-          [[ "${{ inputs.infrastructure_only }}" == "true" || "${{ inputs.managed_identity_sql_ready }}" == "true" ]] || { echo "Full deployment requires production SQL managed-identity readiness."; exit 1; }
-          if [[ "${{ inputs.infrastructure_only }}" != "true" ]]; then
-            [[ -n "$DATABASE_MIGRATION_CONNECTION_STRING" ]] || { echo "Missing production migration connection string."; exit 1; }
-          fi
-          if [[ "${{ inputs.bootstrap_admin }}" == "true" ]]; then
-            required_admin=(BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD BOOTSTRAP_ADMIN_FIRST_NAME BOOTSTRAP_ADMIN_LAST_NAME)
-            for name in "${required_admin[@]}"; do [[ -n "${!name}" ]] || { echo "Missing production admin bootstrap configuration: $name"; exit 1; }; done
-          fi
-          if [[ "${{ inputs.enable_checkout }}" == "true" || "${{ inputs.enable_indexing }}" == "true" ]]; then
-            [[ "${{ inputs.final_launch_acknowledged }}" == "true" ]] || { echo "Checkout or indexing requires the final launch acknowledgement."; exit 1; }
-            [[ "${{ inputs.use_custom_domains }}" == "true" ]] || { echo "Checkout or indexing requires canonical domains and TLS."; exit 1; }
-          fi
-          if [[ "${{ inputs.enable_checkout }}" == "true" ]]; then
-            [[ "${{ inputs.infrastructure_only }}" != "true" ]] || { echo "Checkout cannot be enabled by an infrastructure-only run."; exit 1; }
-            [[ "${{ inputs.enable_store_preview }}" == "true" ]] || { echo "Checkout requires the internal store navigation and catalog."; exit 1; }
-            [[ "${{ inputs.use_verified_email_domain }}" == "true" ]] || { echo "Checkout requires the verified production email domain."; exit 1; }
-            [[ "${{ inputs.enforce_csp }}" == "true" ]] || { echo "Checkout requires enforced CSP."; exit 1; }
-            [[ "${{ inputs.enable_browser_analytics }}" == "true" ]] || { echo "Checkout requires production monitoring to be enabled."; exit 1; }
-            required_square=(SQUARE_LOCATION_ID SQUARE_WEBHOOK_NOTIFICATION_URL SQUARE_CHECKOUT_RETURN_URL SQUARE_ACCESS_TOKEN_SECRET_URI SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI)
-            for name in "${required_square[@]}"; do [[ -n "${!name}" ]] || { echo "Missing Square Production configuration: $name"; exit 1; }; done
-            [[ "$SQUARE_WEBHOOK_NOTIFICATION_URL" == "https://api.el1tespr1ntathlet1cs.org/api/webhooks/square" ]] || { echo "Unexpected production Square webhook URL."; exit 1; }
-            [[ "$SQUARE_CHECKOUT_RETURN_URL" == "https://www.el1tespr1ntathlet1cs.org/shop/order-confirmation" ]] || { echo "Unexpected production Square return URL."; exit 1; }
-          fi
+        run: bash .deployment-control/scripts/deployment/validate-production-request.sh
 
       - name: Verify selected immutable main release
         id: release
@@ -192,12 +199,12 @@ jobs:
             --parameters environmentName=production location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
               monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" \
-              webPublicUrl="${{ inputs.use_custom_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.use_custom_domains && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
-              frontendAllowedOrigin="${{ inputs.use_custom_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
+              webPublicUrl="${{ inputs.configure_public_web_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.configure_api_domain && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
+              frontendAllowedOrigin="${{ inputs.configure_public_web_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
               transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
               storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
               storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
-              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL" \
               squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI"
 
       - name: Apply production infrastructure
@@ -208,12 +215,12 @@ jobs:
             --parameters environmentName=production location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
               monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" \
-              webPublicUrl="${{ inputs.use_custom_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.use_custom_domains && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
-              frontendAllowedOrigin="${{ inputs.use_custom_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
+              webPublicUrl="${{ inputs.configure_public_web_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.configure_api_domain && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
+              frontendAllowedOrigin="${{ inputs.configure_public_web_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" publicIndexingEnabled="${{ inputs.enable_indexing }}" \
               transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
               storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
               storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
-              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
+              squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL" \
               squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" \
               tags="{\"project\":\"el1te-platform\",\"environment\":\"production\",\"funding\":\"nonprofit-grant\"}" \
             --query properties.outputs --output json)
@@ -252,19 +259,33 @@ jobs:
           echo "Database: ${{ steps.infrastructure.outputs.sqldatabasename }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Create this identity as a least-privilege contained SQL user before a full deployment." >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Configure canonical domains and managed TLS
-        if: ${{ inputs.use_custom_domains }}
+      - name: Configure staged domains and managed TLS
+        if: ${{ inputs.configure_api_domain || inputs.configure_public_web_domains }}
         shell: bash
         run: |
           bind() {
             local app="$1" host="$2"
-            az webapp config hostname add --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --hostname "$host"
-            thumb=$(az webapp config ssl create --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --hostname "$host" --query thumbprint -o tsv)
-            az webapp config ssl bind --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --certificate-thumbprint "$thumb" --ssl-type SNI
+            local bound thumb ssl_state
+            bound="$(az webapp config hostname list --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --query "[?name=='$host'].name | [0]" -o tsv)"
+            if [[ "$bound" != "$host" ]]; then
+              az webapp config hostname add --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --hostname "$host"
+            fi
+            thumb="$(az webapp config ssl list --resource-group "$AZURE_RESOURCE_GROUP" --query "[?contains(hostNames, '$host')].thumbprint | [0]" -o tsv)"
+            if [[ -z "$thumb" ]]; then
+              thumb="$(az webapp config ssl create --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --hostname "$host" --query thumbprint -o tsv)"
+            fi
+            ssl_state="$(az webapp config hostname list --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --query "[?name=='$host'].sslState | [0]" -o tsv)"
+            if [[ "$ssl_state" != "SniEnabled" ]]; then
+              az webapp config ssl bind --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --certificate-thumbprint "$thumb" --ssl-type SNI
+            fi
           }
-          bind "${{ steps.infrastructure.outputs.webappname }}" www.el1tespr1ntathlet1cs.org
-          bind "${{ steps.infrastructure.outputs.webappname }}" el1tespr1ntathlet1cs.org
-          bind "${{ steps.infrastructure.outputs.apiappname }}" api.el1tespr1ntathlet1cs.org
+          if [[ "${{ inputs.configure_api_domain }}" == "true" ]]; then
+            bind "${{ steps.infrastructure.outputs.apiappname }}" api.el1tespr1ntathlet1cs.org
+          fi
+          if [[ "${{ inputs.configure_public_web_domains }}" == "true" ]]; then
+            bind "${{ steps.infrastructure.outputs.webappname }}" www.el1tespr1ntathlet1cs.org
+            bind "${{ steps.infrastructure.outputs.webappname }}" el1tespr1ntathlet1cs.org
+          fi
 
       - name: Allow the migration runner temporary SQL access
         if: ${{ ! inputs.infrastructure_only }}
@@ -323,7 +344,9 @@ jobs:
           echo "Indexing enabled: ${{ inputs.enable_indexing }}" >> "$GITHUB_STEP_SUMMARY"
           echo "CSP enforced: ${{ inputs.enforce_csp }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Browser analytics enabled: ${{ inputs.enable_browser_analytics }}" >> "$GITHUB_STEP_SUMMARY"
-          echo "Custom domains configured: ${{ inputs.use_custom_domains }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "API custom domain configured: ${{ inputs.configure_api_domain }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Public web domains configured: ${{ inputs.configure_public_web_domains }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Prelaunch checkout test: ${{ inputs.prelaunch_checkout_test }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Custom email domain linked: ${{ inputs.use_verified_email_domain }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Custom email domain resource: ${{ steps.infrastructure.outputs.customemaildomainresourceid }}" >> "$GITHUB_STEP_SUMMARY"
 
