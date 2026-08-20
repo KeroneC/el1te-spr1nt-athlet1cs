@@ -46,6 +46,7 @@ printf '%s\n' \
   '  count=$((count + 1))' \
   '  printf "%s" "$count" > "$count_file"' \
   '  if (( count <= MOCK_AZ_DEPLOY_FAILURES )); then' \
+  '    if [[ "$MOCK_AZ_DEPLOY_ERROR_STARTS_DEPLOYMENT" == "true" ]]; then touch "$state_dir/published"; fi' \
   '    if [[ -n "$MOCK_AZ_DEPLOY_ERROR" ]]; then echo "$MOCK_AZ_DEPLOY_ERROR" >&2; else echo "ERROR: Publishing failed with status code '\''${MOCK_AZ_STATUS}'\''." >&2; fi' \
   '    exit 1' \
   '  fi' \
@@ -75,7 +76,10 @@ printf '%s\n' \
   '  [[ -f "$count_file" ]] && count=$(<"$count_file")' \
   '  count=$((count + 1))' \
   '  printf "%s" "$count" > "$count_file"' \
-  '  if (( count <= MOCK_TIMEOUT_FAILURES )); then exit 124; fi' \
+  '  if (( count <= MOCK_TIMEOUT_FAILURES )); then' \
+  '    if [[ "$MOCK_TIMEOUT_STARTS_DEPLOYMENT" == "true" ]]; then touch "$state_dir/published"; fi' \
+  '    exit 124' \
+  '  fi' \
   'fi' \
   'exec "$@"' \
   > "$fake_bin/timeout"
@@ -92,6 +96,8 @@ run_deployment()
   local post_list_failures="${7:-0}"
   local post_list_status="${8:-503}"
   local timeout_failures="${9:-0}"
+  local timeout_starts_deployment="${10:-true}"
+  local deploy_error_starts_deployment="${11:-false}"
 
   mkdir -p "$state_dir"
   PATH="$fake_bin:$PATH" \
@@ -104,6 +110,8 @@ run_deployment()
     MOCK_AZ_POST_LIST_FAILURES="$post_list_failures" \
     MOCK_AZ_POST_LIST_STATUS="$post_list_status" \
     MOCK_TIMEOUT_FAILURES="$timeout_failures" \
+    MOCK_TIMEOUT_STARTS_DEPLOYMENT="$timeout_starts_deployment" \
+    MOCK_AZ_DEPLOY_ERROR_STARTS_DEPLOYMENT="$deploy_error_starts_deployment" \
     DEPLOYMENT_PUBLISH_RETRY_BASE_SECONDS=0 \
     DEPLOYMENT_PUBLISH_RETRY_MAX_SECONDS=0 \
     DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS=1 \
@@ -137,20 +145,26 @@ grep -q "Azure publishing returned a transient response" <<< "$scm_restart_outpu
 
 timeout_retry_state="$test_root/timeout-retry"
 timeout_retry_output=$(run_deployment "$timeout_retry_state" 0 502 0 502 "" 0 503 1)
-[[ "$(<"$timeout_retry_state/timeout-count")" == "2" ]]
-[[ "$(<"$timeout_retry_state/deploy-count")" == "1" ]]
-[[ "$(<"$timeout_retry_state/restart-count")" == "2" ]]
-grep -q "publishing exceeded 1s" <<< "$timeout_retry_output"
+[[ "$(<"$timeout_retry_state/timeout-count")" == "1" ]]
+[[ ! -f "$timeout_retry_state/deploy-count" ]]
+[[ "$(<"$timeout_retry_state/restart-count")" == "1" ]]
+grep -q "without restarting or resubmitting" <<< "$timeout_retry_output"
 
-timeout_exhausted_state="$test_root/timeout-exhausted"
+timeout_without_deployment_state="$test_root/timeout-without-deployment"
 set +e
-timeout_exhausted_output=$(DEPLOYMENT_PUBLISH_TIMEOUT_ATTEMPTS=2 run_deployment "$timeout_exhausted_state" 0 502 0 502 "" 0 503 2 2>&1)
-timeout_exhausted_exit=$?
+timeout_without_deployment_output=$(DEPLOYMENT_STATUS_ATTEMPTS=1 run_deployment "$timeout_without_deployment_state" 0 502 0 502 "" 0 503 1 false 2>&1)
+timeout_without_deployment_exit=$?
 set -e
-[[ "$timeout_exhausted_exit" -ne 0 ]]
-[[ "$(<"$timeout_exhausted_state/timeout-count")" == "2" ]]
-[[ "$(<"$timeout_exhausted_state/restart-count")" == "1" ]]
-grep -q "timed out 2 times" <<< "$timeout_exhausted_output"
+[[ "$timeout_without_deployment_exit" -ne 0 ]]
+[[ "$(<"$timeout_without_deployment_state/timeout-count")" == "1" ]]
+[[ ! -f "$timeout_without_deployment_state/restart-count" ]]
+grep -q "Timed out waiting for a new active deployment" <<< "$timeout_without_deployment_output"
+
+deployment_in_progress_state="$test_root/deployment-in-progress"
+deployment_in_progress_output=$(run_deployment "$deployment_in_progress_state" 1 409 0 502 "ERROR: DeploymentInProgress: There is a deployment currently in progress." 0 503 0 true true)
+[[ "$(<"$deployment_in_progress_state/deploy-count")" == "1" ]]
+[[ "$(<"$deployment_in_progress_state/restart-count")" == "1" ]]
+grep -q "waiting for its Kudu status instead of resubmitting" <<< "$deployment_in_progress_output"
 
 non_retry_state="$test_root/non-retry"
 set +e
