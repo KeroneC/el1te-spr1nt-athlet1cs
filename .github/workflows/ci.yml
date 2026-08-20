@@ -246,6 +246,10 @@ jobs:
         shell: bash
         run: bash scripts/deployment/test-validate-production-request.sh
 
+      - name: Test production publishing scale guard
+        shell: bash
+        run: bash scripts/deployment/test-production-publish-scaling.sh
+
       - name: Compile Azure infrastructure
         shell: bash
         run: az bicep build --file infra/main.bicep --stdout >/dev/null
