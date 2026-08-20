@@ -32,6 +32,16 @@ if [[ ! "$publish_command_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
   echo "DEPLOYMENT_PUBLISH_COMMAND_TIMEOUT_SECONDS must be a positive integer."
   exit 2
 fi
+status_command_timeout_seconds="${DEPLOYMENT_STATUS_COMMAND_TIMEOUT_SECONDS:-20}"
+if [[ ! "$status_command_timeout_seconds" =~ ^[1-9][0-9]*$ ]]; then
+  echo "DEPLOYMENT_STATUS_COMMAND_TIMEOUT_SECONDS must be a positive integer."
+  exit 2
+fi
+status_retry_seconds="${DEPLOYMENT_STATUS_RETRY_SECONDS:-5}"
+if [[ ! "$status_retry_seconds" =~ ^[0-9]+$ ]]; then
+  echo "DEPLOYMENT_STATUS_RETRY_SECONDS must be a non-negative integer."
+  exit 2
+fi
 if ! command -v timeout >/dev/null 2>&1; then
   echo "The coreutils timeout command is required for bounded Azure publishing."
   exit 2
@@ -60,7 +70,7 @@ retry_delay_for_attempt()
 previous_id=""
 for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++)); do
   set +e
-  previous_id_output=$(az webapp log deployment list \
+  previous_id_output=$(timeout --signal=TERM --kill-after=5 "${status_command_timeout_seconds}s" az webapp log deployment list \
     --resource-group "$resource_group" \
     --name "$app_name" \
     --query '[?active].id | [0]' \
@@ -73,7 +83,9 @@ for ((status_attempt = 1; status_attempt <= publish_attempts; status_attempt++))
     break
   fi
 
-  if ! is_transient_azure_deployment_response <<< "$previous_id_output"; then
+  if [[ "$previous_id_exit_code" -eq 124 || "$previous_id_exit_code" -eq 137 ]]; then
+    echo "Azure deployment status lookup timed out after ${status_command_timeout_seconds}s for $app_name; retrying ($status_attempt/$publish_attempts)."
+  elif ! is_transient_azure_deployment_response <<< "$previous_id_output"; then
     printf '%s\n' "$previous_id_output" >&2
     echo "Deployment status lookup failed with a non-retriable error for $app_name."
     exit "$previous_id_exit_code"
@@ -152,7 +164,7 @@ deployment_id=""
 attempts="${DEPLOYMENT_STATUS_ATTEMPTS:-90}"
 for ((attempt = 1; attempt <= attempts; attempt++)); do
   set +e
-  deployment=$(az webapp log deployment list \
+  deployment=$(timeout --signal=TERM --kill-after=5 "${status_command_timeout_seconds}s" az webapp log deployment list \
     --resource-group "$resource_group" \
     --name "$app_name" \
     --query '[?active] | [0].{id:id,status:status}' \
@@ -161,9 +173,14 @@ for ((attempt = 1; attempt <= attempts; attempt++)); do
   set -e
 
   if [[ "$deployment_exit_code" -ne 0 ]]; then
+    if [[ "$deployment_exit_code" -eq 124 || "$deployment_exit_code" -eq 137 ]]; then
+      echo "Azure deployment status polling timed out after ${status_command_timeout_seconds}s for $app_name; retrying status check ($attempt/$attempts)."
+      sleep "$status_retry_seconds"
+      continue
+    fi
     if is_transient_azure_deployment_response <<< "$deployment"; then
       echo "Azure deployment status remained transient for $app_name; retrying status check ($attempt/$attempts)."
-      sleep 5
+      sleep "$status_retry_seconds"
       continue
     fi
     printf '%s\n' "$deployment" >&2
@@ -182,7 +199,7 @@ for ((attempt = 1; attempt <= attempts; attempt++)); do
   fi
 
   deployment_id=""
-  sleep 5
+  sleep "$status_retry_seconds"
 done
 
 if [[ -z "$deployment_id" ]]; then
