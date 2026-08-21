@@ -265,19 +265,7 @@ jobs:
         run: |
           bind() {
             local app="$1" host="$2"
-            local bound thumb ssl_state
-            bound="$(az webapp config hostname list --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --query "[?name=='$host'].name | [0]" -o tsv)"
-            if [[ "$bound" != "$host" ]]; then
-              az webapp config hostname add --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --hostname "$host"
-            fi
-            thumb="$(az webapp config ssl list --resource-group "$AZURE_RESOURCE_GROUP" --query "[?contains(hostNames, '$host')].thumbprint | [0]" -o tsv)"
-            if [[ -z "$thumb" ]]; then
-              thumb="$(az webapp config ssl create --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --hostname "$host" --query thumbprint -o tsv)"
-            fi
-            ssl_state="$(az webapp config hostname list --resource-group "$AZURE_RESOURCE_GROUP" --webapp-name "$app" --query "[?name=='$host'].sslState | [0]" -o tsv)"
-            if [[ "$ssl_state" != "SniEnabled" ]]; then
-              az webapp config ssl bind --resource-group "$AZURE_RESOURCE_GROUP" --name "$app" --certificate-thumbprint "$thumb" --ssl-type SNI
-            fi
+            bash scripts/deployment/bind-app-service-managed-certificate.sh "$AZURE_RESOURCE_GROUP" "$app" "$host"
           }
           if [[ "${{ inputs.configure_api_domain }}" == "true" ]]; then
             bind "${{ steps.infrastructure.outputs.apiappname }}" api.el1tespr1ntathlet1cs.org
