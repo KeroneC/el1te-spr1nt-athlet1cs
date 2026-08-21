@@ -17,6 +17,7 @@ Deploy in stages:
 3. Bootstrap one fresh production SuperAdmin. Do not promote demo users.
 4. Verify `updates.el1tespr1ntathlet1cs.org` ownership, SPF, and both DKIM records in Azure before selecting `use_verified_email_domain`.
 5. Create the `api` CNAME and `asuid.api` TXT validation record while `www` and the apex remain on Squarespace. Select `configure_api_domain` to bind only the API hostname and managed TLS.
+   Managed-certificate issuance is asynchronous. The deployment polls the named certificate until Azure exposes its thumbprint, then binds SNI TLS; rerunning the same request is safe.
 6. Promote reviewed public data, enter physical inventory, and complete private smoke testing. Leave indexing disabled.
 7. For the single supervised Square Production test, select `prelaunch_checkout_test`, `configure_api_domain`, verified email, enforced CSP, browser analytics, internal store preview, and checkout. The workflow requires the Azure web return URL, rejects indexing and public web-domain changes, and does not accept the final launch acknowledgement in this mode. Disable checkout again after the refund test.
 8. At cutover, move `www` and the apex to Azure and select `configure_public_web_domains`. Public checkout and indexing require both API and web domains, monitoring, verified email, enforced CSP, and the final launch acknowledgement.

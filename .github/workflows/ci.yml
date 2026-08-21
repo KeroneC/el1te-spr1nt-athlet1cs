@@ -246,6 +246,10 @@ jobs:
         shell: bash
         run: bash scripts/deployment/test-validate-production-request.sh
 
+      - name: Test App Service managed-certificate polling
+        shell: bash
+        run: bash scripts/deployment/test-bind-app-service-managed-certificate.sh
+
       - name: Test production publishing scale guard
         shell: bash
         run: bash scripts/deployment/test-production-publish-scaling.sh
