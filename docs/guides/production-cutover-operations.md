@@ -15,7 +15,7 @@ Deploy in stages:
 1. Run `infrastructure_only=true`. Leave custom domains, custom email, preview, checkout, and indexing disabled.
 2. Create the production API managed-identity SQL user and rerun with `managed_identity_sql_ready=true`.
 3. Bootstrap one fresh production SuperAdmin. Do not promote demo users.
-4. Verify `updates.el1tespr1ntathlet1cs.org` ownership, SPF, and both DKIM records in Azure before selecting `use_verified_email_domain`.
+4. Verify `updates.el1tespr1ntathlet1cs.org` ownership, SPF, and both DKIM records in Azure before selecting `use_verified_email_domain`. That deployment creates the `orders` sender identity, links the custom domain to Communication Services, and configures `orders@updates.el1tespr1ntathlet1cs.org`; do not create an untracked sender manually in the portal.
 5. Create the `api` CNAME and `asuid.api` TXT validation record while `www` and the apex remain on Squarespace. Select `configure_api_domain` to bind only the API hostname and managed TLS.
    Managed-certificate issuance is asynchronous. The deployment polls the named certificate until Azure exposes its thumbprint, then binds SNI TLS; rerunning the same request is safe.
 6. Promote reviewed public data, enter physical inventory, and complete private smoke testing. Leave indexing disabled.
