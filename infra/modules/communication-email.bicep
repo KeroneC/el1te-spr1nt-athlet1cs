@@ -9,6 +9,8 @@ param customEmailDomainName string = ''
 param useCustomEmailDomain bool = false
 @description('Local part of the transactional sender when a custom domain is linked.')
 param senderUsername string = 'orders'
+@description('Display name shown on transactional messages from the custom sender.')
+param senderDisplayName string = 'El1te Spr1nt Athlet1cs'
 
 var emailServiceName = take('${baseName}-email', 63)
 var communicationServiceName = take('${baseName}-communication', 63)
@@ -39,6 +41,15 @@ resource customDomain 'Microsoft.Communication/emailServices/domains@2023-03-31'
   properties: {
     domainManagement: 'CustomerManaged'
     userEngagementTracking: 'Disabled'
+  }
+}
+
+resource customSenderUsername 'Microsoft.Communication/emailServices/domains/senderUsernames@2023-04-01-preview' = if (useCustomEmailDomain) {
+  parent: customDomain
+  name: senderUsername
+  properties: {
+    displayName: senderDisplayName
+    username: senderUsername
   }
 }
 
