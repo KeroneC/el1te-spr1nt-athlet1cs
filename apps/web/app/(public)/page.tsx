@@ -7,8 +7,14 @@ import { getAnnouncements, getCoaches, getContentBlocks, getEvents, getGalleryAl
 import { CONTENT_KEYS, contentByKey } from "@/lib/public/content";
 import { BRAND, prioritizeSponsorPreviews } from "@/lib/public/site";
 import { ResponsiveMediaImage } from "@/components/public/responsive-media-image";
+import { HomeAllAmericanShowcase } from "@/components/public/home-all-american-showcase";
+import { isEnabledSetting } from "@/lib/runtime-config";
+
+// The hero review flag is supplied by each deployed environment at request time.
+export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
+  const showcaseEnabled = isEnabledSetting(process.env.HOME_ALL_AMERICAN_SHOWCASE_ENABLED);
   const [blocksResult, newsResult, eventsResult, coachesResult, sponsorsResult, galleryResult] = await Promise.allSettled([
     getContentBlocks(), getAnnouncements("featured=true&page=1&pageSize=3"),
     getEvents("upcomingOnly=true&page=1&pageSize=3"), getCoaches(), getSponsors(), getGalleryAlbums("page=1&pageSize=3")
@@ -23,22 +29,25 @@ export default async function HomePage() {
   const albums = galleryResult.status === "fulfilled" ? galleryResult.value.items : [];
 
   return <>
-    <section className="home-hero">
+    <section className={`home-hero${showcaseEnabled ? " home-hero-showcase" : ""}`}>
       <div className="site-container hero-content">
-        <div className="hero-logo-panel">
-          <img
-            src="/images/brand/el1te-full-black.png"
-            alt={`${BRAND.name}. ${BRAND.slogan}`}
-            width="1000"
-            height="1000"
-            loading="eager"
-            fetchPriority="high"
-          />
+        <div className="hero-brand-column">
+          <div className="hero-logo-panel">
+            <img
+              src="/images/brand/el1te-full-black.png"
+              alt={`${BRAND.name}. ${BRAND.slogan}`}
+              width="1000"
+              height="1000"
+              loading="eager"
+              fetchPriority="high"
+            />
+          </div>
+          <div className="button-row">
+            <Link className="button button-primary" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link>
+            <Link className="button button-ghost" href="/gallery">View Gallery</Link>
+          </div>
         </div>
-        <div className="button-row">
-          <Link className="button button-primary" href="/registration">Registration Info<ArrowRight size={18} aria-hidden="true" /></Link>
-          <Link className="button button-ghost" href="/gallery">View Gallery</Link>
-        </div>
+        {showcaseEnabled && <HomeAllAmericanShowcase />}
       </div>
     </section>
 

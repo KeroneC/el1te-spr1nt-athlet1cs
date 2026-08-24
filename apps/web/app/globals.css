@@ -352,7 +352,11 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .hero-logo-panel::before { background: #7f1d1d; opacity: 0.34; transform: scale(1.16); }
 .hero-logo-panel::after { background: var(--figma-red); opacity: 0.1; transform: scale(1.23); }
 .hero-logo-panel img { position: relative; z-index: 1; display: block; width: 100%; height: auto; }
+.hero-brand-column { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; }
 .hero-content .button-row { margin-top: 1.5rem; animation: heroReveal 360ms ease-out 100ms both; }
+.home-hero-showcase { min-height: clamp(42rem, 80svh, 48rem); }
+.home-hero-showcase .hero-content { display: grid; min-height: clamp(42rem, 80svh, 48rem); grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); align-items: center; gap: clamp(1rem, 3vw, 3.5rem); }
+.home-hero-showcase .hero-logo-panel { width: min(34rem, 100%); }
 .achievement-band { background: #ffffff; padding-block: clamp(3.5rem, 7vw, 5.5rem); }
 .achievement-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(20rem, 0.8fr); align-items: center; gap: clamp(2rem, 6vw, 5rem); }
 .achievement-image { width: 100%; min-width: 0; aspect-ratio: 16 / 10; overflow: hidden; background: var(--figma-muted); }
@@ -611,6 +615,11 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
   .home-hero::before { right: 4%; clip-path: polygon(0 0, 92% 0, 100% 100%, 0 100%); }
   .home-hero::after { right: -10%; width: 48%; }
   .hero-logo-panel { width: min(31rem, 94vw); }
+  .home-hero-showcase, .home-hero-showcase .hero-content { min-height: 0; }
+  .home-hero-showcase .hero-content { display: flex; padding-top: clamp(2.5rem, 9vw, 4rem); padding-bottom: 0; }
+  .home-hero-showcase .hero-brand-column { width: 100%; align-items: center; }
+  .home-hero-showcase .hero-logo-panel { width: min(31rem, 94vw); }
+  .home-hero-showcase .hero-brand-column .button-row { align-items: center; }
   .achievement-image { aspect-ratio: 4 / 5; }
   .page-hero h1 { font-size: clamp(2.75rem, 15vw, 4.2rem); }
   .button-row { align-items: stretch; flex-direction: column; width: 100%; }

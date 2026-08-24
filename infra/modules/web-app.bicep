@@ -7,6 +7,7 @@ param applicationInsightsConnectionString string
 param tags object = {}
 param releaseSha string
 param browserAnalyticsEnabled bool = false
+param homeAllAmericanShowcaseEnabled bool = false
 @allowed(['internal', 'external'])
 param storeNavigationMode string = 'external'
 param deploymentEnvironment string = 'demo'
@@ -86,6 +87,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'BROWSER_ANALYTICS_ENABLED'
           value: string(browserAnalyticsEnabled)
+        }
+        {
+          name: 'HOME_ALL_AMERICAN_SHOWCASE_ENABLED'
+          value: string(homeAllAmericanShowcaseEnabled)
         }
         {
           name: 'CSP_MODE'

@@ -46,3 +46,30 @@ test("about page renders the approved mission and preserves club values", async 
   await expect(page.getByRole("heading", { name: "What We Value" })).toBeVisible();
   await expect(page.getByText("Our Story", { exact: true })).toHaveCount(0);
 });
+
+test("homepage All-American showcase is responsive, controllable, and motion safe", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto("/");
+
+  const showcase = page.getByRole("region", { name: "9 All-Americans" });
+  await expect(showcase).toBeVisible();
+  await expect(showcase.locator("figure")).toHaveCount(3);
+  await expect(showcase.getByRole("img")).toHaveCount(1);
+  await expect(page.getByTestId("all-american-progress")).toHaveText(/01\s*\/\s*08/);
+
+  await showcase.getByRole("button", { name: "Show next photograph" }).click();
+  await expect(page.getByTestId("all-american-progress")).toHaveText(/02\s*\/\s*08/);
+  await expect(showcase.getByRole("button", { name: "Play photograph showcase" })).toBeVisible();
+
+  for (let index = 0; index < 6; index += 1) {
+    await showcase.getByRole("button", { name: "Show next photograph" }).click();
+  }
+  await expect(page.getByTestId("all-american-progress")).toHaveText(/08\s*\/\s*08/);
+  await expect(showcase.getByRole("img", { name: /Matthew, Rocco, Kingston, and Chase/ })).toBeVisible();
+
+  for (const width of [1024, 800, 769, 768, 390, 340]) {
+    await page.setViewportSize({ width, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+  }
+});
