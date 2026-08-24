@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
 import { readAdminMutationBody } from "../lib/admin/mutation-request";
+import { isRetiredAdminRoute } from "../lib/admin/retired-routes";
 import type { CoachWriteRequest, ContentBlockWriteRequest, EventWriteRequest, FaqWriteRequest, HallOfFameInducteeWriteRequest, SiteSettingsWriteRequest, SponsorWriteRequest } from "../lib/admin/types";
 import { buildListQuery, validateCoach, validateContentBlock, validateEvent, validateFaq, validateHallOfFameInductee, validateSiteSettings, validateSponsor } from "../lib/admin/validation";
 
@@ -37,6 +38,12 @@ describe("Phase 7 mutation boundary", () => {
     expect(isAllowedAdminRead(["store", "square-import", "preview"])).toBe(false);
     expect(isAllowedAdminRead(["store", "products", "not-a-guid"])).toBe(false);
     expect(isAllowedAdminRead(["users"])).toBe(false);
+  });
+
+  it("returns a tombstone for the retired Square import page", () => {
+    expect(isRetiredAdminRoute("/admin/store/import")).toBe(true);
+    expect(isRetiredAdminRoute("/admin/store/import/")).toBe(true);
+    expect(isRetiredAdminRoute("/admin/store/products")).toBe(false);
   });
 
   it("preserves JSON mutation bodies", async () => {
