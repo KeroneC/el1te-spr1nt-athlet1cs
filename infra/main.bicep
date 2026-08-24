@@ -51,6 +51,9 @@ param cspMode string = 'report-only'
 @description('Enable cookie-free public browser performance telemetry.')
 param browserAnalyticsEnabled bool = true
 
+@description('Show the homepage All-American photo experience. Keep false in production until the design and athlete details are approved.')
+param homeAllAmericanShowcaseEnabled bool = false
+
 @description('Allow public search-engine indexing. Keep false until the final production gate passes.')
 param publicIndexingEnabled bool = false
 
@@ -268,6 +271,7 @@ module web 'modules/web-app.bicep' = {
     name: webAppName
     releaseSha: releaseSha
     browserAnalyticsEnabled: browserAnalyticsEnabled
+    homeAllAmericanShowcaseEnabled: homeAllAmericanShowcaseEnabled
     cspMode: cspMode
     deploymentEnvironment: environmentName
     publicIndexingEnabled: publicIndexingEnabled

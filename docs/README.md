@@ -88,6 +88,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)
 - [CI troubleshooting and branch protection](guides/ci-troubleshooting.md)
+- [Homepage All-American showcase](guides/home-all-american-showcase.md)
 - [Azure setup and release](guides/future-azure-setup.md)
 - [Observability and support references](guides/observability-support.md)
 - [Launch hardening, performance, and content promotion](guides/launch-hardening-performance.md)
