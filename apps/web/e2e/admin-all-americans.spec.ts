@@ -34,7 +34,7 @@ test("Admin publishes a completed annual story with individual and relay medals"
   await page.getByLabel("Summary").fill("A disposable annual story used to verify the complete archive workflow.");
   await page.getByLabel("Verified athlete total").fill("2");
   await page.getByLabel("Verified medal total").fill("3");
-  await page.getByLabel("Hero image").selectOption({ label: heroTitle });
+  await page.getByLabel("Hero image", { exact: true }).selectOption({ label: heroTitle });
   const create = page.waitForResponse(value => value.url().endsWith("/api/admin/all-americans") && value.request().method() === "POST");
   await page.getByRole("button", { name: "Create" }).click();
   const created = await create;
