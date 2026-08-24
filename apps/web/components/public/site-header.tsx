@@ -4,11 +4,11 @@ import { ChevronDown, ClipboardCheck, ExternalLink, Menu, ShoppingBag, X } from 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BRAND, HEADER_NAV_ITEMS } from "@/lib/public/site";
+import { BRAND, headerNavItems } from "@/lib/public/site";
 import type { StoreNavigationMode } from "@/lib/public/deployment";
 import type { SiteSettings } from "@/lib/public/types";
 
-export function SiteHeader({ settings, storeNavigationMode = "external" }: { settings: SiteSettings; storeNavigationMode?: StoreNavigationMode }) {
+export function SiteHeader({ settings, storeNavigationMode = "external", allAmericansEnabled = false }: { settings: SiteSettings; storeNavigationMode?: StoreNavigationMode; allAmericansEnabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const pathname = usePathname();
@@ -79,7 +79,7 @@ export function SiteHeader({ settings, storeNavigationMode = "external" }: { set
         </button>
         <nav id="primary-navigation" className={open ? "primary-nav is-open" : "primary-nav"} aria-label="Primary navigation">
           <ul className="primary-nav-list">
-            {HEADER_NAV_ITEMS.map((item) => "links" in item ? (
+            {headerNavItems(allAmericansEnabled).map((item) => "links" in item ? (
               <li className={openGroup === item.label ? "nav-group is-open" : "nav-group"} key={item.label}>
                 <button
                   ref={(element) => { groupButtonRefs.current[item.label] = element; }}

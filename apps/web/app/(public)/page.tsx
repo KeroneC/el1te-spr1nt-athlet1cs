@@ -15,6 +15,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const showcaseEnabled = isEnabledSetting(process.env.HOME_ALL_AMERICAN_SHOWCASE_ENABLED);
+  const archiveEnabled = isEnabledSetting(process.env.ALL_AMERICANS_ARCHIVE_ENABLED);
   const [blocksResult, newsResult, eventsResult, coachesResult, sponsorsResult, galleryResult] = await Promise.allSettled([
     getContentBlocks(), getAnnouncements("featured=true&page=1&pageSize=3"),
     getEvents("upcomingOnly=true&page=1&pageSize=3"), getCoaches(), getSponsors(), getGalleryAlbums("page=1&pageSize=3")
@@ -47,7 +48,7 @@ export default async function HomePage() {
             <Link className="button button-ghost" href="/gallery">View Gallery</Link>
           </div>
         </div>
-        {showcaseEnabled && <HomeAllAmericanShowcase />}
+        {showcaseEnabled && <HomeAllAmericanShowcase archiveEnabled={archiveEnabled} />}
       </div>
     </section>
 

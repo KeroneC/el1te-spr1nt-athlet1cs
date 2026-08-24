@@ -16,6 +16,7 @@ public sealed class CmsModelTests
     [InlineData(typeof(Event), nameof(Event.Slug))]
     [InlineData(typeof(Sponsor), nameof(Sponsor.Slug))]
     [InlineData(typeof(HallOfFameInductee), nameof(HallOfFameInductee.Slug))]
+    [InlineData(typeof(AllAmericanYear), nameof(AllAmericanYear.Slug))]
     public void CmsModel_DefinesRequiredUniqueIndexes(Type entityType, string propertyName)
     {
         var modelType = _dbContext.Model.FindEntityType(entityType);

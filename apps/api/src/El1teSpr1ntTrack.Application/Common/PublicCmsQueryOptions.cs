@@ -4,6 +4,7 @@ namespace El1teSpr1ntTrack.Application.Common;
 
 public sealed record AnnouncementQueryOptions(bool? Featured, int Page, int PageSize);
 public sealed record HallOfFameInducteeQueryOptions(int Page, int PageSize);
+public sealed record AllAmericanYearQueryOptions(int Page, int PageSize);
 
 public sealed record EventQueryOptions(
     EventType? EventType,

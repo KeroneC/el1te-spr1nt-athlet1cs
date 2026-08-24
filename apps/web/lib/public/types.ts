@@ -334,3 +334,21 @@ export interface GalleryImage {
 export interface GalleryAlbum {
   title: string; slug: string; description: string; eventDateUtc: string | null; images: GalleryImage[];
 }
+
+export interface AllAmericanYearListItem {
+  year: number; slug: string; title: string; summary: string; athleteCount: number; medalCount: number;
+  heroImageUrl: string | null; heroAltText: string | null; imageCount: number;
+}
+export interface AllAmericanImage {
+  publicUrl: string; altText: string; caption: string | null; width: number; height: number; displayOrder: number;
+}
+export interface AllAmericanResult {
+  eventName: string; division: string | null; placement: number | null; isRelay: boolean; displayOrder: number;
+}
+export interface AllAmericanRecipient {
+  firstName: string; lastName: string; photoUrl: string | null; photoAltText: string | null;
+  displayOrder: number; results: AllAmericanResult[];
+}
+export interface AllAmericanYear extends AllAmericanYearListItem {
+  detailsComplete: boolean; images: AllAmericanImage[]; recipients: AllAmericanRecipient[];
+}

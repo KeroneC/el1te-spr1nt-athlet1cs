@@ -35,6 +35,10 @@
   text-transform: uppercase;
 }
 
+.heading > span {
+  display: block;
+}
+
 .showcase .heading h1 {
   margin: 0.15rem 0 0.2rem;
   font-size: clamp(1.65rem, 3.2vw, 2.8rem);
@@ -44,9 +48,26 @@
 }
 
 .showcase .heading h1 strong {
-  color: #e5262a;
+  color: #fff;
   font-size: 1.34em;
 }
+
+.archiveLink {
+  display: inline-flex;
+  margin-top: 0.55rem;
+  color: #fff;
+  font-size: clamp(0.64rem, 0.95vw, 0.76rem);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-decoration-color: #e5262a;
+  text-decoration-thickness: 0.16rem;
+  text-underline-offset: 0.28rem;
+  text-transform: uppercase;
+}
+
+.archiveLink:hover { color: #fca5a5; }
+.archiveLink:focus-visible { outline: 3px solid #fff; outline-offset: 0.3rem; }
 
 .stage {
   position: relative;

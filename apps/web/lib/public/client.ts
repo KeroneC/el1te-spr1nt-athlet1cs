@@ -7,6 +7,8 @@ import type {
   EventListItem,
   Faq,
   HallOfFameInductee,
+  AllAmericanYear,
+  AllAmericanYearListItem,
   PagedResult,
   SiteSettings,
   Sponsor,
@@ -79,6 +81,10 @@ export const getEvent = (slug: string) =>
 export const getCoaches = () => publicApiFetch<Coach[]>("/coaches");
 export const getHallOfFameInductees = (query = "") =>
   publicApiFetch<PagedResult<HallOfFameInductee>>(`/hall-of-fame-inductees${query ? `?${query}` : ""}`);
+export const getAllAmericanYears = (query = "") =>
+  publicApiFetch<PagedResult<AllAmericanYearListItem>>(`/all-americans${query ? `?${query}` : ""}`);
+export const getAllAmericanYear = (year: string | number) =>
+  publicApiFetch<AllAmericanYear>(`/all-americans/${encodeURIComponent(String(year))}`);
 export const getSponsors = () => publicApiFetch<Sponsor[]>("/sponsors");
 export const getFaqs = () => publicApiFetch<Faq[]>("/faqs");
 export const getGalleryAlbums = (query = "") =>

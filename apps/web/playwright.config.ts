@@ -44,6 +44,7 @@ export default defineConfig({
         TransactionalEmail__DevelopmentOutboxPath: "../../../../artifacts/e2e/mail",
         Store__Enabled: "true",
         Store__CheckoutEnabled: "true",
+        AllAmericansArchive__Enabled: "true",
         MediaStorage__LocalRoot: "../../../../artifacts/e2e/uploads",
         MediaStorage__PublicBaseUrl: apiUrl,
       },
@@ -54,7 +55,7 @@ export default defineConfig({
       url: webUrl,
       timeout: 120_000,
       reuseExistingServer: false,
-      env: { API_BASE_URL: apiUrl, PUBLIC_REVALIDATE_SECONDS: "0", HOME_ALL_AMERICAN_SHOWCASE_ENABLED: "true" },
+      env: { API_BASE_URL: apiUrl, PUBLIC_REVALIDATE_SECONDS: "0", HOME_ALL_AMERICAN_SHOWCASE_ENABLED: "true", ALL_AMERICANS_ARCHIVE_ENABLED: "true" },
     },
   ],
 });

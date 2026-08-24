@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useReducer, useRef, useState } from "react";
 import styles from "./home-all-american-showcase.module.css";
 
@@ -129,7 +130,7 @@ export const ALL_AMERICAN_SLIDES: ShowcaseSlide[] = [
   }
 ];
 
-export function HomeAllAmericanShowcase() {
+export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEnabled?: boolean }) {
   const [state, dispatch] = useReducer(showcaseReducer, { activeIndex: 0, userPaused: false });
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
@@ -188,7 +189,8 @@ export function HomeAllAmericanShowcase() {
       <div className={styles.heading}>
         <p>2026 AAU Junior Olympic Games</p>
         <h1 id="all-american-title"><strong>9</strong> All-Americans</h1>
-        <span>11 All-American performances</span>
+        <span>11 All-American medals</span>
+        {archiveEnabled && <Link className={styles.archiveLink} href="/all-americans">Explore our All-American legacy</Link>}
       </div>
 
       <div className={styles.stage} aria-live="off">

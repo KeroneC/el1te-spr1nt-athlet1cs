@@ -35,6 +35,9 @@ public sealed class MediaRepository(El1teDbContext dbContext) : IMediaRepository
     public async Task<bool> IsReferencedAsync(Guid id, string publicUrl, CancellationToken cancellationToken) =>
         await dbContext.GalleryAlbumMedia.AnyAsync(item => item.MediaAssetId == id, cancellationToken) ||
         await dbContext.GalleryAlbums.AnyAsync(album => album.CoverMediaAssetId == id, cancellationToken) ||
+        await dbContext.AllAmericanYears.AnyAsync(year => year.HeroMediaAssetId == id, cancellationToken) ||
+        await dbContext.AllAmericanYearMedia.AnyAsync(item => item.MediaAssetId == id, cancellationToken) ||
+        await dbContext.AllAmericanRecipients.AnyAsync(item => item.PhotoMediaAssetId == id, cancellationToken) ||
         await dbContext.Announcements.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
         await dbContext.Events.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||
         await dbContext.Coaches.AnyAsync(item => item.ImageUrl == publicUrl, cancellationToken) ||

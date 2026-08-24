@@ -25,6 +25,12 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<HallOfFameInductee> HallOfFameInductees => Set<HallOfFameInductee>();
 
+    public DbSet<AllAmericanYear> AllAmericanYears => Set<AllAmericanYear>();
+    public DbSet<AllAmericanYearMedia> AllAmericanYearMedia => Set<AllAmericanYearMedia>();
+    public DbSet<AllAmericanRecipient> AllAmericanRecipients => Set<AllAmericanRecipient>();
+    public DbSet<AllAmericanPerformance> AllAmericanPerformances => Set<AllAmericanPerformance>();
+    public DbSet<AllAmericanPerformanceRecipient> AllAmericanPerformanceRecipients => Set<AllAmericanPerformanceRecipient>();
+
     public DbSet<Sponsor> Sponsors => Set<Sponsor>();
 
     public DbSet<Faq> Faqs => Set<Faq>();
