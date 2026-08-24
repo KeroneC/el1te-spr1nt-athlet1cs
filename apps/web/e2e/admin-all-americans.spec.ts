@@ -84,7 +84,7 @@ test("Admin publishes a completed annual story with individual and relay medals"
   await expect(page.getByText(`E2E Alexis ${suffix}`)).toBeVisible();
   await expect(page.getByText(`E2E Javon ${suffix}`)).toBeVisible();
   await expect(page.getByText("Long jump")).toBeVisible();
-  await expect(page.getByText("4x100 relay")).toBeVisible();
+  await expect(page.getByText("4x100 relay")).toHaveCount(2);
   const accessibility = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(accessibility.violations.filter(value => ["serious", "critical"].includes(value.impact ?? ""))).toEqual([]);
 });
