@@ -13,7 +13,7 @@ describe("Phase 7 mutation boundary", () => {
     [["users", id], "PUT"], [["invitations"], "POST"], [["invitations", id, "reissue"], "POST"], [["invitations", id], "DELETE"]
     , [["store", "products"], "POST"], [["store", "products", id], "PUT"], [["store", "products", id, "duplicate"], "POST"],
     [["store", "inventory", "receipts"], "POST"], [["store", "inventory", "stocktakes"], "POST"],
-    [["store", "inventory", id, "adjustments"], "POST"], [["store", "square-import"], "POST"]
+    [["store", "inventory", id, "adjustments"], "POST"]
   ] as const)("allows supported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(true));
 
   it("allows deterministic seed GUIDs used by CMS records", () => {
@@ -34,7 +34,7 @@ describe("Phase 7 mutation boundary", () => {
   it("allows only safe store reads through the client proxy", () => {
     expect(isAllowedAdminRead(["store", "inventory"])).toBe(true);
     expect(isAllowedAdminRead(["store", "products", id])).toBe(true);
-    expect(isAllowedAdminRead(["store", "square-import", "preview"])).toBe(true);
+    expect(isAllowedAdminRead(["store", "square-import", "preview"])).toBe(false);
     expect(isAllowedAdminRead(["store", "products", "not-a-guid"])).toBe(false);
     expect(isAllowedAdminRead(["users"])).toBe(false);
   });

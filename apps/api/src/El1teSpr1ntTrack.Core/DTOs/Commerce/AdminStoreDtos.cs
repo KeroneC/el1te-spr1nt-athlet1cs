@@ -315,23 +315,3 @@ public sealed record AdminInventoryStocktakeDto(
     string? Note,
     string ActorDisplayName,
     DateTimeOffset CreatedAtUtc);
-
-public sealed record SquareCatalogImportProductPreviewDto(
-    string SquareCatalogObjectId,
-    string Name,
-    int VariantCount,
-    int ImageCount,
-    bool AlreadyImported);
-
-public sealed record SquareCatalogImportPreviewDto(
-    bool IsConfigured,
-    int ProductCount,
-    int NewProductCount,
-    IReadOnlyList<SquareCatalogImportProductPreviewDto> Products);
-
-public sealed record SquareCatalogImportResultDto(
-    Guid ImportRunId,
-    int ProductsDiscovered,
-    int ProductsCreated,
-    int ProductsSkipped,
-    int ImagesImported);

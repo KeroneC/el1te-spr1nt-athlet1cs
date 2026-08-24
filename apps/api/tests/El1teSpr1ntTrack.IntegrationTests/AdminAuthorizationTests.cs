@@ -126,16 +126,6 @@ public sealed class AdminAuthorizationTests
         }
     }
 
-    [Theory]
-    [InlineData(nameof(AdminStoreController.PreviewSquareImport))]
-    [InlineData(nameof(AdminStoreController.ImportSquareCatalog))]
-    public void SquareCatalogImport_RequiresSuperAdminPolicy(string methodName)
-    {
-        var method = typeof(AdminStoreController).GetMethod(methodName);
-        var attribute = Assert.Single(method!.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
-        Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName, attribute.Policy);
-    }
-
     [Fact]
     public void CurrentUserEndpoint_RequiresAuthentication_AndPublicCmsDoesNot()
     {

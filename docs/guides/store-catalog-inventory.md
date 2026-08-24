@@ -1,6 +1,6 @@
 # Store Catalog and Inventory Administration
 
-This is the second guarded delivery phase of the El1te merchandise replacement. It adds a private Admin commerce workspace and a one-time Square catalog copy while keeping full commerce (`Store:Enabled=false`) disabled. A later demo-only preview may expose catalog reads, but the existing Square storefront remains the only active sales path.
+The private Admin commerce workspace is the source of truth for merchandise catalog and inventory data. Staff create and review products here before enabling public browsing or checkout. Square is used for hosted payment, receipts, and refunds; its catalog is not imported or synchronized.
 
 ## What Staff Can Do
 
@@ -16,26 +16,7 @@ All active Admins and SuperAdmins can:
 - position approved transparent visualizer layers with percentage-based coordinates;
 - receive stock, record corrections/damage/returns, and complete physical stocktakes.
 
-Only a SuperAdmin can preview or run the one-time Square import because it calls a credentialed financial-provider integration. Catalog and inventory access does not grant refund, Square-configuration, or tracking-link authority.
-
-## Safe Square Import
-
-The import reads Square Catalog items, categories, item options, variations, fixed prices, image references, and the selected location's `IN_STOCK` quantities. It creates unpublished El1te drafts and copies trusted Square-hosted images into the existing El1te Media library.
-
-The import:
-
-- never publishes a product;
-- never imports historical orders or customer/payment data;
-- skips a product whose Square catalog object ID was imported previously;
-- gives generated local SKUs to variations that do not have one;
-- records source object IDs and versions for audit/idempotency, not ongoing synchronization;
-- creates an initial Receipt adjustment for imported positive inventory;
-- records a safe import-run result without provider bodies or credentials;
-- runs catalog persistence transactionally so a failure does not expose a partial local catalog.
-
-After the first successful import, El1te is the editing source of truth. Do not use this action as a recurring synchronization job.
-
-The import needs `Square__AccessToken` and `Square__LocationId` even while `Store__Enabled=false`. Keep the token in Azure Key Vault and supply its secret URI through the existing deployment input. The Admin portal never accepts or displays the token.
+Catalog and inventory access does not grant refund, Square-configuration, or tracking-link authority. Historical Square source IDs and import-run rows remain mapped for audit and backward compatibility, but no Admin page or API can initiate a catalog import.
 
 ## Product Workflow
 
@@ -90,17 +71,17 @@ Do not change physical quantity in the product wizard. Use the Inventory workspa
 
 Before the configurator or checkout phases use this data:
 
-1. Review every imported product name, price, category, photograph, and description.
+1. Review every product name, price, category, photograph, and description.
 2. Verify each tracked option and SKU matches a physical size/color combination.
 3. Complete a physical stocktake for every active variant.
 4. Verify low-stock thresholds with staff.
-5. Archive obsolete imports; do not delete history.
+5. Archive obsolete products; do not delete operational history.
 6. Approve every base mockup and transparent overlay.
 7. Confirm `Store:Enabled=false` and the external Square storefront still handles sales.
 
 ## Rollback
 
-The phase does not enable checkout. Full-commerce rollback is `Store__Enabled=false`; hide the catalog/configurator as well with `Store__PublicPreviewEnabled=false`. Imported products stay as reversible drafts and source IDs make a repeated import safe. Archive an unwanted product; do not delete inventory adjustments, stocktakes, import runs, or media that may be referenced.
+Full-commerce rollback is `Store__Enabled=false`; hide the catalog/configurator as well with `Store__PublicPreviewEnabled=false`. Products stay as reversible drafts. Archive an unwanted product; do not delete inventory adjustments, stocktakes, historical import runs, or referenced media.
 
 ## Validation
 
@@ -117,10 +98,4 @@ npm --prefix apps/web run typecheck
 npm --prefix apps/web run build
 ```
 
-The migration `AddStoreCatalogAdministration` preserves existing option/modifier rows as active, adds unique nullable Square source IDs, and adds audited stocktake and import-run records.
-
-## Official Square References
-
-- [Search Catalog objects](https://developer.squareup.com/reference/square/catalog-api/search-catalog-objects)
-- [Catalog item options](https://developer.squareup.com/docs/catalog-api/item-options)
-- [Batch retrieve inventory counts](https://developer.squareup.com/reference/square/inventory-api/batch-retrieve-inventory-counts)
+The historical migration `AddStoreCatalogAdministration` retains nullable Square source IDs and import-run records for compatibility. No destructive migration removes those fields or audit records.

@@ -12,7 +12,7 @@ The existing Square storefront accepts payments but makes product configuration,
 
 El1te is the source of truth for products, tracked variants, modifiers, inventory, reservations, operational orders, and fulfillment. Square remains the financial provider for hosted payment, receipts, refunds, and reconciliation.
 
-Each checkout creates a unique Square-hosted payment link from an immutable local order snapshot using ad-hoc itemized lines. The current Square catalog is imported once as unpublished drafts and is not synchronized after cutover. Historical pre-cutover orders remain in Square.
+Each checkout creates a unique Square-hosted payment link from an immutable local order snapshot using ad-hoc itemized lines. Staff create and maintain products in the El1te Admin workspace; Square catalog import and synchronization are not part of the supported workflow. Historical pre-cutover orders remain in Square.
 
 Square webhooks are validated against the exact raw request body and configured notification URL, deduplicated by event ID, and processed through a SQL outbox. Raw payment or customer payloads are not retained. Inventory is reserved transactionally before checkout and never permits backorders.
 
@@ -24,5 +24,5 @@ The store remains behind a disabled feature flag through all implementation phas
 - Staff get one operational source of truth for stock and fulfillment.
 - Order-item snapshots protect historical price and configuration meaning when products later change.
 - Webhook, reservation-expiry, email, and reconciliation work must be idempotent and recoverable.
-- A deliberate physical stocktake and one-time catalog import are required before cutover.
+- Manual catalog review and a deliberate physical stocktake are required before cutover.
 - Rollback can disable the feature and restore the external Square link without deleting commerce history.

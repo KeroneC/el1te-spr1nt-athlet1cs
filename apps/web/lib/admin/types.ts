@@ -266,15 +266,6 @@ export interface AdminInventoryVariant {
   onHandQuantity: number; reservedQuantity: number; availableQuantity: number; lowStockThreshold: number;
   isLowStock: boolean; isSoldOut: boolean; isActive: boolean; rowVersion: string; updatedAtUtc: string | null;
 }
-export interface SquareCatalogImportPreviewProduct {
-  squareCatalogObjectId: string; name: string; variantCount: number; imageCount: number; alreadyImported: boolean;
-}
-export interface SquareCatalogImportPreview {
-  isConfigured: boolean; productCount: number; newProductCount: number; products: SquareCatalogImportPreviewProduct[];
-}
-export interface SquareCatalogImportResult {
-  importRunId: string; productsDiscovered: number; productsCreated: number; productsSkipped: number; imagesImported: number;
-}
 
 export type AdminStoreOrderStatus = "AwaitingPayment" | "Paid" | "NeedsReview" | "ReadyForProduction" |
   "InProduction" | "NeedsCustomerInfo" | "ReadyForHandoff" | "Completed" | "Canceled" | "Refunded";
