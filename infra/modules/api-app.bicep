@@ -16,6 +16,7 @@ param releaseSha string
 param storeEnabled bool = false
 param storeCheckoutEnabled bool = false
 param storePublicPreviewEnabled bool = false
+param allAmericansArchiveEnabled bool = false
 param squareEnvironment string = 'Sandbox'
 param squareLocationId string = ''
 param squareWebhookNotificationUrl string = ''
@@ -120,6 +121,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'MediaStorage__BackfillDerivativesOnStartup'
           value: string(backfillMediaDerivativesOnStartup)
+        }
+        {
+          name: 'AllAmericansArchive__Enabled'
+          value: string(allAmericansArchiveEnabled)
         }
         {
           name: 'AdminInvitations__SiteUrl'

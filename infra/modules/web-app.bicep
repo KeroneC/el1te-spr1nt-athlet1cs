@@ -8,6 +8,7 @@ param tags object = {}
 param releaseSha string
 param browserAnalyticsEnabled bool = false
 param homeAllAmericanShowcaseEnabled bool = false
+param allAmericansArchiveEnabled bool = false
 @allowed(['internal', 'external'])
 param storeNavigationMode string = 'external'
 param deploymentEnvironment string = 'demo'
@@ -91,6 +92,10 @@ resource web 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'HOME_ALL_AMERICAN_SHOWCASE_ENABLED'
           value: string(homeAllAmericanShowcaseEnabled)
+        }
+        {
+          name: 'ALL_AMERICANS_ARCHIVE_ENABLED'
+          value: string(allAmericansArchiveEnabled)
         }
         {
           name: 'CSP_MODE'

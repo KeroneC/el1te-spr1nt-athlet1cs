@@ -54,6 +54,9 @@ param browserAnalyticsEnabled bool = true
 @description('Show the homepage All-American photo experience. Keep false in production until the design and athlete details are approved.')
 param homeAllAmericanShowcaseEnabled bool = false
 
+@description('Enable the public All-American archive. Keep false in production until annual details are approved.')
+param allAmericansArchiveEnabled bool = false
+
 @description('Allow public search-engine indexing. Keep false until the final production gate passes.')
 param publicIndexingEnabled bool = false
 
@@ -244,6 +247,7 @@ module api 'modules/api-app.bicep' = {
     storeEnabled: storeEnabled
     storeCheckoutEnabled: storeCheckoutEnabled
     storePublicPreviewEnabled: storePublicPreviewEnabled
+    allAmericansArchiveEnabled: allAmericansArchiveEnabled
     squareEnvironment: squareEnvironment
     squareLocationId: squareLocationId
     squareWebhookNotificationUrl: squareWebhookNotificationUrl
@@ -272,6 +276,7 @@ module web 'modules/web-app.bicep' = {
     releaseSha: releaseSha
     browserAnalyticsEnabled: browserAnalyticsEnabled
     homeAllAmericanShowcaseEnabled: homeAllAmericanShowcaseEnabled
+    allAmericansArchiveEnabled: allAmericansArchiveEnabled
     cspMode: cspMode
     deploymentEnvironment: environmentName
     publicIndexingEnabled: publicIndexingEnabled

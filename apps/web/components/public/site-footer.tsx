@@ -1,11 +1,11 @@
 import { ExternalLink, Mail, MapPin, Phone, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 import { FacebookIcon, InstagramIcon } from "@/components/public/brand-social-icons";
-import { BRAND, FOOTER_LINK_GROUPS } from "@/lib/public/site";
+import { BRAND, footerLinkGroups } from "@/lib/public/site";
 import type { StoreNavigationMode } from "@/lib/public/deployment";
 import type { SiteSettings } from "@/lib/public/types";
 
-export function SiteFooter({ settings, storeNavigationMode = "external" }: { settings: SiteSettings; storeNavigationMode?: StoreNavigationMode }) {
+export function SiteFooter({ settings, storeNavigationMode = "external", allAmericansEnabled = false }: { settings: SiteSettings; storeNavigationMode?: StoreNavigationMode; allAmericansEnabled?: boolean }) {
   const address = [settings.addressLine1, settings.addressLine2, [settings.city, settings.state, settings.zipCode].filter(Boolean).join(", ")].filter(Boolean);
   const email = settings.contactEmail || BRAND.contactEmail;
   const phone = settings.phoneNumber || BRAND.contactPhone;
@@ -26,7 +26,7 @@ export function SiteFooter({ settings, storeNavigationMode = "external" }: { set
             ? <Link className="footer-shop-link" href="/shop"><ShoppingBag size={17} aria-hidden="true" />Shop team gear</Link>
             : <a className="footer-shop-link" href={BRAND.shopUrl} target="_blank" rel="noreferrer noopener"><ShoppingBag size={17} aria-hidden="true" />Shop team gear<ExternalLink size={14} aria-hidden="true" /></a>}
         </div>
-        {FOOTER_LINK_GROUPS.map((group) => (
+        {footerLinkGroups(allAmericansEnabled).map((group) => (
           <div key={group.title}>
             <h2><span aria-hidden="true" />{group.title}</h2>
             <div className="footer-links">

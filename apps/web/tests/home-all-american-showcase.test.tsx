@@ -46,11 +46,13 @@ describe("homepage All-American showcase", () => {
     expect(visibleSlideIndexes(0, 8)).toEqual([7, 0, 1]);
     expect(ALL_AMERICAN_SLIDES).toHaveLength(8);
 
-    const markup = renderToStaticMarkup(createElement(HomeAllAmericanShowcase));
+    const markup = renderToStaticMarkup(createElement(HomeAllAmericanShowcase, { archiveEnabled: true }));
     expect(markup.match(/<figure/g)).toHaveLength(3);
     expect(markup).toContain("2026 AAU Junior Olympic Games");
     expect(markup).toContain("9</strong> All-Americans");
-    expect(markup).toContain("11 All-American performances");
+    expect(markup).toContain("11 All-American medals");
+    expect(markup).toContain('href="/all-americans"');
+    expect(markup).toContain("Explore our All-American legacy");
     expect(markup).toContain('aria-label="Show previous photograph"');
     expect(markup).toContain('aria-label="Pause photograph showcase"');
     expect(markup).toContain('aria-label="Show next photograph"');
@@ -84,5 +86,16 @@ describe("homepage All-American showcase", () => {
     expect(infrastructure).toContain("param homeAllAmericanShowcaseEnabled bool = false");
     expect(homepage).toContain('export const dynamic = "force-dynamic"');
     expect(homepage).toContain("process.env.HOME_ALL_AMERICAN_SHOWCASE_ENABLED");
+  });
+
+  it("enables the archive only on demo and renders the achievement numeral in white", () => {
+    const demoWorkflow = readFileSync("../../.github/workflows/deploy-azure.yml", "utf8");
+    const productionWorkflow = readFileSync("../../.github/workflows/deploy-production.yml", "utf8");
+    const infrastructure = readFileSync("../../infra/main.bicep", "utf8");
+    const styles = readFileSync("components/public/home-all-american-showcase.module.css", "utf8");
+    expect(demoWorkflow.match(/allAmericansArchiveEnabled=true/g)).toHaveLength(2);
+    expect(productionWorkflow.match(/allAmericansArchiveEnabled=false/g)).toHaveLength(2);
+    expect(infrastructure).toContain("param allAmericansArchiveEnabled bool = false");
+    expect(styles).toMatch(/\.showcase \.heading h1 strong\s*\{\s*color: #fff;/);
   });
 });

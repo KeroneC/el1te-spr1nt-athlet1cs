@@ -20,6 +20,17 @@ Liveness is available at `/health`; database readiness is available at `/health/
 
 The public route returns only active records, ordered by display order and then name. Admin listing accepts `search`, `isActive`, `inductionYear`, `page`, and `pageSize`. Delete is reversible deactivation. Active records require an accessible photo; names can be edited without changing the generated slug.
 
+## All-American Archive
+
+- Public years: `GET /api/public/all-americans?page=1&pageSize=12`
+- Public annual story: `GET /api/public/all-americans/{year}`
+- Admin years: `GET/POST /api/admin/all-americans`, `GET/PUT/DELETE /api/admin/all-americans/{id}`
+- Annual media: `POST /api/admin/all-americans/{id}/media`, `PUT/DELETE /api/admin/all-americans/{id}/media/{mediaId}`, `PUT /api/admin/all-americans/{id}/media/order`
+- Annual athletes: `POST /api/admin/all-americans/{id}/recipients`, `PUT/DELETE /api/admin/all-americans/{id}/recipients/{recipientId}`
+- Annual performances: `POST /api/admin/all-americans/{id}/performances`, `PUT/DELETE /api/admin/all-americans/{id}/performances/{performanceId}`
+
+Public APIs return only published years. A summary-only year returns no recipient details until its verified roster and medal-recipient totals reconcile and `DetailsComplete` is enabled. Delete operations are reversible deactivation/unpublishing; no permanent-delete Admin route is exposed.
+
 ## Commerce Foundation
 
 - Commerce integration health: `GET /health/commerce`

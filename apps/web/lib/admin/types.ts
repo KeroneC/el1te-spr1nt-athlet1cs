@@ -179,6 +179,28 @@ export interface AdminGalleryAlbum extends Omit<AdminGalleryAlbumListItem, "cove
   media: AdminGalleryAlbumMedia[];
 }
 
+export interface AdminAllAmericanYearListItem {
+  id: string; year: number; slug: string; title: string; summary: string; athleteCount: number; medalCount: number;
+  heroMediaAssetId: string | null; heroImageUrl: string | null; isPublished: boolean; detailsComplete: boolean;
+  displayOrder: number; imageCount: number; recipientCount: number; performanceCount: number;
+  createdAtUtc: string; updatedAtUtc: string | null;
+}
+export interface AdminAllAmericanYearMedia {
+  id: string; mediaAssetId: string; publicUrl: string; title: string; altText: string; caption: string | null;
+  altTextOverride: string | null; captionOverride: string | null; displayOrder: number; width: number; height: number;
+}
+export interface AdminAllAmericanRecipient {
+  id: string; firstName: string; lastName: string; photoMediaAssetId: string | null; photoUrl: string | null;
+  photoAltText: string | null; displayOrder: number; isActive: boolean;
+}
+export interface AdminAllAmericanPerformance {
+  id: string; eventName: string; division: string | null; placement: number | null; isRelay: boolean;
+  displayOrder: number; isActive: boolean; recipientIds: string[];
+}
+export interface AdminAllAmericanYear extends Omit<AdminAllAmericanYearListItem, "heroImageUrl" | "imageCount" | "recipientCount" | "performanceCount"> {
+  media: AdminAllAmericanYearMedia[]; recipients: AdminAllAmericanRecipient[]; performances: AdminAllAmericanPerformance[];
+}
+
 export interface AdminUser {
   id: string; firstName: string; lastName: string; email: string; role: "Admin" | "SuperAdmin";
   isActive: boolean; createdAtUtc: string; updatedAtUtc: string | null;

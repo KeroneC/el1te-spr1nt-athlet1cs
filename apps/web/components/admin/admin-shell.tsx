@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
-import { Bell, CalendarDays, ChevronRight, CircleHelp, FileImage, FileText, GalleryHorizontal, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, ShoppingBag, Trophy, Users, X } from "lucide-react";
+import { Award, Bell, CalendarDays, ChevronRight, CircleHelp, FileImage, FileText, GalleryHorizontal, Handshake, Inbox, LayoutDashboard, LogOut, Menu, Settings, ShieldCheck, ShoppingBag, Trophy, Users, X } from "lucide-react";
 import type { CurrentUser } from "@/lib/admin/types";
 
 const active = [
@@ -14,6 +14,7 @@ const active = [
   { href: "/admin/gallery", label: "Gallery", icon: GalleryHorizontal, exact: false },
   { href: "/admin/coaches", label: "Coaches", icon: Users, exact: false },
   { href: "/admin/hall-of-fame", label: "Hall of Fame", icon: Trophy, exact: false },
+  { href: "/admin/all-americans", label: "All-Americans", icon: Award, exact: false },
   { href: "/admin/sponsors", label: "Sponsors", icon: Handshake, exact: false },
   { href: "/admin/store", label: "Merchandise", icon: ShoppingBag, exact: false },
   { href: "/admin/faqs", label: "FAQs", icon: CircleHelp, exact: false },

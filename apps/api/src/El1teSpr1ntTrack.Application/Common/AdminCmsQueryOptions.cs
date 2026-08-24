@@ -8,6 +8,7 @@ public sealed record AdminAnnouncementOptions(string? Search, bool? IsPublished,
 public sealed record AdminEventOptions(string? Search, EventType? EventType, bool? IsPublished, bool? IsFeatured, DateTimeOffset? FromDate, DateTimeOffset? ToDate, int Page = 1, int PageSize = 20);
 public sealed record AdminCoachOptions(string? Search, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminHallOfFameInducteeOptions(string? Search, bool? IsActive, int? InductionYear, int Page = 1, int PageSize = 20);
+public sealed record AdminAllAmericanYearOptions(string? Search, bool? IsPublished, int Page = 1, int PageSize = 20);
 public sealed record AdminSponsorOptions(string? Search, SponsorTier? Tier, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminFaqOptions(string? Search, string? Category, bool? IsActive, int Page = 1, int PageSize = 20);
 public sealed record AdminContactOptions(string? Search, ContactSubmissionStatus? Status, InquiryType? InquiryType, DateTimeOffset? FromDate, DateTimeOffset? ToDate, int Page = 1, int PageSize = 20);

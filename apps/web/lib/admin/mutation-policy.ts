@@ -1,4 +1,4 @@
-const resources = new Set(["events", "coaches", "hall-of-fame-inductees", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store"]);
+const resources = new Set(["events", "coaches", "hall-of-fame-inductees", "all-americans", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store"]);
 const idPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | "DELETE"): boolean {
@@ -21,6 +21,12 @@ export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | 
     if (path.length === 3) return method === "POST";
     if (path.length === 4 && path[3] === "order") return method === "PUT";
     return path.length === 4 && idPattern.test(path[3]) && (method === "PUT" || method === "DELETE");
+  }
+  if (resource === "all-americans" && path.length > 2) {
+    if (!idPattern.test(id ?? "") || !["media", "recipients", "performances"].includes(action ?? "")) return false;
+    if (action === "media" && path.length === 4 && path[3] === "order") return method === "PUT";
+    if (path.length === 3) return method === "POST";
+    return path.length === 4 && idPattern.test(path[3] ?? "") && (method === "PUT" || method === "DELETE");
   }
   if (resource === "site-settings") return path.length === 1 && method === "PUT";
   if (method === "POST") return path.length === 1 && resource !== "contact-submissions";
@@ -53,6 +59,7 @@ function isAllowedStoreMutation(path: string[], method: "POST" | "PUT" | "DELETE
 }
 
 export function isAllowedAdminRead(path: string[]): boolean {
+  if (path[0] === "all-americans") return path.length === 1 || (path.length === 2 && idPattern.test(path[1] ?? ""));
   if (path[0] !== "store") return false;
   const storePath = path.slice(1);
   if (storePath.length === 1) {

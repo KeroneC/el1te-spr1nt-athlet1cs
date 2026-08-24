@@ -12,7 +12,7 @@ Browser interaction includes the mobile menu, contact form, feature-gated store 
 
 Content Block keys are centralized in `lib/public/content.ts`. Pages omit missing unpublished blocks and do not expose raw keys. Public list/detail DTOs preserve API publication, expiration, active-state, ordering, and coach-email privacy rules. The Hall of Fame is a paged Server Component backed by active public CMS records; its memorial hero and dedication remain page-owned content.
 
-Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, `/forms`, `/scholarship`, `/hall-of-fame`, `/rgnhof` redirect, `/team`, `/contact`, `/gallery`, `/gallery/[slug]`, and feature-gated `/shop`, `/shop/[slug]`, and `/shop/cart`.
+Public routes are `/`, `/about`, `/programs`, `/news`, `/news/[slug]`, `/events`, `/events/[slug]`, `/coaches`, `/sponsors`, `/faqs`, `/registration`, `/forms`, `/scholarship`, `/hall-of-fame`, `/rgnhof` redirect, `/team`, `/contact`, `/gallery`, `/gallery/[slug]`, feature-gated `/all-americans` and `/all-americans/[year]`, and feature-gated `/shop`, `/shop/[slug]`, and `/shop/cart`.
 
 Phase 10 keeps the Registration Hub frontend-only. The public site links downloadable PDFs under `apps/web/public/forms` and asks families to contact the club instead of collecting athlete details, proof of age, medical information, waivers, payments, or private documents online. Current-site parity pages that do not yet have CMS modules use structured static content in Server Components so they can be converted later without changing the public route shape.
 

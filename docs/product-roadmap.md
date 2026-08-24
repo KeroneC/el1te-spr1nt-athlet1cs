@@ -75,6 +75,8 @@ Delivery status: the launch-hardening foundation and Square-only checkout are im
 
 Delivery status: the Square-only club-inventory workflow is implemented through checkout and order operations. It includes the Admin catalog and inventory workspace, public configurator/cart, inventory reservations, hosted Square payment, verified webhooks, customer tracking and cancellation, audited refunds/restocking, order emails, and fulfillment workboard. Printify is paused on its unmerged WIP branch; shipping and staff-entered tender remain deferred. The existing Square storefront remains the rollback path until public cutover.
 
+The All-American annual archive is implemented behind a demo-only feature flag. It supports summary-and-photo publication before detailed results are complete, then reconciles verified roster and medal-recipient totals before exposing individual and relay results. Production remains disabled pending final athlete/event verification.
+
 ## Stage 5: Lean Public Launch
 
 The club has chosen to launch the public CMS and Square-only merchandise workflow before the Parent registration pilot. Launch requires:

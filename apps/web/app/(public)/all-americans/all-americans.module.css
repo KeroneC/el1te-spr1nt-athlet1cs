@@ -1,0 +1,72 @@
+.archiveHero {
+  position: relative;
+  overflow: hidden;
+  padding: clamp(5rem, 10vw, 8.5rem) 0 clamp(4rem, 8vw, 7rem);
+  background: #151515;
+  color: #fff;
+}
+
+.archiveHero::before {
+  content: "";
+  position: absolute;
+  inset: 0 46% 0 0;
+  background: #e5262a;
+  clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%);
+}
+
+.heroInner { position: relative; z-index: 1; }
+.eyebrow { margin: 0 0 0.75rem; color: #fff; font-size: 0.75rem; font-style: italic; font-weight: 900; letter-spacing: 0.15em; text-transform: uppercase; }
+.archiveHero h1 { max-width: 15ch; margin: 0; font-size: clamp(3.1rem, 8vw, 7.5rem); font-style: italic; line-height: 0.84; text-transform: uppercase; }
+.archiveHero h1 span { color: #171717; text-shadow: 1px 1px 0 #fff; }
+.archiveHero p:last-child { max-width: 46rem; margin: 1.5rem 0 0; color: #e4e4e7; font-size: clamp(1rem, 2vw, 1.2rem); line-height: 1.7; }
+
+.yearGrid { display: grid; gap: clamp(1.5rem, 3vw, 2.5rem); }
+.yearCard { display: grid; overflow: hidden; background: #171717; color: #fff; text-decoration: none; box-shadow: 0 1.25rem 2.8rem rgba(15, 15, 15, 0.16); }
+.yearImage { position: relative; min-height: clamp(18rem, 44vw, 32rem); overflow: hidden; }
+.yearImage img { width: 100%; height: 100%; object-fit: cover; transition: transform 300ms ease; }
+.yearCard:hover .yearImage img { transform: scale(1.025); }
+.yearCopy { position: relative; padding: clamp(1.5rem, 4vw, 3rem); }
+.yearCopy::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 0.35rem; background: #e5262a; }
+.yearCopy h2 { margin: 0.2rem 0 1rem; font-size: clamp(2rem, 5vw, 4.5rem); font-style: italic; line-height: 0.9; text-transform: uppercase; }
+.yearCopy > p { max-width: 50rem; color: #d4d4d8; line-height: 1.65; }
+.stats { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-top: 1.5rem; }
+.stats div { min-width: 8.5rem; border-top: 2px solid #e5262a; padding-top: 0.65rem; }
+.stats strong { display: block; font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1; }
+.stats span { color: #d4d4d8; font-size: 0.7rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+.cardLink { display: inline-flex; margin-top: 1.5rem; border-bottom: 2px solid #e5262a; font-weight: 900; text-transform: uppercase; }
+.yearCard:focus-visible { outline: 4px solid #e5262a; outline-offset: 0.3rem; }
+
+.detailHero { position: relative; min-height: min(78vh, 54rem); display: grid; align-items: end; overflow: hidden; background: #171717; color: #fff; }
+.detailHero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0.62; }
+.detailHero::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgba(15,15,15,.95), rgba(15,15,15,.22)), linear-gradient(0deg, rgba(15,15,15,.9), transparent 55%); }
+.detailCopy { position: relative; z-index: 2; padding-block: clamp(4rem, 9vw, 7rem); }
+.back { color: #fff; font-weight: 900; text-decoration-color: #e5262a; text-decoration-thickness: 0.18rem; text-underline-offset: 0.3rem; }
+.detailCopy h1 { max-width: 13ch; margin: 1.5rem 0 1rem; font-size: clamp(3rem, 8vw, 7rem); font-style: italic; line-height: 0.86; text-transform: uppercase; }
+.detailCopy > p { max-width: 48rem; font-size: clamp(1rem, 2vw, 1.25rem); line-height: 1.7; }
+.detailStats { position: relative; z-index: 2; display: flex; gap: clamp(1.5rem, 5vw, 4rem); padding-bottom: clamp(2rem, 5vw, 4rem); }
+.detailStats strong { display: block; font-size: clamp(2.5rem, 6vw, 5rem); line-height: 0.8; }
+.detailStats span { font-size: 0.72rem; font-weight: 900; letter-spacing: 0.1em; text-transform: uppercase; }
+
+.photoGrid { columns: 3 18rem; column-gap: 1.25rem; }
+.photoGrid figure { break-inside: avoid; margin: 0 0 1.25rem; overflow: hidden; background: #171717; color: #fff; }
+.photoGrid img { display: block; width: 100%; height: auto; }
+.photoGrid figcaption { padding: 0.85rem 1rem; font-size: 0.85rem; }
+.roster { display: grid; gap: 1.25rem; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); }
+.athlete { border-top: 0.35rem solid #e5262a; background: #f4f4f5; padding: 1.25rem; }
+.athletePhoto { aspect-ratio: 4 / 5; margin: -1.25rem -1.25rem 1.25rem; overflow: hidden; background: #171717; }
+.athletePhoto img { width: 100%; height: 100%; object-fit: cover; }
+.fallback { display: grid; height: 100%; place-items: center; color: #fff; font-size: 3rem; font-weight: 900; }
+.athlete h3 { margin: 0; font-size: 1.45rem; }
+.athlete ul { margin: 1rem 0 0; padding-left: 1.2rem; }
+.athlete li { margin-top: 0.5rem; line-height: 1.45; }
+
+@media (min-width: 52rem) {
+  .yearCard { grid-template-columns: minmax(18rem, 0.9fr) 1.1fr; }
+  .yearCard:nth-child(even) .yearImage { order: 2; }
+}
+@media (max-width: 48rem) {
+  .archiveHero::before { inset: 0 12% 47% 0; clip-path: polygon(0 0, 100% 0, 78% 100%, 0 100%); }
+  .archiveHero h1 span { color: #fff; text-shadow: none; }
+  .detailHero::after { background: linear-gradient(0deg, rgba(15,15,15,.96), rgba(15,15,15,.18)); }
+}
+@media (prefers-reduced-motion: reduce) { .yearImage img { transition: none; } }

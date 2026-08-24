@@ -49,6 +49,13 @@ export const HEADER_NAV_ITEMS = [
   { href: "/contact", label: "Contact" }
 ] as const satisfies readonly (PublicNavLink | PublicNavGroup)[];
 
+export function headerNavItems(allAmericansEnabled = false): readonly (PublicNavLink | PublicNavGroup)[] {
+  if (!allAmericansEnabled) return HEADER_NAV_ITEMS;
+  return HEADER_NAV_ITEMS.map((item) => item.label === "Club" && "links" in item
+    ? { ...item, links: [...item.links, { href: "/all-americans", label: "All-Americans" }] }
+    : item);
+}
+
 export const PRIMARY_NAV_LINKS: readonly PublicNavLink[] = HEADER_NAV_ITEMS.flatMap<PublicNavLink>((item) =>
   "links" in item ? item.links : [item]
 );
@@ -92,6 +99,13 @@ export const FOOTER_LINK_GROUPS = [
     ]
   }
 ] as const;
+
+export function footerLinkGroups(allAmericansEnabled = false) {
+  if (!allAmericansEnabled) return FOOTER_LINK_GROUPS;
+  return FOOTER_LINK_GROUPS.map((group) => group.title === "Explore"
+    ? { ...group, links: [...group.links, { href: "/all-americans", label: "All-Americans" }] }
+    : group);
+}
 
 export const FORM_DOWNLOADS = [
   {

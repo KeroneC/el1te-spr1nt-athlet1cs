@@ -134,6 +134,8 @@ builder.Services.AddSingleton<IMediaDerivativeGenerator, SkiaMediaDerivativeGene
 builder.Services.AddScoped<MediaDerivativeBackfillService>();
 builder.Services.AddScoped<IGalleryService, GalleryService>();
 builder.Services.AddScoped<IGalleryRepository, GalleryRepository>();
+builder.Services.AddScoped<IAllAmericanArchiveService, AllAmericanArchiveService>();
+builder.Services.AddScoped<IAllAmericanArchiveRepository, AllAmericanArchiveRepository>();
 builder.Services.AddScoped<IStoreAdminService, StoreAdminService>();
 builder.Services.AddScoped<IPublicStoreService, PublicStoreService>();
 builder.Services.AddScoped<IStoreOrderService, StoreOrderService>();

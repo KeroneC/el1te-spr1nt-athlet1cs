@@ -130,6 +130,14 @@ internal static class PromotionEngine
         var includedAlbums = records.Where(value => value.Type == nameof(GalleryAlbum) && value.Include).Select(value => value.Id).ToHashSet();
         await Add(db.GalleryAlbumMedia, value => includedAlbums.Contains(value.GalleryAlbumId), _ => "Referenced", value => [value.GalleryAlbumId.ToString(), value.MediaAssetId.ToString()]);
 
+        await Add(db.AllAmericanYears, value => value.IsPublished, value => value.IsPublished ? "Published" : "Draft", value => MediaDependencies(value.HeroMediaAssetId));
+        var includedAllAmericanYears = records.Where(value => value.Type == nameof(AllAmericanYear) && value.Include).Select(value => value.Id).ToHashSet();
+        await Add(db.AllAmericanYearMedia, value => includedAllAmericanYears.Contains(value.AllAmericanYearId), _ => "Referenced", value => [value.AllAmericanYearId.ToString(), value.MediaAssetId.ToString()]);
+        await Add(db.AllAmericanRecipients, value => includedAllAmericanYears.Contains(value.AllAmericanYearId), value => value.IsActive ? "Active" : "Inactive", value => [value.AllAmericanYearId.ToString(), .. MediaDependencies(value.PhotoMediaAssetId)]);
+        await Add(db.AllAmericanPerformances, value => includedAllAmericanYears.Contains(value.AllAmericanYearId), value => value.IsActive ? "Active" : "Inactive", value => [value.AllAmericanYearId.ToString()]);
+        var includedPerformances = records.Where(value => value.Type == nameof(AllAmericanPerformance) && value.Include).Select(value => value.Id).ToHashSet();
+        await Add(db.AllAmericanPerformanceRecipients, value => includedPerformances.Contains(value.AllAmericanPerformanceId), _ => "Referenced", value => [value.AllAmericanPerformanceId.ToString(), value.AllAmericanRecipientId.ToString()]);
+
         await Add(db.ProductCategories, value => value.IsActive, value => value.IsActive ? "Active" : "Inactive");
         await Add(db.Products, value => value.Status == StoreProductStatus.Published, value => value.Status.ToString(), value => value.CategoryId.HasValue ? [value.CategoryId.Value.ToString()] : []);
         var includedProducts = records.Where(value => value.Type == nameof(Product) && value.Include).Select(value => value.Id).ToHashSet();
@@ -253,6 +261,11 @@ internal static class PromotionEngine
             nameof(MediaDerivative) => await UpsertEntity<MediaDerivative>(record),
             nameof(GalleryAlbum) => await UpsertEntity<GalleryAlbum>(record),
             nameof(GalleryAlbumMedia) => await UpsertEntity<GalleryAlbumMedia>(record),
+            nameof(AllAmericanYear) => await UpsertEntity<AllAmericanYear>(record),
+            nameof(AllAmericanYearMedia) => await UpsertEntity<AllAmericanYearMedia>(record),
+            nameof(AllAmericanRecipient) => await UpsertEntity<AllAmericanRecipient>(record),
+            nameof(AllAmericanPerformance) => await UpsertEntity<AllAmericanPerformance>(record),
+            nameof(AllAmericanPerformanceRecipient) => await UpsertEntity<AllAmericanPerformanceRecipient>(record),
             nameof(ProductCategory) => await UpsertEntity<ProductCategory>(record),
             nameof(Product) => await UpsertEntity<Product>(record),
             nameof(ProductMedia) => await UpsertEntity<ProductMedia>(record),
@@ -305,8 +318,10 @@ internal static class PromotionEngine
     private static int ImportOrder(string type) => type switch
     {
         nameof(SiteSetting) or nameof(ContentBlock) or nameof(Announcement) or nameof(Event) or nameof(Coach) or nameof(HallOfFameInductee) or nameof(Sponsor) or nameof(Faq) => 10,
-        nameof(MediaAsset) => 20, nameof(MediaDerivative) => 21, nameof(GalleryAlbum) => 30,
-        nameof(GalleryAlbumMedia) => 31, nameof(ProductCategory) => 40, nameof(Product) => 41,
+        nameof(MediaAsset) => 20, nameof(MediaDerivative) => 21, nameof(GalleryAlbum) or nameof(AllAmericanYear) => 30,
+        nameof(GalleryAlbumMedia) or nameof(AllAmericanYearMedia) or nameof(AllAmericanRecipient) => 31,
+        nameof(AllAmericanPerformance) => 32, nameof(AllAmericanPerformanceRecipient) => 33,
+        nameof(ProductCategory) => 40, nameof(Product) => 41,
         nameof(ProductMedia) or nameof(ProductOption) or nameof(ProductVariant) or nameof(ProductModifierGroup) => 42,
         nameof(ProductOptionValue) or nameof(ProductModifierValue) => 43,
         nameof(ProductVariantOptionValue) or nameof(ProductVisualizerLayer) => 44, _ => 100

@@ -84,6 +84,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - [Media and gallery testing](guides/media-and-gallery-testing.md)
 - [Sponsor logo image guide](guides/sponsor-logo-images.md)
 - [Hall of Fame management](guides/hall-of-fame-management.md)
+- [All-American archive management](guides/all-american-archive.md)
 - [EF Core migrations](guides/ef-core-migrations.md)
 - [Troubleshooting](guides/troubleshooting.md)
 - [Glossary](guides/glossary.md)

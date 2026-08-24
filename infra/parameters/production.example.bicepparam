@@ -18,6 +18,7 @@ param frontendAllowedOrigin = 'https://el1tespr1ntathlet1cs.org'
 param cspMode = 'enforce'
 param browserAnalyticsEnabled = true
 param homeAllAmericanShowcaseEnabled = false
+param allAmericansArchiveEnabled = false
 param publicIndexingEnabled = false
 
 param mediaSoftDeleteRetentionDays = 30
