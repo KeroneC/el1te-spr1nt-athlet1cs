@@ -52,12 +52,7 @@ The following routes require the `CmsAdmin` policy:
 - `GET/POST /api/admin/store/inventory/stocktakes`
 - `GET /api/admin/store/inventory/adjustments`
 
-The following one-time import routes require the `SuperAdmin` policy:
-
-- `GET /api/admin/store/square-import/preview`
-- `POST /api/admin/store/square-import`
-
-The import creates unpublished local drafts, retains Square source IDs for idempotency, copies trusted Square-hosted images into El1te Media, and never imports customers, payments, or old orders. Exact inventory is private Admin data. Public store routes are feature-gated and `Store:Enabled=false` remains required until cutover.
+Products are created and maintained through the Admin catalog workflow. Square catalog import routes are not exposed. Historical Square source metadata and import-run records remain in the database for compatibility and audit purposes. Exact inventory is private Admin data. Public store routes are feature-gated and `Store:Enabled=false` remains required until cutover.
 
 ## Auth
 

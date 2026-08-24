@@ -114,16 +114,6 @@ public sealed class AdminStoreController(
         CancellationToken token = default) =>
         Ok(await service.GetStocktakesAsync(page, pageSize, token));
 
-    [HttpGet("square-import/preview")]
-    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
-    public async Task<IActionResult> PreviewSquareImport(CancellationToken token) =>
-        Ok(await service.PreviewSquareImportAsync(token));
-
-    [HttpPost("square-import")]
-    [Authorize(Policy = CmsAdminAuthorization.SuperAdminPolicyName)]
-    public async Task<IActionResult> ImportSquareCatalog(CancellationToken token) =>
-        StatusCode(StatusCodes.Status201Created, await service.ImportSquareCatalogAsync(CurrentUserId(), token));
-
     [HttpGet("operations-dashboard")]
     public async Task<IActionResult> OperationsDashboard(CancellationToken token) =>
         Ok(await orderService.GetOperationsDashboardAsync(token));

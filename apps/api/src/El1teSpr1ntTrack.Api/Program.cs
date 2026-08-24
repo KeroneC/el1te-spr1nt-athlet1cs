@@ -162,13 +162,6 @@ builder.Services.AddHttpClient<ISquareClient, SquareClient>(client =>
     client.BaseAddress = new Uri(squareSettings.BaseUrl);
     client.Timeout = TimeSpan.FromSeconds(Math.Clamp(squareSettings.RequestTimeoutSeconds, 5, 60));
 });
-builder.Services.AddHttpClient<ISquareCatalogImageImporter, SquareCatalogImageImporter>(client =>
-{
-    client.Timeout = TimeSpan.FromSeconds(30);
-}).ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
-{
-    AllowAutoRedirect = false
-});
 builder.Services.AddHostedService<CommerceOutboxWorker>();
 
 var authFeatureSettings = builder.Configuration

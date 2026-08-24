@@ -42,7 +42,6 @@ function isAllowedStoreMutation(path: string[], method: "POST" | "PUT" | "DELETE
     if (method === "POST") return path.length === 1;
     return method === "PUT" && path.length === 2 && idPattern.test(id ?? "");
   }
-  if (resource === "square-import") return method === "POST" && path.length === 1;
   if (resource === "orders") {
     if (!idPattern.test(id ?? "") || method !== "POST") return false;
     if (path.length === 3) return ["transitions", "notes", "refunds", "tracking-link"].includes(action ?? "");
@@ -61,6 +60,5 @@ export function isAllowedAdminRead(path: string[]): boolean {
   }
   return (storePath[0] === "products" && storePath.length === 2 && idPattern.test(storePath[1])) ||
     (storePath[0] === "orders" && storePath.length === 2 && idPattern.test(storePath[1])) ||
-    (storePath[0] === "inventory" && storePath.length === 2 && ["adjustments", "stocktakes"].includes(storePath[1])) ||
-    (storePath[0] === "square-import" && storePath[1] === "preview" && storePath.length === 2);
+    (storePath[0] === "inventory" && storePath.length === 2 && ["adjustments", "stocktakes"].includes(storePath[1]));
 }

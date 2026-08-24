@@ -548,7 +548,6 @@ public sealed class StoreOrderServiceTests
         public List<SquarePaymentLinkCommand> CreateCommands { get; } = [];
         private long CurrentTotalMinor { get; set; } = 2700;
         public Task<bool> CheckConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(true);
-        public Task<SquareCatalogSnapshot> GetCatalogSnapshotAsync(CancellationToken cancellationToken) => throw new NotSupportedException();
         public Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(SquarePaymentLinkCommand command, CancellationToken cancellationToken)
         {
             CreateCommands.Add(command);

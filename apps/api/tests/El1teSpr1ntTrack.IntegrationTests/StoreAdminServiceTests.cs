@@ -117,31 +117,6 @@ public sealed class StoreAdminServiceTests
     }
 
     [Fact]
-    public async Task SquareImport_IsIdempotentAndLeavesProductsAsDrafts()
-    {
-        await using var db = Context();
-        var actor = await AddActor(db);
-        var square = new FakeSquareClient(new SquareCatalogSnapshot([
-            new("ITEM-1", 4, "Square tee", "Description", "CAT-1", "Apparel", [],
-                [new("OPTION-1", "Size", 0, [new("VALUE-1", "Small", null, 0)])],
-                [new("VAR-1", 8, "Small", "SQ-TEE-S", 2500, "USD", 5, ["VALUE-1"])])
-        ]));
-        var service = Service(db, square);
-
-        var first = await service.ImportSquareCatalogAsync(actor.Id, CancellationToken.None);
-        var second = await service.ImportSquareCatalogAsync(actor.Id, CancellationToken.None);
-
-        Assert.Equal(1, first.ProductsCreated);
-        Assert.Equal(0, second.ProductsCreated);
-        Assert.Equal(1, second.ProductsSkipped);
-        var product = await db.Products.Include(value => value.Variants).SingleAsync();
-        Assert.Equal(StoreProductStatus.Draft, product.Status);
-        Assert.Equal("ITEM-1", product.SquareCatalogObjectId);
-        Assert.Equal(5, product.Variants.Single().OnHandQuantity);
-        Assert.Single(await db.InventoryAdjustments.ToListAsync());
-    }
-
-    [Fact]
     public async Task CreateProduct_RejectsVisualizerConditionsOutsideTheProductConfiguration()
     {
         await using var db = Context();
@@ -312,29 +287,12 @@ public sealed class StoreAdminServiceTests
         return actor;
     }
 
-    private static StoreAdminService Service(El1teDbContext db, ISquareClient? square = null) =>
-        new(db, new SlugGenerator(), new TestClock(), square ?? new FakeSquareClient(new SquareCatalogSnapshot([])), new NullImageImporter());
+    private static StoreAdminService Service(El1teDbContext db) =>
+        new(db, new SlugGenerator(), new TestClock());
 
     private sealed class TestClock : IClock
     {
         public DateTimeOffset UtcNow => new(2026, 7, 26, 12, 0, 0, TimeSpan.Zero);
     }
 
-    private sealed class NullImageImporter : ISquareCatalogImageImporter
-    {
-        public Task<Guid?> ImportAsync(SquareCatalogImage image, string productName, Guid actorUserId, CancellationToken cancellationToken) =>
-            Task.FromResult<Guid?>(null);
-    }
-
-    private sealed class FakeSquareClient(SquareCatalogSnapshot snapshot) : ISquareClient
-    {
-        public Task<SquareCatalogSnapshot> GetCatalogSnapshotAsync(CancellationToken cancellationToken) => Task.FromResult(snapshot);
-        public Task<bool> CheckConnectionAsync(CancellationToken cancellationToken) => Task.FromResult(true);
-        public Task<SquarePaymentLinkResult> CreatePaymentLinkAsync(SquarePaymentLinkCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<SquarePaymentResult> RetrievePaymentAsync(string paymentId, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<SquareOrderResult> RetrieveOrderAsync(string orderId, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<SquarePaymentLinkDeleteResult> DeletePaymentLinkAsync(string paymentLinkId, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<SquareRefundResult> RefundPaymentAsync(SquareRefundCommand command, CancellationToken cancellationToken) => throw new NotSupportedException();
-        public Task<SquareRefundStatusResult> RetrieveRefundAsync(string refundId, CancellationToken cancellationToken) => throw new NotSupportedException();
-    }
 }

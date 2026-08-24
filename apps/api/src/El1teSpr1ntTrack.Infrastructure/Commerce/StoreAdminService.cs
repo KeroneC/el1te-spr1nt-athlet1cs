@@ -13,9 +13,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Commerce;
 public sealed class StoreAdminService(
     El1teDbContext dbContext,
     ISlugGenerator slugGenerator,
-    IClock clock,
-    ISquareClient squareClient,
-    ISquareCatalogImageImporter imageImporter) : IStoreAdminService
+    IClock clock) : IStoreAdminService
 {
     public async Task<AdminStoreDashboardDto> GetDashboardAsync(CancellationToken cancellationToken)
     {
@@ -451,75 +449,6 @@ public sealed class StoreAdminService(
         return new PagedResultDto<AdminInventoryStocktakeDto>(items, page, pageSize, total);
     }
 
-    public async Task<SquareCatalogImportPreviewDto> PreviewSquareImportAsync(CancellationToken cancellationToken)
-    {
-        SquareCatalogSnapshot snapshot;
-        try { snapshot = await squareClient.GetCatalogSnapshotAsync(cancellationToken); }
-        catch (SquareIntegrationException exception) when (exception.SafeCode == "NOT_CONFIGURED")
-        {
-            return new SquareCatalogImportPreviewDto(false, 0, 0, []);
-        }
-        var ids = snapshot.Products.Select(value => value.CatalogObjectId).ToHashSet();
-        var existing = await dbContext.Products.AsNoTracking()
-            .Where(value => value.SquareCatalogObjectId != null && ids.Contains(value.SquareCatalogObjectId))
-            .Select(value => value.SquareCatalogObjectId!)
-            .ToHashSetAsync(cancellationToken);
-        var products = snapshot.Products.Select(value => new SquareCatalogImportProductPreviewDto(
-            value.CatalogObjectId, value.Name, value.Variants.Count, value.Images.Count,
-            existing.Contains(value.CatalogObjectId))).ToList();
-        return new SquareCatalogImportPreviewDto(true, products.Count, products.Count(value => !value.AlreadyImported), products);
-    }
-
-    public async Task<SquareCatalogImportResultDto> ImportSquareCatalogAsync(
-        Guid actorUserId,
-        CancellationToken cancellationToken)
-    {
-        var now = clock.UtcNow;
-        var run = new SquareCatalogImportRun { ActorUserId = actorUserId, CreatedAt = now };
-        dbContext.SquareCatalogImportRuns.Add(run);
-        await SaveAsync(cancellationToken);
-        await using var transaction = dbContext.Database.IsRelational()
-            ? await dbContext.Database.BeginTransactionAsync(cancellationToken)
-            : null;
-        try
-        {
-            var snapshot = await squareClient.GetCatalogSnapshotAsync(cancellationToken);
-            run.ProductsDiscovered = snapshot.Products.Count;
-            foreach (var source in snapshot.Products)
-            {
-                if (await dbContext.Products.AnyAsync(value => value.SquareCatalogObjectId == source.CatalogObjectId, cancellationToken))
-                {
-                    run.ProductsSkipped++;
-                    continue;
-                }
-                var category = await ImportedCategory(source, now, cancellationToken);
-                var product = await BuildImportedProduct(source, category, actorUserId, now, cancellationToken);
-                dbContext.Products.Add(product);
-                run.ProductsCreated++;
-                run.ImagesImported += product.Media.Count;
-            }
-            run.Status = SquareCatalogImportStatus.Completed;
-            run.CompletedAtUtc = clock.UtcNow;
-            AddActivity(actorUserId, "store.square.imported", "SquareCatalogImportRun", run.Id, $"Imported {run.ProductsCreated} Square products as drafts.");
-            await SaveAsync(cancellationToken);
-            if (transaction != null) await transaction.CommitAsync(cancellationToken);
-            return new SquareCatalogImportResultDto(run.Id, run.ProductsDiscovered, run.ProductsCreated, run.ProductsSkipped, run.ImagesImported);
-        }
-        catch
-        {
-            if (transaction != null) await transaction.RollbackAsync(CancellationToken.None);
-            dbContext.ChangeTracker.Clear();
-            var failedRun = await dbContext.SquareCatalogImportRuns.SingleAsync(
-                value => value.Id == run.Id,
-                CancellationToken.None);
-            failedRun.Status = SquareCatalogImportStatus.Failed;
-            failedRun.SafeFailureCode = "square_catalog_import_failed";
-            failedRun.CompletedAtUtc = clock.UtcNow;
-            await SaveAsync(CancellationToken.None);
-            throw;
-        }
-    }
-
     private async Task<Product?> ProductGraph(Guid id, CancellationToken token) =>
         await dbContext.Products
             .Include(value => value.Category)
@@ -878,114 +807,6 @@ public sealed class StoreAdminService(
         try { rowVersion = Convert.FromBase64String(encoded); }
         catch (FormatException) { throw new CmsConflictException("Inventory changed or the concurrency token is invalid. Refresh and try again."); }
         dbContext.Entry(variant).Property(value => value.RowVersion).OriginalValue = rowVersion;
-    }
-
-    private async Task<ProductCategory?> ImportedCategory(SquareCatalogProduct source, DateTimeOffset now, CancellationToken token)
-    {
-        if (string.IsNullOrWhiteSpace(source.CategoryName)) return null;
-        ProductCategory? category = null;
-        if (!string.IsNullOrWhiteSpace(source.CategoryCatalogObjectId))
-        {
-            category = dbContext.ProductCategories.Local.FirstOrDefault(
-                value => value.SquareCatalogObjectId == source.CategoryCatalogObjectId);
-        }
-        if (category == null && !string.IsNullOrWhiteSpace(source.CategoryCatalogObjectId))
-            category = await dbContext.ProductCategories.SingleOrDefaultAsync(
-                value => value.SquareCatalogObjectId == source.CategoryCatalogObjectId, token);
-        if (category != null) return category;
-        category = new ProductCategory
-        {
-            Name = source.CategoryName.Trim(),
-            Slug = await UniqueCategorySlug(source.CategoryName, null, token),
-            SquareCatalogObjectId = source.CategoryCatalogObjectId,
-            IsActive = true,
-            CreatedAt = now
-        };
-        dbContext.ProductCategories.Add(category);
-        return category;
-    }
-
-    private async Task<Product> BuildImportedProduct(
-        SquareCatalogProduct source, ProductCategory? category, Guid actorUserId,
-        DateTimeOffset now, CancellationToken token)
-    {
-        var product = new Product
-        {
-            Category = category,
-            Name = source.Name.Trim(),
-            Slug = await UniqueProductSlug(source.Name, null, token),
-            ShortDescription = Clean(source.Description)?.Length > 500 ? Clean(source.Description)![..500] : Clean(source.Description),
-            Description = Clean(source.Description),
-            BasePriceMinor = source.Variants.Select(value => value.PriceMinor).DefaultIfEmpty(0).Min(),
-            Currency = "USD",
-            Status = StoreProductStatus.Draft,
-            SquareCatalogObjectId = source.CatalogObjectId,
-            SquareCatalogVersion = source.Version,
-            ImportedAtUtc = now,
-            CreatedAt = now
-        };
-        var optionValueMap = new Dictionary<string, Guid>(StringComparer.Ordinal);
-        foreach (var sourceOption in source.Options.OrderBy(value => value.DisplayOrder))
-        {
-            var option = new ProductOption
-            {
-                Product = product, Name = sourceOption.Name, IsTracked = true,
-                DisplayOrder = sourceOption.DisplayOrder, IsActive = true,
-                SquareCatalogObjectId = sourceOption.CatalogObjectId, CreatedAt = now
-            };
-            foreach (var sourceValue in sourceOption.Values.OrderBy(value => value.DisplayOrder))
-            {
-                var value = new ProductOptionValue
-                {
-                    ProductOption = option, Name = sourceValue.Name, Slug = slugGenerator.Generate(sourceValue.Name),
-                    ColorHex = Clean(sourceValue.ColorHex), DisplayOrder = sourceValue.DisplayOrder, IsActive = true,
-                    SquareCatalogObjectId = sourceValue.CatalogObjectId, CreatedAt = now
-                };
-                optionValueMap[sourceValue.CatalogObjectId] = value.Id;
-                option.Values.Add(value);
-            }
-            product.Options.Add(option);
-        }
-        foreach (var sourceVariant in source.Variants)
-        {
-            var skuBase = string.IsNullOrWhiteSpace(sourceVariant.Sku)
-                ? $"SQ-{sourceVariant.CatalogObjectId[..Math.Min(12, sourceVariant.CatalogObjectId.Length)]}"
-                : sourceVariant.Sku.Trim();
-            var variant = new ProductVariant
-            {
-                Product = product, Name = sourceVariant.Name,
-                Sku = await UniqueSku(skuBase, null, token),
-                PriceOverrideMinor = sourceVariant.PriceMinor == product.BasePriceMinor ? null : sourceVariant.PriceMinor,
-                OnHandQuantity = Math.Max(0, sourceVariant.OnHandQuantity), ReservedQuantity = 0,
-                LowStockThreshold = 3, IsActive = true,
-                SquareCatalogObjectId = sourceVariant.CatalogObjectId,
-                SquareCatalogVersion = sourceVariant.Version, CreatedAt = now
-            };
-            foreach (var sourceValueId in sourceVariant.OptionValueCatalogObjectIds)
-                if (optionValueMap.TryGetValue(sourceValueId, out var valueId))
-                    variant.OptionValues.Add(new ProductVariantOptionValue { ProductVariant = variant, ProductOptionValueId = valueId });
-            product.Variants.Add(variant);
-            if (variant.OnHandQuantity > 0)
-                dbContext.InventoryAdjustments.Add(new InventoryAdjustment
-                {
-                    ProductVariant = variant, ActorUserId = actorUserId,
-                    Reason = InventoryAdjustmentReason.Receipt, QuantityDelta = variant.OnHandQuantity,
-                    ResultingOnHandQuantity = variant.OnHandQuantity,
-                    Note = "Initial quantity imported from Square catalog.", CreatedAt = now
-                });
-        }
-        var order = 0;
-        foreach (var image in source.Images)
-        {
-            var mediaId = await imageImporter.ImportAsync(image, product.Name, actorUserId, token);
-            if (mediaId.HasValue)
-                product.Media.Add(new ProductMedia
-                {
-                    Product = product, MediaAssetId = mediaId.Value, Role = ProductMediaRole.Gallery,
-                    DisplayOrder = order++, CreatedAt = now
-                });
-        }
-        return product;
     }
 
     private AdminStoreProductDto MapProduct(Product value) => new(
