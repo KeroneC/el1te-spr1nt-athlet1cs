@@ -88,12 +88,12 @@ describe("homepage All-American showcase", () => {
     expect(homepage).toContain("process.env.HOME_ALL_AMERICAN_SHOWCASE_ENABLED");
   });
 
-  it("enables the archive only on demo and renders the achievement numeral in white", () => {
+  it("keeps the shelved archive disabled in every deployed environment and renders the achievement numeral in white", () => {
     const demoWorkflow = readFileSync("../../.github/workflows/deploy-azure.yml", "utf8");
     const productionWorkflow = readFileSync("../../.github/workflows/deploy-production.yml", "utf8");
     const infrastructure = readFileSync("../../infra/main.bicep", "utf8");
     const styles = readFileSync("components/public/home-all-american-showcase.module.css", "utf8");
-    expect(demoWorkflow.match(/allAmericansArchiveEnabled=true/g)).toHaveLength(2);
+    expect(demoWorkflow.match(/allAmericansArchiveEnabled=false/g)).toHaveLength(2);
     expect(productionWorkflow.match(/allAmericansArchiveEnabled=false/g)).toHaveLength(2);
     expect(infrastructure).toContain("param allAmericansArchiveEnabled bool = false");
     expect(styles).toMatch(/\.showcase \.heading h1 strong\s*\{\s*color: #fff;/);
