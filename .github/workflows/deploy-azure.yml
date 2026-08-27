@@ -157,7 +157,7 @@ jobs:
           az deployment group what-if --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
             --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
-              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" homeAllAmericanShowcaseEnabled=true allAmericansArchiveEnabled=true storePublicPreviewEnabled=true storeNavigationMode="${{ inputs.use_internal_store_navigation && 'internal' || 'external' }}" \
+              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" homeAllAmericanShowcaseEnabled=true allAmericansArchiveEnabled=false storePublicPreviewEnabled=true storeNavigationMode="${{ inputs.use_internal_store_navigation && 'internal' || 'external' }}" \
               storeEnabled="${{ inputs.enable_square_sandbox_checkout }}" storeCheckoutEnabled="${{ inputs.enable_square_sandbox_checkout }}" squareEnvironment=Sandbox \
               squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
               squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI"
@@ -169,7 +169,7 @@ jobs:
           outputs=$(az deployment group create --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
             --parameters environmentName=demo location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
               deploymentPrincipalObjectId="$AZURE_DEPLOYMENT_PRINCIPAL_OBJECT_ID" sqlAdminLogin="$SQL_ADMIN_LOGIN" sqlAdminPassword="$SQL_ADMIN_PASSWORD" \
-              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" homeAllAmericanShowcaseEnabled=true allAmericansArchiveEnabled=true storePublicPreviewEnabled=true storeNavigationMode="${{ inputs.use_internal_store_navigation && 'internal' || 'external' }}" \
+              monitoringAlertEmail="$BUDGET_CONTACT_EMAIL" releaseSha="${{ steps.release.outputs.sha }}" homeAllAmericanShowcaseEnabled=true allAmericansArchiveEnabled=false storePublicPreviewEnabled=true storeNavigationMode="${{ inputs.use_internal_store_navigation && 'internal' || 'external' }}" \
               storeEnabled="${{ inputs.enable_square_sandbox_checkout }}" storeCheckoutEnabled="${{ inputs.enable_square_sandbox_checkout }}" squareEnvironment=Sandbox \
               squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$SQUARE_CHECKOUT_RETURN_URL" \
               squareAccessTokenSecretUri="$SQUARE_ACCESS_TOKEN_SECRET_URI" squareWebhookSignatureKeySecretUri="$SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI" \

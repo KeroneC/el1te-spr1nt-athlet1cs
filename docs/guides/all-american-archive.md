@@ -1,6 +1,6 @@
 # All-American Archive Management
 
-The All-American archive celebrates verified El1te results from the AAU Junior Olympic Games without using private athlete-registration records. The public archive is feature-gated with `ALL_AMERICANS_ARCHIVE_ENABLED`; demo enables it for review and production keeps it disabled until the club approves the content.
+The All-American archive celebrates verified El1te results from the AAU Junior Olympic Games without using private athlete-registration records. The public archive is feature-gated with `ALL_AMERICANS_ARCHIVE_ENABLED` and is currently shelved: both demo and production keep it disabled until the club chooses to resume archive work. The separate homepage All-American showcase remains enabled on demo.
 
 ## Create an annual story
 
