@@ -2,6 +2,7 @@
   position: relative;
   display: grid;
   min-width: 0;
+  overflow-x: clip;
   align-content: center;
   gap: clamp(0.65rem, 1.4vw, 1rem);
   color: #fff;

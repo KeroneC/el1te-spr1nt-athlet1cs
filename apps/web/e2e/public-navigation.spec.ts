@@ -70,6 +70,10 @@ test("homepage All-American showcase is responsive, controllable, and motion saf
 
   for (const width of [1024, 800, 769, 768, 390, 340]) {
     await page.setViewportSize({ width, height: 844 });
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+    const viewport = await page.evaluate(() => ({
+      clientWidth: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth
+    }));
+    expect(viewport.scrollWidth, `homepage overflow at ${width}px`).toBeLessThanOrEqual(viewport.clientWidth);
   }
 });
