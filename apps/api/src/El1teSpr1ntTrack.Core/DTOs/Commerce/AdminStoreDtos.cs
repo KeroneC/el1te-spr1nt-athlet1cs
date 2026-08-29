@@ -180,6 +180,12 @@ public sealed class StoreProductWriteDto
     public IReadOnlyList<ProductVisualizerLayerWriteDto> VisualizerLayers { get; init; } = [];
 }
 
+public sealed class DuplicateProductWriteDto
+{
+    [Required, MaxLength(200)]
+    public string Name { get; init; } = string.Empty;
+}
+
 public sealed record ProductMediaWriteDto(
     Guid Id,
     Guid MediaAssetId,

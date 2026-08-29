@@ -49,8 +49,12 @@ public sealed class AdminStoreController(
         Ok(await service.UpdateProductAsync(id, request, CurrentUserId(), token));
 
     [HttpPost("products/{id:guid}/duplicate")]
-    public async Task<IActionResult> DuplicateProduct(Guid id, CancellationToken token) =>
-        StatusCode(StatusCodes.Status201Created, await service.DuplicateProductAsync(id, CurrentUserId(), token));
+    public async Task<IActionResult> DuplicateProduct(Guid id, DuplicateProductWriteDto request, CancellationToken token) =>
+        StatusCode(StatusCodes.Status201Created, await service.DuplicateProductAsync(id, request, CurrentUserId(), token));
+
+    [HttpPost("products/{id:guid}/regenerate-slug")]
+    public async Task<IActionResult> RegenerateProductSlug(Guid id, CancellationToken token) =>
+        Ok(await service.RegenerateProductSlugAsync(id, CurrentUserId(), token));
 
     [HttpDelete("products/{id:guid}")]
     public async Task<IActionResult> ArchiveProduct(Guid id, CancellationToken token)

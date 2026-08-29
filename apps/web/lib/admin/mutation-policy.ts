@@ -42,7 +42,7 @@ function isAllowedStoreMutation(path: string[], method: "POST" | "PUT" | "DELETE
     if (method === "POST" && path.length === 1) return true;
     if (!idPattern.test(id ?? "")) return false;
     if (method === "PUT" || method === "DELETE") return path.length === 2;
-    return method === "POST" && path.length === 3 && action === "duplicate";
+    return method === "POST" && path.length === 3 && ["duplicate", "regenerate-slug"].includes(action ?? "");
   }
   if (resource === "categories") {
     if (method === "POST") return path.length === 1;

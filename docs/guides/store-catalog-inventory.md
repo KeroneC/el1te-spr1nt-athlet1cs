@@ -9,7 +9,7 @@ All active Admins and SuperAdmins can:
 - view draft, published, low-stock, sold-out, variant, and on-hand summaries;
 - create and edit categories;
 - create products through the guided Basics, Media, Variants, Customizations, and Preview workflow;
-- duplicate a product into a new draft with new option identifiers, new SKUs, and zero stock;
+- duplicate a product by naming the new draft first, generating a URL from that name while copying catalog setup with new option identifiers, unique `-COPY` SKUs, and zero stock;
 - archive products without deleting order or inventory history;
 - configure physical size/garment-color options and concrete SKUs;
 - configure logo color, logo treatment, name, and number choices without splitting stock;
@@ -21,7 +21,7 @@ Catalog and inventory access does not grant refund, Square-configuration, or tra
 ## Product Workflow
 
 1. Open **Admin → Merchandise → Catalog**.
-2. Create a product or duplicate a similar draft.
+2. Create a product or duplicate a similar product. Duplication asks for the new customer-facing name and generates a unique slug from it; review every copied SKU before publishing.
 3. Enter its name, category, base USD price, descriptions, order, and special-request behavior.
 4. Select real product media from the reusable Media library. Assign:
    - `Gallery` to customer-facing photography;
@@ -34,6 +34,8 @@ Catalog and inventory access does not grant refund, Square-configuration, or tra
 9. Preview and save.
 
 Drafts may be incomplete and saved for later. Publishing requires at least one image and one active variant. A published record appears in the non-transactional storefront only when `Store:PublicPreviewEnabled` or full commerce is enabled.
+
+Older copied drafts whose URL ends in `-copy` or a numeric copy suffix show a **Repair draft URL** action after their final name is saved. The confirmation replaces that draft-only slug with one generated from the saved name and immediately revokes the old draft URL. Ordinary draft URLs and all published or archived product URLs remain stable and cannot be regenerated.
 
 Removing an option that participates in existing variants requires confirmation. Those existing rows are omitted and therefore deactivated rather than deleted, preserving inventory, adjustment, reservation, and order history. Newly generated replacement variants start at zero and require a physical stocktake before purchase. Modifier and visualizer configuration can be replaced because paid order items retain immutable configuration snapshots.
 

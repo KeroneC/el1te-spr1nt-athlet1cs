@@ -12,7 +12,7 @@ describe("Phase 7 mutation boundary", () => {
     [["events"], "POST"], [["coaches", id], "PUT"], [["hall-of-fame-inductees"], "POST"], [["hall-of-fame-inductees", id], "PUT"], [["hall-of-fame-inductees", id], "DELETE"], [["content-blocks", id], "DELETE"],
     [["site-settings"], "PUT"], [["contact-submissions", id, "status"], "PUT"], [["contact-submissions", id], "DELETE"],
     [["users", id], "PUT"], [["invitations"], "POST"], [["invitations", id, "reissue"], "POST"], [["invitations", id], "DELETE"]
-    , [["store", "products"], "POST"], [["store", "products", id], "PUT"], [["store", "products", id, "duplicate"], "POST"],
+    , [["store", "products"], "POST"], [["store", "products", id], "PUT"], [["store", "products", id, "duplicate"], "POST"], [["store", "products", id, "regenerate-slug"], "POST"],
     [["store", "inventory", "receipts"], "POST"], [["store", "inventory", "stocktakes"], "POST"],
     [["store", "inventory", id, "adjustments"], "POST"]
   ] as const)("allows supported operation %#", (path, method) => expect(isAllowedAdminMutation([...path], method)).toBe(true));
