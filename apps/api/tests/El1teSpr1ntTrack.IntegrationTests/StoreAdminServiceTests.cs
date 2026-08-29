@@ -24,19 +24,129 @@ public sealed class StoreAdminServiceTests
 
         var created = await service.CreateProductAsync(request, actor.Id, CancellationToken.None);
         var entity = await db.Products.Include(value => value.Variants).SingleAsync(value => value.Id == created.Id);
+        entity.SquareCatalogObjectId = "SQUARE-PRODUCT";
+        entity.SquareCatalogVersion = 12;
+        entity.ImportedAtUtc = new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero);
         entity.Variants.Single().OnHandQuantity = 6;
+        entity.Variants.Single().SquareCatalogObjectId = "SQUARE-VARIANT";
+        entity.Variants.Single().SquareCatalogVersion = 13;
         await db.SaveChangesAsync();
 
-        var duplicate = await service.DuplicateProductAsync(created.Id, actor.Id, CancellationToken.None);
+        var duplicate = await service.DuplicateProductAsync(
+            created.Id,
+            new DuplicateProductWriteDto { Name = "  Warmup hoodie  " },
+            actor.Id,
+            CancellationToken.None);
 
+        Assert.Equal("Warmup hoodie", duplicate.Name);
+        Assert.Equal("warmup-hoodie", duplicate.Slug);
         Assert.Equal(StoreProductStatus.Draft, duplicate.Status);
         Assert.False(duplicate.IsFeatured);
         Assert.Null(duplicate.SquareCatalogObjectId);
+        Assert.Null(duplicate.SquareCatalogVersion);
+        Assert.Null(duplicate.ImportedAtUtc);
         var variant = Assert.Single(duplicate.Variants);
         Assert.Equal(0, variant.OnHandQuantity);
         Assert.Equal(0, variant.ReservedQuantity);
+        Assert.Null(variant.SquareCatalogObjectId);
+        Assert.Null(variant.SquareCatalogVersion);
         Assert.EndsWith("-COPY", variant.Sku);
         Assert.NotEqual(created.Options.Single().Values.Single().Id, duplicate.Options.Single().Values.Single().Id);
+    }
+
+    [Fact]
+    public async Task DuplicateProduct_RejectsNamesLongerThanTwoHundredCharacters()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var service = Service(db);
+        var created = await service.CreateProductAsync(
+            ProductRequest(Guid.NewGuid(), Guid.NewGuid()), actor.Id, CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() =>
+            service.DuplicateProductAsync(created.Id, new DuplicateProductWriteDto { Name = new string('x', 201) },
+                actor.Id, CancellationToken.None));
+
+        Assert.Contains("Name", exception.Errors);
+        Assert.Single(await db.Products.ToListAsync());
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("team HOODIE")]
+    public async Task DuplicateProduct_RejectsMissingOrUnchangedNames(string requestedName)
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var created = await Service(db).CreateProductAsync(
+            ProductRequest(Guid.NewGuid(), Guid.NewGuid()), actor.Id, CancellationToken.None);
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() =>
+            Service(db).DuplicateProductAsync(created.Id, new DuplicateProductWriteDto { Name = requestedName },
+                actor.Id, CancellationToken.None));
+
+        Assert.Contains("Name", exception.Errors);
+        Assert.Single(await db.Products.ToListAsync());
+    }
+
+    [Fact]
+    public async Task DuplicateProduct_GeneratesNumericSlugSuffixWhenRequestedNameCollides()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var service = Service(db);
+        var source = await service.CreateProductAsync(
+            ProductRequest(Guid.NewGuid(), Guid.NewGuid()), actor.Id, CancellationToken.None);
+        db.Products.Add(new Product { Name = "Warmup hoodie", Slug = "warmup-hoodie" });
+        await db.SaveChangesAsync();
+
+        var duplicate = await service.DuplicateProductAsync(
+            source.Id, new DuplicateProductWriteDto { Name = "Warmup hoodie" }, actor.Id, CancellationToken.None);
+
+        Assert.Equal("warmup-hoodie-2", duplicate.Slug);
+    }
+
+    [Fact]
+    public async Task RegenerateProductSlug_RepairsEligibleDraftAndRecordsOldAndNewSlug()
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var product = new Product
+        {
+            Name = "Performance quarter zip", Slug = "team-hoodie-copy-2", Status = StoreProductStatus.Draft
+        };
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+
+        var updated = await Service(db).RegenerateProductSlugAsync(product.Id, actor.Id, CancellationToken.None);
+
+        Assert.Equal("performance-quarter-zip", updated.Slug);
+        var activity = await db.AdminActivityLogs.SingleAsync(value => value.Action == "store.product.slug-regenerated");
+        Assert.Equal(product.Id, activity.TargetId);
+        Assert.Contains("team-hoodie-copy-2", activity.Summary);
+        Assert.Contains("performance-quarter-zip", activity.Summary);
+    }
+
+    [Theory]
+    [InlineData(StoreProductStatus.Published, "team-hoodie-copy")]
+    [InlineData(StoreProductStatus.Archived, "team-hoodie-copy-3")]
+    [InlineData(StoreProductStatus.Draft, "team-hoodie")]
+    public async Task RegenerateProductSlug_RejectsPublishedArchivedAndOrdinaryProducts(
+        StoreProductStatus status,
+        string slug)
+    {
+        await using var db = Context();
+        var actor = await AddActor(db);
+        var product = new Product { Name = "Updated hoodie", Slug = slug, Status = status };
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+
+        var exception = await Assert.ThrowsAsync<CmsRequestValidationException>(() =>
+            Service(db).RegenerateProductSlugAsync(product.Id, actor.Id, CancellationToken.None));
+
+        Assert.Contains("Slug", exception.Errors);
+        Assert.Equal(slug, (await db.Products.AsNoTracking().SingleAsync(value => value.Id == product.Id)).Slug);
     }
 
     [Fact]

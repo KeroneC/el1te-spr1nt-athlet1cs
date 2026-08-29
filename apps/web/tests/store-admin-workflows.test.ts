@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { validateInventoryOperation } from "../components/admin/store-inventory-workspace";
 import { buildVariantMatrix, parseMoneyInput, storeProductDraftFromItem, validateStoreProductDraft, type StoreProductDraft } from "../components/admin/store-product-wizard";
 import type { AdminInventoryVariant, AdminStoreProduct } from "../lib/admin/types";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "../lib/admin/mutation-policy";
+import { validateDuplicateProductName } from "../components/admin/store-product-actions";
+import { isRepairableCopiedDraft } from "../components/admin/store-product-slug-repair";
 
 const draft = (overrides: Partial<StoreProductDraft> = {}): StoreProductDraft => ({
   categoryId: null, name: "Team hoodie", shortDescription: "", description: "",
@@ -18,6 +21,37 @@ const inventory: AdminInventoryVariant = {
 };
 
 describe("store product wizard", () => {
+  it("validates the requested name before duplicating a product", () => {
+    expect(validateDuplicateProductName("", "Team hoodie")).toBe("Enter a name for the new product.");
+    expect(validateDuplicateProductName(" team HOODIE ", "Team hoodie")).toContain("different");
+    expect(validateDuplicateProductName("x".repeat(201), "Team hoodie")).toContain("200");
+    expect(validateDuplicateProductName(" Warmup hoodie ", "Team hoodie")).toBeNull();
+  });
+
+  it("offers slug repair only for copied drafts", () => {
+    expect(isRepairableCopiedDraft("Draft", "team-hoodie-copy")).toBe(true);
+    expect(isRepairableCopiedDraft("Draft", "team-hoodie-copy-2")).toBe(true);
+    expect(isRepairableCopiedDraft("Draft", "team-hoodie-copy-10")).toBe(true);
+    expect(isRepairableCopiedDraft("Published", "team-hoodie-copy")).toBe(false);
+    expect(isRepairableCopiedDraft("Draft", "team-hoodie")).toBe(false);
+  });
+
+  it("keeps duplication and slug repair accessible and session-aware", () => {
+    const duplicate = readFileSync("components/admin/store-product-actions.tsx", "utf8");
+    const repair = readFileSync("components/admin/store-product-slug-repair.tsx", "utf8");
+
+    expect(duplicate).toContain("showModal()");
+    expect(duplicate).toContain("nameInput.current?.focus()");
+    expect(duplicate).toContain("onSubmit={duplicate}");
+    expect(duplicate).toContain('JSON.stringify({ name: copyName.trim() })');
+    expect(duplicate).toContain("aria-invalid");
+    expect(duplicate).toContain("redirectForAdminResponse(response)");
+    expect(duplicate).toContain("router.push(`/admin/store/products/${result.id}/edit`)");
+    expect(repair).toContain("The previous draft URL");
+    expect(repair).toContain("/regenerate-slug");
+    expect(repair).toContain("redirectForAdminResponse(response)");
+  });
+
   it("accepts typed dollar amounts without relying on number-field steppers", () => {
     expect(parseMoneyInput("25")).toBe(2500);
     expect(parseMoneyInput("25.5")).toBe(2550);
@@ -171,5 +205,11 @@ describe("store order proxy policy", () => {
     expect(isAllowedAdminMutation(["store", "orders", id, "emails", emailId, "retry"], "POST")).toBe(true);
     expect(isAllowedAdminMutation(["store", "orders", id, "refunds", emailId, "retry"], "POST")).toBe(true);
     expect(isAllowedAdminMutation(["store", "orders", id], "DELETE")).toBe(false);
+  });
+
+  it("allows only the named product duplicate and guarded slug repair actions", () => {
+    expect(isAllowedAdminMutation(["store", "products", id, "duplicate"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "products", id, "regenerate-slug"], "POST")).toBe(true);
+    expect(isAllowedAdminMutation(["store", "products", id, "change-slug"], "POST")).toBe(false);
   });
 });

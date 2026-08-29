@@ -167,17 +167,25 @@ public sealed class StoreAdminService(
 
     public async Task<AdminStoreProductDto> DuplicateProductAsync(
         Guid id,
+        DuplicateProductWriteDto request,
         Guid actorUserId,
         CancellationToken cancellationToken)
     {
         var source = await ProductGraph(id, cancellationToken)
             ?? throw new CmsNotFoundException("Product", id);
+        var name = request.Name?.Trim() ?? string.Empty;
+        if (name.Length == 0)
+            Invalid("Name", "A new product name is required.");
+        if (name.Length > 200)
+            Invalid("Name", "The product name cannot exceed 200 characters.");
+        if (string.Equals(name, source.Name.Trim(), StringComparison.OrdinalIgnoreCase))
+            Invalid("Name", "Enter a name that is different from the product being copied.");
         var now = clock.UtcNow;
         var product = new Product
         {
             CategoryId = source.CategoryId,
-            Name = $"{source.Name} copy",
-            Slug = await UniqueProductSlug($"{source.Name}-copy", null, cancellationToken),
+            Name = name,
+            Slug = await UniqueProductSlug(name, null, cancellationToken),
             ShortDescription = source.ShortDescription,
             Description = source.Description,
             BasePriceMinor = source.BasePriceMinor,
@@ -231,7 +239,32 @@ public sealed class StoreAdminService(
         }
         CloneModifiersAndVisualizer(source, product, now, valueMap);
         dbContext.Products.Add(product);
-        AddActivity(actorUserId, "store.product.duplicated", "Product", product.Id, $"Duplicated product '{source.Name}'.");
+        AddActivity(actorUserId, "store.product.duplicated", "Product", product.Id, $"Duplicated product '{source.Name}' as '{product.Name}'.");
+        await SaveAsync(cancellationToken);
+        return MapProduct((await ProductGraph(product.Id, cancellationToken))!);
+    }
+
+    public async Task<AdminStoreProductDto> RegenerateProductSlugAsync(
+        Guid id,
+        Guid actorUserId,
+        CancellationToken cancellationToken)
+    {
+        var product = await dbContext.Products.SingleOrDefaultAsync(value => value.Id == id, cancellationToken)
+            ?? throw new CmsNotFoundException("Product", id);
+        if (product.Status != StoreProductStatus.Draft)
+            Invalid("Slug", "Only draft products can have a copied URL repaired.");
+        if (!IsCopiedProductSlug(product.Slug))
+            Invalid("Slug", "This product does not have a copied draft URL.");
+
+        var oldSlug = product.Slug;
+        var newSlug = await UniqueProductSlug(product.Name, product.Id, cancellationToken);
+        if (string.Equals(oldSlug, newSlug, StringComparison.OrdinalIgnoreCase))
+            Invalid("Slug", "Save a different product name before repairing its URL.");
+
+        product.Slug = newSlug;
+        product.UpdatedAt = clock.UtcNow;
+        AddActivity(actorUserId, "store.product.slug-regenerated", "Product", product.Id,
+            $"Regenerated product slug from '{oldSlug}' to '{newSlug}'.");
         await SaveAsync(cancellationToken);
         return MapProduct((await ProductGraph(product.Id, cancellationToken))!);
     }
@@ -901,6 +934,16 @@ public sealed class StoreAdminService(
         (Math.Max(1, page), Math.Clamp(pageSize, 1, maximum));
 
     private static string? Clean(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    private static bool IsCopiedProductSlug(string slug)
+    {
+        var copyIndex = slug.LastIndexOf("-copy", StringComparison.OrdinalIgnoreCase);
+        if (copyIndex <= 0) return false;
+        var suffix = slug[(copyIndex + 5)..];
+        return suffix.Length == 0 ||
+               suffix[0] == '-' &&
+               int.TryParse(suffix[1..], out var number) && number >= 2;
+    }
 
     private static void ValidateName(string value, string field)
     {

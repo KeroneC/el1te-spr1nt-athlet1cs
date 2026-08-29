@@ -12,7 +12,8 @@ public interface IStoreAdminService
     Task<AdminStoreProductDto> GetProductAsync(Guid id, CancellationToken cancellationToken);
     Task<AdminStoreProductDto> CreateProductAsync(StoreProductWriteDto request, Guid actorUserId, CancellationToken cancellationToken);
     Task<AdminStoreProductDto> UpdateProductAsync(Guid id, StoreProductWriteDto request, Guid actorUserId, CancellationToken cancellationToken);
-    Task<AdminStoreProductDto> DuplicateProductAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken);
+    Task<AdminStoreProductDto> DuplicateProductAsync(Guid id, DuplicateProductWriteDto request, Guid actorUserId, CancellationToken cancellationToken);
+    Task<AdminStoreProductDto> RegenerateProductSlugAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken);
     Task ArchiveProductAsync(Guid id, Guid actorUserId, CancellationToken cancellationToken);
     Task<IReadOnlyList<AdminProductCategoryDto>> GetCategoriesAsync(CancellationToken cancellationToken);
     Task<AdminProductCategoryDto> CreateCategoryAsync(ProductCategoryWriteDto request, Guid actorUserId, CancellationToken cancellationToken);
