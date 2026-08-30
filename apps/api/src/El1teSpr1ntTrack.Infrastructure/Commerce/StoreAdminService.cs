@@ -84,9 +84,10 @@ public sealed class StoreAdminService(
                 value.Status,
                 value.IsFeatured,
                 value.DisplayOrder,
-                value.Variants.Count,
-                value.Variants.Sum(variant => variant.OnHandQuantity),
-                value.Variants.Sum(variant => variant.OnHandQuantity - variant.ReservedQuantity),
+                value.Variants.Count(variant => variant.IsActive),
+                value.Variants.Sum(variant => variant.IsActive ? variant.OnHandQuantity : 0),
+                value.Variants.Sum(variant =>
+                    variant.IsActive ? variant.OnHandQuantity - variant.ReservedQuantity : 0),
                 value.Variants.Count(variant =>
                     variant.IsActive &&
                     variant.OnHandQuantity - variant.ReservedQuantity > 0 &&

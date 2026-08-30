@@ -1,4 +1,5 @@
 using El1teSpr1ntTrack.Application.Common.Exceptions;
+using El1teSpr1ntTrack.Application.Common;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Application.Services;
 using El1teSpr1ntTrack.Core.DTOs.Commerce;
@@ -147,6 +148,49 @@ public sealed class StoreAdminServiceTests
 
         Assert.Contains("Slug", exception.Errors);
         Assert.Equal(slug, (await db.Products.AsNoTracking().SingleAsync(value => value.Id == product.Id)).Slug);
+    }
+
+    [Fact]
+    public async Task ProductSummary_ExcludesInactiveVariantHistoryFromOperationalTotals()
+    {
+        await using var db = Context();
+        var product = new Product
+        {
+            Name = "Team hoodie", Slug = "team-hoodie", Status = StoreProductStatus.Published
+        };
+        product.Variants.Add(new ProductVariant
+        {
+            Product = product,
+            Name = "Medium / Red",
+            Sku = "HOOD-M-RED",
+            OnHandQuantity = 5,
+            ReservedQuantity = 2,
+            LowStockThreshold = 3,
+            IsActive = true
+        });
+        product.Variants.Add(new ProductVariant
+        {
+            Product = product,
+            Name = "Medium / Red / White logo",
+            Sku = "HOOD-M-RED-WHITE-HISTORY",
+            OnHandQuantity = 100,
+            ReservedQuantity = 5,
+            LowStockThreshold = 10,
+            IsActive = false
+        });
+        db.Products.Add(product);
+        await db.SaveChangesAsync();
+
+        var result = await Service(db).GetProductsAsync(
+            new AdminStoreProductOptions(null, null, null, null), CancellationToken.None);
+
+        var summary = Assert.Single(result.Items);
+        Assert.Equal(1, summary.VariantCount);
+        Assert.Equal(5, summary.TotalOnHand);
+        Assert.Equal(3, summary.TotalAvailable);
+        Assert.Equal(1, summary.LowStockVariantCount);
+        Assert.Equal(2, await db.ProductVariants.CountAsync());
+        Assert.True(await db.ProductVariants.AnyAsync(value => !value.IsActive));
     }
 
     [Fact]
