@@ -621,7 +621,18 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
   .home-hero-showcase .hero-logo-panel { width: min(31rem, 94vw); }
   .home-hero-showcase .hero-brand-column .button-row { align-items: center; }
   .achievement-image { aspect-ratio: 4 / 5; }
-  .page-hero h1 { font-size: clamp(2.75rem, 15vw, 4.2rem); }
+  .page-hero h1 {
+    max-width: 100%;
+    font-size: clamp(2.25rem, 11vw, 4.2rem);
+    overflow-wrap: normal;
+    word-break: normal;
+  }
+  .page-hero p:not(.eyebrow) { max-width: 38rem; font-size: 1rem; line-height: 1.6; }
+  .content-section h2, .section-heading h2 {
+    font-size: clamp(1.75rem, 9vw, 2.5rem);
+    overflow-wrap: normal;
+    word-break: normal;
+  }
   .button-row { align-items: stretch; flex-direction: column; width: 100%; }
   .button-row .button { width: fit-content; }
   .event-list-card, .event-list-card.has-media, .download-row { grid-template-columns: 1fr; }
