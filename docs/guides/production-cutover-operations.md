@@ -33,14 +33,14 @@ App Service must show each hostname as validated before its managed certificate 
 
 ## Data promotion
 
-1. Run **Promote Reviewed Production Content** with `command=export`.
+1. Run **Promote Reviewed Production Content** with `command=export`. For the initial catalog staging pass, also set `include_all_products=true` so all draft and published product graphs are available for review.
 2. Download its manifest artifact. Review records, dependencies, status, and Blob SHA-256 values.
 3. Set `include` only for approved public records and selected catalog content. The manifest hash intentionally excludes the review flags while protecting all record data and hashes.
 4. Commit the reviewed manifest under `launch/manifests/` through a pull request.
-5. Run the workflow with `command=apply` and acknowledge the review. It performs a dry run first.
-6. Confirm the report, Blob hashes, rewritten production media URLs, fresh production uploader mapping, and zero quantities on every promoted variant.
+5. Run the workflow with `command=apply`, `force_products_draft=true`, and acknowledge the review. It performs a dry run first. Leave the force input off for ordinary later selective promotions unless the same safety behavior is intended.
+6. Confirm the report, Blob hashes, rewritten production media URLs, fresh production uploader mapping, Draft/non-featured product state, and zero quantities on every promoted variant.
 
-The importer does not delete unrelated destination records and is idempotent. Users, invitations, private submissions, athletes, documents, orders, refunds, webhooks, outbox records, telemetry, and secrets are prohibited.
+The importer does not delete unrelated destination records and is idempotent. Users, invitations, private submissions, athletes, documents, orders, refunds, webhooks, outbox records, telemetry, and secrets are prohibited. The shelved All-American archive records must remain excluded from the launch manifest.
 
 ## Restore and rollback
 
