@@ -19,6 +19,16 @@ on:
         required: true
         type: boolean
         default: false
+      include_all_products:
+        description: Export every product and its catalog dependencies, including drafts
+        required: true
+        type: boolean
+        default: false
+      force_products_draft:
+        description: Force every imported product to Draft and non-featured
+        required: true
+        type: boolean
+        default: false
 
 concurrency:
   group: promote-production-content
@@ -91,10 +101,12 @@ jobs:
         shell: bash
         run: |
           mkdir -p "$(dirname '${{ inputs.manifest_path }}')"
+          extra_args=()
+          if [[ "${{ inputs.include_all_products }}" == "true" ]]; then extra_args+=(--include-all-products); fi
           dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
             export --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
             --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
-            --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI"
+            --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI" "${extra_args[@]}"
 
       - name: Upload review manifest
         if: ${{ inputs.command == 'export' }}
@@ -109,21 +121,25 @@ jobs:
         shell: bash
         run: |
           test -f "${{ inputs.manifest_path }}"
+          extra_args=()
+          if [[ "${{ inputs.force_products_draft }}" == "true" ]]; then extra_args+=(--force-products-draft); fi
           dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
             import --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
             --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
             --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI" --destination-blob-service-uri "$PROMOTION_DESTINATION_BLOB_SERVICE_URI" \
-            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID"
+            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID" "${extra_args[@]}"
 
       - name: Apply reviewed manifest
         if: ${{ inputs.command == 'apply' }}
         shell: bash
         run: |
+          extra_args=()
+          if [[ "${{ inputs.force_products_draft }}" == "true" ]]; then extra_args+=(--force-products-draft); fi
           dotnet run --project apps/api/tools/El1teSpr1ntTrack.LaunchPromotion/El1teSpr1ntTrack.LaunchPromotion.csproj --no-restore -- \
             import --source-environment demo --destination-environment production --manifest "${{ inputs.manifest_path }}" \
             --source-api-base https://el1tesprint-demo-neauu2-api.azurewebsites.net --destination-api-base https://api.el1tespr1ntathlet1cs.org \
             --source-blob-service-uri "$PROMOTION_SOURCE_BLOB_SERVICE_URI" --destination-blob-service-uri "$PROMOTION_DESTINATION_BLOB_SERVICE_URI" \
-            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID" --apply --confirm production
+            --bootstrap-user-id "$PRODUCTION_BOOTSTRAP_USER_ID" --apply --confirm production "${extra_args[@]}"
 
       - name: Remove temporary SQL access
         if: ${{ always() && steps.firewall.outcome == 'success' }}

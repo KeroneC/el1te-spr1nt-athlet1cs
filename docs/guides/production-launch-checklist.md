@@ -15,6 +15,7 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 - [ ] Production has its own resource group, SQL database, Blob account, Key Vault, App Services, monitoring, identities, secrets, and protected GitHub environment.
 - [ ] SQL has explicit 14-day point-in-time retention; Blob/container soft delete is 30 days; Blob versioning and 90-day old-version cleanup are enabled; a disposable restore has succeeded.
 - [ ] The selective promotion manifest was reviewed; it excludes users, invitations, submissions, athletes, documents, orders, refunds, webhooks, outbox records, telemetry, and secrets.
+- [ ] The fresh launch manifest contains all 11 reviewed product graphs, excludes all shelved All-American archive records, and is applied with the force-products-draft safeguard.
 - [ ] Every selected media object matches its SHA-256 manifest hash and every promoted variant has zero on-hand/reserved stock before stocktake.
 - [ ] A fresh production SuperAdmin is bootstrapped; demo and test users are absent.
 

@@ -27,7 +27,8 @@ var input = JsonSerializer.Deserialize<PromotionManifest>(await File.ReadAllText
 PromotionEngine.Validate(input, arguments);
 if (!arguments.Apply)
 {
-    Console.WriteLine($"DRY RUN: {input.Records.Count(value => value.Include)} selected records would be applied to {arguments.DestinationEnvironment}. Add --apply --confirm {arguments.DestinationEnvironment} to continue.");
+    var productSafety = arguments.ForceProductsDraft ? " Promoted products would be forced to Draft and non-featured." : string.Empty;
+    Console.WriteLine($"DRY RUN: {input.Records.Count(value => value.Include)} selected records would be applied to {arguments.DestinationEnvironment}.{productSafety} Add --apply --confirm {arguments.DestinationEnvironment} to continue.");
     return;
 }
 if (!arguments.Confirm.Equals(arguments.DestinationEnvironment, StringComparison.Ordinal))
@@ -77,7 +78,8 @@ internal sealed record PromotionArguments(
     string Command, string SourceEnvironment, string DestinationEnvironment, string SourceConnection,
     string DestinationConnection, string ManifestPath, string SourceApiBase, string DestinationApiBase,
     bool Apply, string Confirm, Guid BootstrapUserId, string SourceMediaRoot, string DestinationMediaRoot,
-    string SourceBlobServiceUri, string DestinationBlobServiceUri, string MediaContainer)
+    string SourceBlobServiceUri, string DestinationBlobServiceUri, string MediaContainer,
+    bool IncludeAllProducts, bool ForceProductsDraft)
 {
     public static PromotionArguments Parse(string[] args)
     {
@@ -85,7 +87,11 @@ internal sealed record PromotionArguments(
         var values = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (var index = 1; index < args.Length; index++)
         {
-            if (args[index] == "--apply") { values["apply"] = "true"; continue; }
+            if (args[index] is "--apply" or "--include-all-products" or "--force-products-draft")
+            {
+                values[args[index][2..]] = "true";
+                continue;
+            }
             if (!args[index].StartsWith("--") || index + 1 >= args.Length) Usage();
             values[args[index][2..]] = args[++index];
         }
@@ -100,7 +106,8 @@ internal sealed record PromotionArguments(
             Guid.TryParse(values.GetValueOrDefault("bootstrap-user-id"), out var id) ? id : Guid.Empty,
             values.GetValueOrDefault("source-media-root", ""), values.GetValueOrDefault("destination-media-root", ""),
             values.GetValueOrDefault("source-blob-service-uri", ""), values.GetValueOrDefault("destination-blob-service-uri", ""),
-            values.GetValueOrDefault("media-container", "media"));
+            values.GetValueOrDefault("media-container", "media"), values.ContainsKey("include-all-products"),
+            values.ContainsKey("force-products-draft"));
     }
     private static void Usage() => throw new InvalidOperationException("Use export or import with explicit --source-environment, --destination-environment, --manifest, --source-api-base, and --destination-api-base. Database connections may be supplied through PROMOTION_SOURCE_CONNECTION and PROMOTION_DESTINATION_CONNECTION.");
 }
@@ -138,8 +145,8 @@ internal static class PromotionEngine
         var includedPerformances = records.Where(value => value.Type == nameof(AllAmericanPerformance) && value.Include).Select(value => value.Id).ToHashSet();
         await Add(db.AllAmericanPerformanceRecipients, value => includedPerformances.Contains(value.AllAmericanPerformanceId), _ => "Referenced", value => [value.AllAmericanPerformanceId.ToString(), value.AllAmericanRecipientId.ToString()]);
 
-        await Add(db.ProductCategories, value => value.IsActive, value => value.IsActive ? "Active" : "Inactive");
-        await Add(db.Products, value => value.Status == StoreProductStatus.Published, value => value.Status.ToString(), value => value.CategoryId.HasValue ? [value.CategoryId.Value.ToString()] : []);
+        await Add(db.ProductCategories, value => args.IncludeAllProducts || value.IsActive, value => value.IsActive ? "Active" : "Inactive");
+        await Add(db.Products, value => args.IncludeAllProducts || value.Status == StoreProductStatus.Published, value => value.Status.ToString(), value => value.CategoryId.HasValue ? [value.CategoryId.Value.ToString()] : []);
         var includedProducts = records.Where(value => value.Type == nameof(Product) && value.Include).Select(value => value.Id).ToHashSet();
         await Add(db.ProductMedia, value => includedProducts.Contains(value.ProductId), _ => "Referenced", value => [value.ProductId.ToString(), value.MediaAssetId.ToString()]);
         await Add(db.ProductOptions, value => includedProducts.Contains(value.ProductId), value => value.IsActive ? "Active" : "Inactive", value => [value.ProductId.ToString()]);
@@ -151,7 +158,8 @@ internal static class PromotionEngine
         await Add(db.ProductModifierGroups, value => includedProducts.Contains(value.ProductId), value => value.IsActive ? "Active" : "Inactive", value => [value.ProductId.ToString()]);
         var includedGroups = records.Where(value => value.Type == nameof(ProductModifierGroup) && value.Include).Select(value => value.Id).ToHashSet();
         await Add(db.ProductModifierValues, value => includedGroups.Contains(value.ProductModifierGroupId), value => value.IsActive ? "Active" : "Inactive", value => [value.ProductModifierGroupId.ToString(), .. MediaDependencies(value.OverlayMediaAssetId)]);
-        await Add(db.ProductVisualizerLayers, value => includedProducts.Contains(value.ProductId), _ => "Referenced", value => [value.ProductId.ToString(), value.MediaAssetId.ToString()]);
+        await Add(db.ProductVisualizerLayers, value => includedProducts.Contains(value.ProductId), _ => "Referenced", value =>
+            [value.ProductId.ToString(), value.MediaAssetId.ToString(), .. OptionalDependency(value.ProductOptionValueId), .. OptionalDependency(value.ProductModifierValueId)]);
 
         var referencedMedia = records.Where(value => value.Include).SelectMany(value => value.Dependencies)
             .Select(value => Guid.TryParse(value, out var id) ? id : Guid.Empty).Where(value => value != Guid.Empty).ToHashSet();
@@ -267,7 +275,7 @@ internal static class PromotionEngine
             nameof(AllAmericanPerformance) => await UpsertEntity<AllAmericanPerformance>(record),
             nameof(AllAmericanPerformanceRecipient) => await UpsertEntity<AllAmericanPerformanceRecipient>(record),
             nameof(ProductCategory) => await UpsertEntity<ProductCategory>(record),
-            nameof(Product) => await UpsertEntity<Product>(record),
+            nameof(Product) => await UpsertProduct(record),
             nameof(ProductMedia) => await UpsertEntity<ProductMedia>(record),
             nameof(ProductOption) => await UpsertEntity<ProductOption>(record),
             nameof(ProductOptionValue) => await UpsertEntity<ProductOptionValue>(record),
@@ -292,6 +300,16 @@ internal static class PromotionEngine
             var value = record.Data.Deserialize<MediaAsset>(PromotionJson.Options)!;
             value.UploadedByUserId = args.BootstrapUserId;
             value.PublicUrl = $"{manifest.DestinationApiBase}/media/{value.Id}";
+            return await UpsertValue(value);
+        }
+        async Task<int> UpsertProduct(PromotionRecord record)
+        {
+            var value = record.Data.Deserialize<Product>(PromotionJson.Options)!;
+            if (args.ForceProductsDraft)
+            {
+                value.Status = StoreProductStatus.Draft;
+                value.IsFeatured = false;
+            }
             return await UpsertValue(value);
         }
         async Task<int> UpsertVariant(PromotionRecord record)
@@ -333,6 +351,7 @@ internal static class PromotionEngine
         _ => throw new InvalidOperationException($"{value.GetType().Name} does not expose a supported ID.")
     };
     private static string[] MediaDependencies(Guid? id) => id.HasValue ? [id.Value.ToString()] : [];
+    private static string[] OptionalDependency(Guid? id) => id.HasValue ? [id.Value.ToString()] : [];
     private static string[] MediaDependenciesFromUrl(string? url) => TryMediaId(url, out var id) ? [id.ToString()] : [];
     private static bool TryMediaId(string? url, out Guid id)
     {

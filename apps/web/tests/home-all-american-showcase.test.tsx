@@ -75,14 +75,15 @@ describe("homepage All-American showcase", () => {
     expect(largestThreeMobileImages).toBeLessThanOrEqual(1_500_000);
   });
 
-  it("enables the draft on demo while keeping production disabled", () => {
+  it("enables the showcase on demo and keeps production opt-in with a default-off control", () => {
     const demoWorkflow = readFileSync("../../.github/workflows/deploy-azure.yml", "utf8");
     const productionWorkflow = readFileSync("../../.github/workflows/deploy-production.yml", "utf8");
     const infrastructure = readFileSync("../../infra/main.bicep", "utf8");
     const homepage = readFileSync("app/(public)/page.tsx", "utf8");
 
     expect(demoWorkflow.match(/homeAllAmericanShowcaseEnabled=true/g)).toHaveLength(2);
-    expect(productionWorkflow.match(/homeAllAmericanShowcaseEnabled=false/g)).toHaveLength(2);
+    expect(productionWorkflow).toMatch(/enable_home_all_american_showcase:[\s\S]*?default: false/);
+    expect(productionWorkflow.match(/homeAllAmericanShowcaseEnabled="\$\{\{ inputs\.enable_home_all_american_showcase \}\}"/g)).toHaveLength(2);
     expect(infrastructure).toContain("param homeAllAmericanShowcaseEnabled bool = false");
     expect(homepage).toContain('export const dynamic = "force-dynamic"');
     expect(homepage).toContain("process.env.HOME_ALL_AMERICAN_SHOWCASE_ENABLED");
