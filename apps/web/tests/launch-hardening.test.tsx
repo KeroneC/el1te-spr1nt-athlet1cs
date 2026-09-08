@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ResponsiveMediaImage, isManagedMediaUrl, mediaUrlAtWidth } from "@/components/public/responsive-media-image";
 import { sanitizePublicRoute } from "@/lib/observability/browser-analytics";
 import { isEnabledSetting } from "@/lib/runtime-config";
+import { runtimeCspHeader } from "@/lib/public/security-headers";
 import { readFileSync, statSync } from "node:fs";
 
 describe("launch hardening frontend", () => {
@@ -27,6 +28,13 @@ describe("launch hardening frontend", () => {
     expect(config).toContain('source: "/images/:path*"');
     expect(config).toContain('source: "/brand/:path*"');
     expect(config).toContain('value: "public, max-age=86400, stale-while-revalidate=604800"');
+  });
+
+  it("selects CSP enforcement from runtime configuration", () => {
+    expect(runtimeCspHeader("enforce")?.name).toBe("Content-Security-Policy");
+    expect(runtimeCspHeader("report-only")?.name).toBe("Content-Security-Policy-Report-Only");
+    expect(runtimeCspHeader("off")).toBeNull();
+    expect(runtimeCspHeader("unexpected")?.name).toBe("Content-Security-Policy-Report-Only");
   });
 
   it("uses responsive WebP derivatives for the homepage achievement image", () => {
