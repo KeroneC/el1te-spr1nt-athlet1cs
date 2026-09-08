@@ -48,10 +48,10 @@ Operational alerts use the same email recipient configured for grant-budget noti
 | API readiness | Two failures in 10 minutes | Check `/health/ready`, SQL availability, and the active API deployment |
 | Server failures | Five 5xx responses in 10 minutes | Review failure trend, references, role, and release SHA |
 | Dependency failures | Five failures in 10 minutes | Identify SQL, Blob, or HTTP dependency and verify its Azure health |
-| Request latency | p95 above five seconds with at least 10 requests, sustained twice | Check B1 cold starts, dependencies, request volume, and recent releases |
+| Request latency | p95 above five seconds with at least 10 requests, sustained twice | Check App Service restarts or cold starts, dependencies, request volume, and recent releases |
 | Transactional email | Three failed, bounced, suppressed, quarantined, or spam-filtered outcomes in 15 minutes | Open the workbook email section, compare the provider message ID, and confirm sender-domain authentication |
 
-Alerts evaluate every five minutes and use Azure Monitor's stateful auto-mitigation. The action group is notified when an incident becomes active, is not notified on every evaluation while that incident remains active, and the alert auto-resolves after recovery. A later recurrence can open a new incident. A single transient B1 cold start should not trigger a notification.
+Alerts evaluate every five minutes and use Azure Monitor's stateful auto-mitigation. The action group is notified when an incident becomes active, is not notified on every evaluation while that incident remains active, and the alert auto-resolves after recovery. A later recurrence can open a new incident. A single transient App Service restart should not trigger a notification.
 
 Record confirmed incidents with start/end time, impact, affected safe route templates, reference IDs, release SHA, cause, resolution, and follow-up. Do not copy raw private telemetry into GitHub issues or public channels.
 
