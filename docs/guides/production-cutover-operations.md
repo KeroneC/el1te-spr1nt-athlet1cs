@@ -64,3 +64,5 @@ Never delete completed orders, refunds, inventory adjustments, or Square records
 ## Final observation window
 
 During the DNS switch and first live orders, monitor readiness, web/API 5xx, dependency failures, p95 latency, Square operations, transactional email outcomes, release SHA, and support-reference lookup. Keep a launch owner and rollback owner available and record every intervention with time, release SHA, and outcome.
+
+Before the DNS switch, run the public performance audit against the private production Azure hostname. The audit uses fixed public routes only and records no customer or Admin data. Save its JSON result with the launch evidence; do not weaken the warm-LCP, layout-shift, image-transfer, cache-policy, or repeat-transfer gates to accommodate a transient failure without first rerunning from a stable connection and investigating the affected route.
