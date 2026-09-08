@@ -15,6 +15,8 @@ if (!["http:", "https:"].includes(parsedBaseUrl.protocol)) {
 
 const browser = await chromium.launch({ headless: true });
 const results = [];
+const navigationTimeoutMs = 60_000;
+const renderSettleMs = 2_000;
 
 try {
   for (const route of routes) {
@@ -53,11 +55,14 @@ try {
       imageResponses = [];
       const target = new URL(route, parsedBaseUrl).toString();
       if (cacheState === "cold") {
-        await page.goto(target, { waitUntil: "networkidle", timeout: 60_000 });
+        await page.goto(target, { waitUntil: "load", timeout: navigationTimeoutMs });
       } else {
-        await page.reload({ waitUntil: "networkidle", timeout: 60_000 });
+        await page.reload({ waitUntil: "load", timeout: navigationTimeoutMs });
       }
-      await page.waitForTimeout(250);
+      // Public pages can keep analytics or API connections active after they are
+      // visually ready. A bounded settle period makes the audit repeatable and
+      // still captures layout shifts and LCP caused by asynchronously loaded data.
+      await page.waitForTimeout(renderSettleMs);
 
       const timing = await page.evaluate(() => {
         const navigation = performance.getEntriesByType("navigation")[0];
@@ -79,11 +84,12 @@ try {
       });
 
       const responseByUrl = new Map(imageResponses.map((item) => [item.url, item]));
-      const imageBytes = [...responseByUrl.values()].reduce((sum, item) => sum + item.bytes, 0);
+      const measuredImageBytes = timing.images.reduce((sum, item) => sum + item.encodedBytes, 0);
+      const headerImageBytes = [...responseByUrl.values()].reduce((sum, item) => sum + item.bytes, 0);
       return {
         cacheState,
         ...timing,
-        imageBytes,
+        imageBytes: Math.max(measuredImageBytes, headerImageBytes),
         imageResponses: [...responseByUrl.values()]
       };
     }
@@ -131,6 +137,7 @@ const report = {
   generatedAtUtc: new Date().toISOString(),
   baseUrl: parsedBaseUrl.origin,
   viewport: { width: 390, height: 844, deviceScaleFactor: 2 },
+  measurement: { navigationTimeoutMs, renderSettleMs },
   budgets: {
     warmLcpMs: 2_500,
     maxCls: 0.1,
