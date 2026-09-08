@@ -32,6 +32,7 @@ This checklist is the release gate for the lean public launch: public CMS, Admin
 ## Final verification and cutover
 
 - [ ] CI, Bicep, migrations, vulnerability scans, Playwright/axe, keyboard/narrow-screen checks, and performance budgets pass for the immutable release SHA.
+- [ ] Run `PERFORMANCE_BASE_URL=<private-production-url> PERFORMANCE_REPORT_PATH=<evidence-path> npm --prefix apps/web run audit:performance`; retain the JSON summary showing warm mobile LCP at or below 2.5 seconds, CLS at or below 0.1, image-transfer budgets, one-day media caching, and zero unchanged-image retransfers.
 - [ ] A temporary `$1` product completes payment, webhook, email, tracking, cancellation/refund, and exact inventory restoration; it is then unpublished with zero stock while its audit history remains.
 - [ ] CSP enforcement, cookie-free public analytics, readiness, 5xx/dependency/latency/email alerts, and the support workbook are verified.
 - [ ] Production is initially `noindex`; indexing is enabled only after DNS, HTTPS, content, policy, and commerce checks pass.

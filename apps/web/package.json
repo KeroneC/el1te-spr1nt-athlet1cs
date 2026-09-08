@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "test:e2e:headed": "playwright test --headed"
+    "test:e2e:headed": "playwright test --headed",
+    "audit:performance": "node scripts/audit-public-performance.mjs"
   },
   "dependencies": {
     "@microsoft/applicationinsights-web": "^3.4.3",

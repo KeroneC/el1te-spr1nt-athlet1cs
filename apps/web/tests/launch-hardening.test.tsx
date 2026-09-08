@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { ResponsiveMediaImage, isManagedMediaUrl, mediaUrlAtWidth } from "@/components/public/responsive-media-image";
 import { sanitizePublicRoute } from "@/lib/observability/browser-analytics";
 import { isEnabledSetting } from "@/lib/runtime-config";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 
 describe("launch hardening frontend", () => {
   it("emits responsive derivative candidates only for managed media", () => {
@@ -33,7 +33,14 @@ describe("launch hardening frontend", () => {
     const homepage = readFileSync("app/(public)/page.tsx", "utf8");
     expect(homepage).toContain("meet-community-480.webp 480w");
     expect(homepage).toContain("meet-community-960.webp 960w");
+    expect(homepage).toContain("meet-community-1600.webp 1600w");
     expect(homepage).not.toContain('src="/images/team/meet-community-static.jpg"');
+  });
+
+  it("keeps the high-density desktop derivative within its transfer budget", () => {
+    const desktopDerivative = "public/images/team/meet-community-1600.webp";
+    expect(statSync(desktopDerivative).size).toBeGreaterThan(250_000);
+    expect(statSync(desktopDerivative).size).toBeLessThanOrEqual(320_000);
   });
 
   it("sanitizes dynamic routes and rejects admin or malformed paths", () => {
