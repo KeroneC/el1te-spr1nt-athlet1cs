@@ -6,7 +6,7 @@ This is the reconciliation point between the repository and any separate ChatGPT
 
 - The manually promoted, public-but-noindex `demo` environment is live in Central US under `el1te-demo-central-rg`. Central US was selected after the Basic SQL SKU was unavailable in East US 2 and East US.
 - Passing `main` CI runs package immutable API, web, and EF artifacts with a commit manifest and SHA-256 checksums. The deployment workflow accepts a CI run ID and refuses non-main or unsuccessful runs.
-- Bicep owns the shared B1 Linux plan, API/web apps, Basic Azure SQL, private Standard LRS Blob media, Key Vault, capped workspace-based Application Insights, and 600-second cold-start limits.
+- Bicep owns the shared Linux App Service plan (B1 for demo and B2 for production through launch stabilization), API/web apps, Basic Azure SQL, private Standard LRS Blob media, Key Vault, capped workspace-based Application Insights, and 600-second cold-start limits.
 - Production media uses `AzureBlobMediaStorage` through managed identity; Development keeps `LocalMediaStorage`. Public media continues to stream through the API.
 - The first SuperAdmin is created only through the idempotent non-HTTP `--bootstrap-admin` command. Development seeding remains disabled in Production.
 - GitHub OIDC and the protected `demo` Environment are configured. The API managed identity has scoped Blob/Key Vault roles and a contained SQL user with `db_datareader`/`db_datawriter`; temporary probe resources and firewall rules were removed after launch diagnostics.

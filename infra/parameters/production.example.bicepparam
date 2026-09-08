@@ -3,7 +3,7 @@ using '../main.bicep'
 param environmentName = 'production'
 param location = 'eastus2'
 param namePrefix = 'replacewithclub'
-param appServiceSkuName = 'B1'
+param appServiceSkuName = 'B2'
 param sqlDatabaseSkuName = 'Basic'
 param sqlAdminLogin = 'replacewithadmin'
 param sqlAdminPassword = readEnvironmentVariable('AZURE_SQL_ADMIN_PASSWORD')

@@ -22,6 +22,20 @@ describe("launch hardening frontend", () => {
     expect(html).not.toContain("?width=");
   });
 
+  it("gives version-controlled public images a reusable browser cache policy", () => {
+    const config = readFileSync("next.config.mjs", "utf8");
+    expect(config).toContain('source: "/images/:path*"');
+    expect(config).toContain('source: "/brand/:path*"');
+    expect(config).toContain('value: "public, max-age=86400, stale-while-revalidate=604800"');
+  });
+
+  it("uses responsive WebP derivatives for the homepage achievement image", () => {
+    const homepage = readFileSync("app/(public)/page.tsx", "utf8");
+    expect(homepage).toContain("meet-community-480.webp 480w");
+    expect(homepage).toContain("meet-community-960.webp 960w");
+    expect(homepage).not.toContain('src="/images/team/meet-community-static.jpg"');
+  });
+
   it("sanitizes dynamic routes and rejects admin or malformed paths", () => {
     expect(sanitizePublicRoute("/news/private-athlete-name?email=test@example.com")).toBe("/news/[slug]");
     expect(sanitizePublicRoute("/shop/custom-shirt#name=Alex")).toBe("/shop/[slug]");

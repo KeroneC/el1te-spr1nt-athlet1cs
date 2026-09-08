@@ -15,7 +15,10 @@ cleanup_line=$(grep -n "name: Remove temporary SQL firewall access" "$workflow" 
 (( restore_line < cleanup_line ))
 
 grep -q -- '--sku B2' "$workflow"
-grep -q -- '--sku B1' "$workflow"
+grep -q 'PRODUCTION_APP_SERVICE_SKU: B2' "$workflow"
+grep -q 'appServiceSkuName="$PRODUCTION_APP_SERVICE_SKU"' "$workflow"
+grep -q -- '--sku "$PRODUCTION_APP_SERVICE_SKU"' "$workflow"
+! grep -q -- '--sku B1' "$workflow"
 grep -q "steps.publishing_scale.outcome == 'success'" "$workflow"
 
 echo "Production publishing scale guard tests passed."
