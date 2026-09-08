@@ -43,6 +43,13 @@ describe("launch hardening frontend", () => {
     expect(statSync(desktopDerivative).size).toBeLessThanOrEqual(320_000);
   });
 
+  it("uses a bounded render settle instead of waiting for network silence", () => {
+    const audit = readFileSync("scripts/audit-public-performance.mjs", "utf8");
+    expect(audit).toContain('waitUntil: "load"');
+    expect(audit).toContain("const renderSettleMs = 2_000");
+    expect(audit).not.toContain('waitUntil: "networkidle"');
+  });
+
   it("sanitizes dynamic routes and rejects admin or malformed paths", () => {
     expect(sanitizePublicRoute("/news/private-athlete-name?email=test@example.com")).toBe("/news/[slug]");
     expect(sanitizePublicRoute("/shop/custom-shirt#name=Alex")).toBe("/shop/[slug]");
