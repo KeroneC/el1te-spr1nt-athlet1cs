@@ -427,8 +427,8 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .coach-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 3rem; }
 .coach-card { display: block; border-bottom: 0; padding-bottom: 0; text-align: center; }
 .coach-photo { aspect-ratio: 4/5; min-height: 0; margin-bottom: 1.5rem; background: var(--figma-muted); }
-.coach-photo img { filter: grayscale(1); transition: transform 650ms ease, filter 500ms ease; }
-.coach-card:hover .coach-photo img { filter: grayscale(0); transform: scale(1.05); }
+.coach-photo img { transition: transform 650ms ease; }
+.coach-card:hover .coach-photo img { transform: scale(1.05); }
 .coach-card h2 { margin: 0.2rem 0; font-size: 1.6rem; }
 .gallery-album-card { position: relative; overflow: hidden; border: 0; background: var(--figma-muted); }
 .gallery-album-card > img, .gallery-placeholder { transition: transform 600ms ease, filter 600ms ease; filter: grayscale(0.35); }
