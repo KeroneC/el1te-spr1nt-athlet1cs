@@ -7,7 +7,7 @@ import { SponsorTierSection } from "../components/public/sponsor-tier-section";
 import { getHallOfFameInductees, PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
 import { canonicalHostRedirect, robotsForEnvironment } from "../lib/public/deployment";
-import { HEADER_NAV_ITEMS, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
+import { FORM_DOWNLOADS, HEADER_NAV_ITEMS, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import { SCHOLARSHIP_COPY } from "../lib/public/scholarship";
 import type { Sponsor } from "../lib/public/types";
 import { buildAnnouncementQuery, buildEventQuery, validateContact } from "../lib/public/validation";
@@ -95,6 +95,17 @@ describe("Phase 8 public CMS helpers", () => {
     expect(SCHOLARSHIP_COPY.introduction).toContain("Beulah Veronica Newton");
     expect(SCHOLARSHIP_COPY.legacy).toContain("Miss Beulah");
     expect(SCHOLARSHIP_COPY.award).toContain("Click the logo or use the button below");
+  });
+
+  it("presents the BVN Memorial scholarship PDF as information rather than an application form", () => {
+    const scholarshipInformation = FORM_DOWNLOADS.find((item) => item.name.includes("BVN Memorial"));
+
+    expect(scholarshipInformation).toMatchObject({
+      name: "BVN Memorial Scholarship Information",
+      description: "Scholarship details and eligibility criteria for eligible team members.",
+      actionLabel: "View information",
+      isDownload: false
+    });
   });
 
   it("looks up content by exact key", () => {
