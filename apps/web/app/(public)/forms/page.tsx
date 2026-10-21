@@ -6,7 +6,7 @@ import { FORM_DOWNLOADS } from "@/lib/public/site";
 
 export const metadata: Metadata = {
   title: "Forms",
-  description: "Download registration, waiver, photo consent, and scholarship forms for El1te Spr1nt Athlet1cs."
+  description: "Download registration, waiver, and photo consent forms, and view BVN Memorial Scholarship information for El1te Spr1nt Athlet1cs."
 };
 
 export default function FormsPage() {
