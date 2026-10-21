@@ -114,6 +114,8 @@ export const FORM_DOWNLOADS = [
     audience: "Families interested in joining",
     href: "/forms/athlete-registration-form.pdf",
     fileType: "PDF",
+    actionLabel: "Download",
+    isDownload: true,
     Icon: ClipboardList
   },
   {
@@ -122,6 +124,8 @@ export const FORM_DOWNLOADS = [
     audience: "Parent or guardian",
     href: "/forms/liability-waiver.pdf",
     fileType: "PDF",
+    actionLabel: "Download",
+    isDownload: true,
     Icon: ShieldCheck
   },
   {
@@ -130,14 +134,18 @@ export const FORM_DOWNLOADS = [
     audience: "Parent or guardian",
     href: "/forms/photo-consent-form.pdf",
     fileType: "PDF",
+    actionLabel: "Download",
+    isDownload: true,
     Icon: FileCheck2
   },
   {
-    name: "BVN Memorial Scholarship Form",
-    description: "Scholarship application and criteria for eligible team members.",
+    name: "BVN Memorial Scholarship Information",
+    description: "Scholarship details and eligibility criteria for eligible team members.",
     audience: "Eligible junior or senior athletes",
     href: "/forms/scholarship-form.pdf",
     fileType: "PDF",
+    actionLabel: "View information",
+    isDownload: false,
     Icon: FileHeart
   }
 ] as const;

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Download, Mail } from "lucide-react";
+import { Download, ExternalLink, Mail } from "lucide-react";
 import Link from "next/link";
 import { PageHero } from "@/components/public/ui";
 import { FORM_DOWNLOADS } from "@/lib/public/site";
 
 export const metadata: Metadata = {
   title: "Forms",
-  description: "Download registration, waiver, photo consent, and scholarship forms for El1te Spr1nt Athlet1cs."
+  description: "Download registration, waiver, and photo consent forms, and view BVN Memorial Scholarship information for El1te Spr1nt Athlet1cs."
 };
 
 export default function FormsPage() {
@@ -27,7 +27,7 @@ export default function FormsPage() {
           <Link className="text-link" href="/registration">Registration Hub</Link>
         </div>
         <div className="download-list">
-          {FORM_DOWNLOADS.map(({ name, description, audience, href, fileType, Icon }) => (
+          {FORM_DOWNLOADS.map(({ name, description, audience, href, fileType, actionLabel, isDownload, Icon }) => (
             <article className="download-row" key={name}>
               <div className="download-icon"><Icon aria-hidden="true" /></div>
               <div>
@@ -36,7 +36,16 @@ export default function FormsPage() {
                 <p className="form-audience"><strong>For:</strong> {audience}</p>
                 <span>{fileType}</span>
               </div>
-              <a className="button button-secondary" href={href} download>Download<Download size={17} aria-hidden="true" /></a>
+              <a
+                className="button button-secondary"
+                href={href}
+                download={isDownload || undefined}
+                target={isDownload ? undefined : "_blank"}
+                rel={isDownload ? undefined : "noreferrer"}
+              >
+                {actionLabel}
+                {isDownload ? <Download size={17} aria-hidden="true" /> : <ExternalLink size={17} aria-hidden="true" />}
+              </a>
             </article>
           ))}
         </div>
