@@ -95,6 +95,10 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<MediaDerivative> MediaDerivatives => Set<MediaDerivative>();
 
+    public DbSet<LegacyPhoto> LegacyPhotos => Set<LegacyPhoto>();
+    public DbSet<LegacyPhotoSource> LegacyPhotoSources => Set<LegacyPhotoSource>();
+    public DbSet<LegacyPhotoPage> LegacyPhotoPages => Set<LegacyPhotoPage>();
+
     public DbSet<AdminPasswordReset> AdminPasswordResets => Set<AdminPasswordReset>();
 
     public DbSet<AdminMfaChallenge> AdminMfaChallenges => Set<AdminMfaChallenge>();

@@ -57,6 +57,9 @@ param homeAllAmericanShowcaseEnabled bool = false
 @description('Enable the public All-American archive. Keep false in production until annual details are approved.')
 param allAmericansArchiveEnabled bool = false
 
+@description('Enable the private historical photo pilot on demo only.')
+param legacyMediaArchiveEnabled bool = false
+
 @description('Allow public search-engine indexing. Keep false until the final production gate passes.')
 param publicIndexingEnabled bool = false
 
@@ -187,6 +190,7 @@ module storage 'modules/storage.bicep' = {
     name: storageName
     location: location
     containerName: mediaContainerName
+    createHistoricalPhotoContainer: environmentName == 'demo' && legacyMediaArchiveEnabled
     softDeleteRetentionDays: mediaSoftDeleteRetentionDays
     previousVersionRetentionDays: mediaPreviousVersionRetentionDays
     tags: tags
@@ -248,6 +252,7 @@ module api 'modules/api-app.bicep' = {
     storeCheckoutEnabled: storeCheckoutEnabled
     storePublicPreviewEnabled: storePublicPreviewEnabled
     allAmericansArchiveEnabled: allAmericansArchiveEnabled
+    legacyMediaArchiveEnabled: environmentName == 'demo' && legacyMediaArchiveEnabled
     squareEnvironment: squareEnvironment
     squareLocationId: squareLocationId
     squareWebhookNotificationUrl: squareWebhookNotificationUrl
@@ -277,6 +282,7 @@ module web 'modules/web-app.bicep' = {
     browserAnalyticsEnabled: browserAnalyticsEnabled
     homeAllAmericanShowcaseEnabled: homeAllAmericanShowcaseEnabled
     allAmericansArchiveEnabled: allAmericansArchiveEnabled
+    legacyMediaArchiveEnabled: environmentName == 'demo' && legacyMediaArchiveEnabled
     cspMode: cspMode
     deploymentEnvironment: environmentName
     publicIndexingEnabled: publicIndexingEnabled

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using Azure.Identity;
 using El1teSpr1ntTrack.Api.Authorization;
 using El1teSpr1ntTrack.Api.Background;
 using El1teSpr1ntTrack.Api.Configuration;
@@ -201,6 +202,11 @@ builder.Services.AddSingleton<IMediaStorage>(provider =>
         : new LocalMediaStorage(mediaStorageOptions));
 builder.Services.AddHostedService<MediaDerivativeBackfillWorker>();
 
+var legacyPhotoOptions = builder.Configuration.GetSection("LegacyMediaArchive").Get<LegacyPhotoOptions>() ?? new();
+builder.Services.AddSingleton(legacyPhotoOptions);
+builder.Services.AddSingleton<ILegacyPhotoBlobs>(_ =>
+    new LegacyPhotoBlobs(new Uri(mediaStorageOptions.BlobServiceUri), new DefaultAzureCredential()));
+
 var databaseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 var useManagedIdentity = builder.Configuration.GetValue<bool>("Database:UseManagedIdentity");
 builder.Services.AddDbContext<El1teDbContext>(options =>
@@ -305,6 +311,12 @@ app.Use(async (context, next) =>
     context.Response.Headers.XFrameOptions = "DENY";
     context.Response.Headers["Referrer-Policy"] = "no-referrer";
     context.Response.Headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=(), payment=()";
+    if (context.Request.Path.StartsWithSegments("/api/admin/historical-photos", StringComparison.OrdinalIgnoreCase))
+        context.Response.OnStarting(() =>
+        {
+            context.Response.Headers.CacheControl = "private, no-store";
+            return Task.CompletedTask;
+        });
     await next();
 });
 app.UseCors(ApiCorsExtensions.ConfiguredCorsPolicy);

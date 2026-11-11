@@ -1,6 +1,7 @@
 param name string
 param location string
 param containerName string = 'media'
+param createHistoricalPhotoContainer bool = false
 param tags object = {}
 @minValue(1)
 @maxValue(365)
@@ -65,6 +66,12 @@ resource lifecyclePolicy 'Microsoft.Storage/storageAccounts/managementPolicies@2
 resource container 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = {
   parent: blobService
   name: containerName
+  properties: { publicAccess: 'None' }
+}
+
+resource historicalPhotos 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-05-01' = if (createHistoricalPhotoContainer) {
+  parent: blobService
+  name: 'historical-photos'
   properties: { publicAccess: 'None' }
 }
 
