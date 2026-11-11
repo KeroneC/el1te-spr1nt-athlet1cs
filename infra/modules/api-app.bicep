@@ -17,6 +17,7 @@ param storeEnabled bool = false
 param storeCheckoutEnabled bool = false
 param storePublicPreviewEnabled bool = false
 param allAmericansArchiveEnabled bool = false
+param legacyMediaArchiveEnabled bool = false
 param squareEnvironment string = 'Sandbox'
 param squareLocationId string = ''
 param squareWebhookNotificationUrl string = ''
@@ -125,6 +126,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'AllAmericansArchive__Enabled'
           value: string(allAmericansArchiveEnabled)
+        }
+        {
+          name: 'LegacyMediaArchive__Enabled'
+          value: string(legacyMediaArchiveEnabled)
         }
         {
           name: 'AdminInvitations__SiteUrl'

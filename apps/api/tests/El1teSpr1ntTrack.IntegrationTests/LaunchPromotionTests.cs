@@ -24,7 +24,7 @@ public sealed class LaunchPromotionTests
             var uploader = new User { Email = "demo@example.test", FirstName = "Demo", LastName = "Admin", PasswordHash = "not-exported" };
             var media = new MediaAsset { UploadedByUserId = uploader.Id, OriginalFileName = "team.png", StorageKey = "2026/08/team.png", ContentType = "image/png", FileExtension = ".png", FileSizeBytes = 4, Width = 1, Height = 1, Title = "Team", AltText = "Team", PublicUrl = $"https://demo-api.example/media/{Guid.NewGuid()}" };
             media.PublicUrl = $"https://demo-api.example/media/{media.Id}";
-            source.AddRange(uploader, media,
+            source.AddRange(uploader, media, new LegacyPhoto { Sha256 = new string('a', 64) },
                 new Announcement { Title = "Published", Slug = "published", Summary = "Summary", Body = "Body", IsPublished = true, ImageUrl = media.PublicUrl },
                 new Announcement { Title = "Draft", Slug = "draft", Summary = "Summary", Body = "Body", IsPublished = false },
                 new ContactSubmission { Name = "Private", Email = "private@example.test", Message = "Do not export" });
@@ -35,7 +35,7 @@ public sealed class LaunchPromotionTests
 
             var manifest = await PromotionEngine.ExportAsync(source, args, sourceStorage);
 
-            Assert.DoesNotContain(manifest.Records, value => value.Type is nameof(User) or nameof(ContactSubmission));
+            Assert.DoesNotContain(manifest.Records, value => value.Type is nameof(User) or nameof(ContactSubmission) or nameof(LegacyPhoto));
             Assert.Contains(manifest.Records, value => value.Type == nameof(Announcement) && value.Status == "Draft" && !value.Include);
             var mediaRecord = Assert.Single(manifest.Records, value => value.Type == nameof(MediaAsset));
             Assert.True(mediaRecord.Include);

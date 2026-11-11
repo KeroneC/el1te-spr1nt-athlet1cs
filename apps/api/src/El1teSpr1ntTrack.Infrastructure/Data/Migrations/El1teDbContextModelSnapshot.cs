@@ -1907,6 +1907,109 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.ToTable("InventoryStocktakeLines");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhoto", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<long>("ByteLength")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateOnly?>("CapturedOn")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Height")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("ImportedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Review")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset?>("ReviewedAtUtc")
+                        .IsConcurrencyToken()
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Sha256")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<int>("Width")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Sha256")
+                        .IsUnique();
+
+                    b.HasIndex("Review", "Id");
+
+                    b.ToTable("LegacyPhotos");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhotoPage", b =>
+                {
+                    b.Property<string>("SourceUrlSha256")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("PageUrlSha256")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<string>("Collection")
+                        .IsRequired()
+                        .HasMaxLength(450)
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("PageUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.HasKey("SourceUrlSha256", "PageUrlSha256");
+
+                    b.HasIndex("Collection");
+
+                    b.ToTable("LegacyPhotoPages");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhotoSource", b =>
+                {
+                    b.Property<string>("UrlSha256")
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("LegacyPhotoId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SourceUrl")
+                        .IsRequired()
+                        .HasMaxLength(2048)
+                        .HasColumnType("nvarchar(2048)");
+
+                    b.HasKey("UrlSha256");
+
+                    b.HasIndex("LegacyPhotoId");
+
+                    b.ToTable("LegacyPhotoSources");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3588,6 +3691,24 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("ProductVariant");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhotoPage", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.LegacyPhotoSource", null)
+                        .WithMany("Pages")
+                        .HasForeignKey("SourceUrlSha256")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhotoSource", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.LegacyPhoto", null)
+                        .WithMany("Sources")
+                        .HasForeignKey("LegacyPhotoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>
                 {
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "UploadedByUser")
@@ -3887,6 +4008,16 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.InventoryStocktake", b =>
                 {
                     b.Navigation("Lines");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhoto", b =>
+                {
+                    b.Navigation("Sources");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.LegacyPhotoSource", b =>
+                {
+                    b.Navigation("Pages");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.MediaAsset", b =>

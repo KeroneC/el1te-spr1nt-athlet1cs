@@ -118,12 +118,29 @@ public sealed class AdminAuthorizationTests
     [Fact]
     public void IdentityManagementControllers_RequireSuperAdminPolicy()
     {
-        Type[] controllerTypes = [typeof(AdminUsersController), typeof(El1teSpr1ntTrack.Api.Controllers.Admin.AdminInvitationsController), typeof(AdminActivityController)];
+        Type[] controllerTypes = [typeof(AdminUsersController), typeof(El1teSpr1ntTrack.Api.Controllers.Admin.AdminInvitationsController), typeof(AdminActivityController), typeof(HistoricalPhotosController)];
         foreach (var type in controllerTypes)
         {
             var attribute = Assert.Single(type.GetCustomAttributes(typeof(AuthorizeAttribute), true).Cast<AuthorizeAttribute>());
             Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName, attribute.Policy);
         }
+    }
+
+    [Fact]
+    public async Task HistoricalPhotosPolicy_RejectsAnonymousAndRevokedSuperAdmin()
+    {
+        var user = new User { Role = UserRole.SuperAdmin, IsActive = true, SecurityVersion = 2, Email = "user@example.com" };
+        var services = new ServiceCollection();
+        services.AddLogging();
+        services.AddAuthorizationCore(CmsAdminAuthorization.Configure);
+        services.AddSingleton<IAuthorizationHandler>(new ActiveSuperAdminHandler(new FakeUserRepository(user)));
+        await using var provider = services.BuildServiceProvider();
+        var authorization = provider.GetRequiredService<IAuthorizationService>();
+        var revoked = new ClaimsPrincipal(new ClaimsIdentity([
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()), new Claim("security_version", "1")
+        ], "Test"));
+        Assert.False((await authorization.AuthorizeAsync(new ClaimsPrincipal(), null, CmsAdminAuthorization.SuperAdminPolicyName)).Succeeded);
+        Assert.False((await authorization.AuthorizeAsync(revoked, null, CmsAdminAuthorization.SuperAdminPolicyName)).Succeeded);
     }
 
     [Fact]
