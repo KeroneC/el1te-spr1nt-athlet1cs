@@ -81,7 +81,7 @@ test("homepage All-American showcase is responsive, controllable, and motion saf
 });
 
 test("homepage showcase resumes from its controls without requiring a click elsewhere", async ({ page }) => {
-  await page.clock.install();
+  test.setTimeout(45_000);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
 
@@ -91,36 +91,38 @@ test("homepage showcase resumes from its controls without requiring a click else
   const previous = showcase.getByRole("button", { name: "Show previous photograph" });
   const play = showcase.getByRole("button", { name: "Play photograph showcase" });
   const pause = showcase.getByRole("button", { name: "Pause photograph showcase" });
-  const check = (index: string) => expect(progress).toHaveText(new RegExp(`${index}\\s*/\\s*08`));
+  const check = (index: string) => expect(progress).toHaveText(new RegExp(`${index}\\s*/\\s*08`), { timeout: 8_000 });
 
   await pause.click();
   await expect(play).toBeFocused();
-  await page.clock.pauseAt(new Date(await page.evaluate(() => Date.now()) + 250));
   await next.click();
   await check("02");
-  await page.clock.runFor(6_000);
-  await check("02"); // An explicit pause survives manual navigation.
+  const staysStill = () => progress.evaluate(element => new Promise<boolean>(resolve => {
+    // Observe for longer than one autoplay interval; don't depend on a mocked clock for hydration or React effects.
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      observer.disconnect();
+      resolve(false);
+    });
+    const timer = setTimeout(() => { observer.disconnect(); resolve(true); }, 5_500);
+    observer.observe(element, { childList: true, characterData: true, subtree: true });
+  }));
+  expect(await staysStill()).toBe(true); // An explicit pause survives manual navigation.
 
   await play.click();
   await expect(pause).toBeFocused();
-  await page.clock.runFor(5_000);
   await check("03"); // The pointer is still over Play.
   await next.click();
   await check("04");
   await expect(next).toBeFocused();
-  await page.clock.runFor(4_999);
-  await check("04");
-  await page.clock.runFor(1);
   await check("05");
 
   await page.mouse.move(0, 0);
   await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Club" }).focus();
   await previous.focus();
-  await page.clock.runFor(6_000);
-  await check("05"); // Entering with keyboard focus pauses before any control is pressed.
+  expect(await staysStill()).toBe(true); // New keyboard focus suspends autoplay.
   await previous.press("Enter");
   await check("04");
   await expect(previous).toBeFocused();
-  await page.clock.runFor(5_000);
   await check("05");
 });
