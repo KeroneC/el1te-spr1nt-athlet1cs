@@ -10,6 +10,7 @@ const active = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/announcements", label: "Announcements", icon: Bell, exact: false },
   { href: "/admin/events", label: "Events", icon: CalendarDays, exact: false },
+  { href: "/admin/registration", label: "Registration", icon: FileText, exact: false },
   { href: "/admin/media", label: "Media", icon: FileImage, exact: false },
   { href: "/admin/gallery", label: "Gallery", icon: GalleryHorizontal, exact: false },
   { href: "/admin/coaches", label: "Coaches", icon: Users, exact: false },

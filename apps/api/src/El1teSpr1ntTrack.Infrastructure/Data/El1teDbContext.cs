@@ -91,6 +91,11 @@ public sealed class El1teDbContext(DbContextOptions<El1teDbContext> options) : D
 
     public DbSet<ContactSubmission> ContactSubmissions => Set<ContactSubmission>();
 
+    public DbSet<RegistrationSeason> RegistrationSeasons => Set<RegistrationSeason>();
+    public DbSet<RegistrationSubmission> RegistrationSubmissions => Set<RegistrationSubmission>();
+    public DbSet<RegistrationReview> RegistrationReviews => Set<RegistrationReview>();
+    public DbSet<RegistrationCount> RegistrationCounts => Set<RegistrationCount>();
+
     public DbSet<MediaAsset> MediaAssets => Set<MediaAsset>();
 
     public DbSet<MediaDerivative> MediaDerivatives => Set<MediaDerivative>();

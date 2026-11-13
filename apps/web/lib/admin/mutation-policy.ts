@@ -1,9 +1,12 @@
-const resources = new Set(["events", "coaches", "hall-of-fame-inductees", "all-americans", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store"]);
+const resources = new Set(["events", "coaches", "hall-of-fame-inductees", "all-americans", "sponsors", "faqs", "content-blocks", "site-settings", "contact-submissions", "media", "gallery-albums", "users", "invitations", "store", "registration"]);
 const idPattern = /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 
 export function isAllowedAdminMutation(path: string[], method: "POST" | "PUT" | "DELETE"): boolean {
   const [resource, id, action] = path;
   if (!resources.has(resource)) return false;
+  if (resource === "registration") return path.length === 2 &&
+    (method === "PUT" ? ["season", "opening", "review"].includes(id) :
+      method === "POST" && ["queue", "detail", "closeout"].includes(id));
   if (resource === "store") return isAllowedStoreMutation(path.slice(1), method);
   if (resource === "media") {
     if (method === "POST") return path.length === 1;

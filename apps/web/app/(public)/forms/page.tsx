@@ -15,7 +15,7 @@ export default function FormsPage() {
       eyebrow="Family paperwork"
       title="Forms &"
       accent="Downloads"
-      summary="Download the current registration packet and related forms before contacting the club with questions or submitting paperwork for review."
+      summary="Preview the registration forms anytime. Wait for a club offer before sending completed paperwork."
     />
     <section className="content-section">
       <div className="site-container">
@@ -56,7 +56,7 @@ export default function FormsPage() {
         <div>
           <p className="eyebrow light">Need help?</p>
           <h2>Ask before submitting sensitive paperwork.</h2>
-          <p>The website provides downloads only. A club administrator can help with questions about timing, eligibility, and form requirements.</p>
+          <p>Apply or check in on the Registration page. After an offer, send completed paperwork by the designated club email or in person, using the instructions staff provide. Do not upload paperwork to the website.</p>
         </div>
         <Link className="button button-light" href="/contact">Contact the club<Mail size={17} aria-hidden="true" /></Link>
       </div>

@@ -36,7 +36,7 @@ This is the learning and operating reference for the El1te Spr1nt Athlet1cs plat
 - The public site uses the real logo and favicon assets from `apps/web/public/brand` and `apps/web/public/favicon.png`.
 - Downloadable paperwork lives in `apps/web/public/forms`.
 - Current-site parity routes include `/forms`, `/scholarship`, `/hall-of-fame`, and `/team`; `/rgnhof` redirects to `/hall-of-fame`. Hall of Fame inductees are managed through Admin while the memorial presentation remains fixed.
-- Registration is intentionally a Registration Hub with downloadable forms and a contact CTA. It does not collect athlete registration data, waivers, payments, or private documents online.
+- The Registration Hub has [seasonal intake](guides/registration-intake.md) for short applications and returning check-ins, with downloadable blank forms and a contact CTA. Waivers, payments, and completed private documents are not collected online.
 - The external Square shop, Facebook, and Instagram links are configured in shared public-site constants and surfaced through navigation/footer/contact.
 - The public design now follows the Figma concept's black/red athletic shell, Oswald-style uppercase headings, skewed buttons and accents, black page heroes with red highlighted title words, event date slabs, download rows, gallery hover overlays, and a white centered sponsor logo wall with tier accents.
 
