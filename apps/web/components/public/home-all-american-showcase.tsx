@@ -134,14 +134,12 @@ export const ALL_AMERICAN_SLIDES: ShowcaseSlide[] = [
 
 export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEnabled?: boolean }) {
   const [state, dispatch] = useReducer(showcaseReducer, { activeIndex: 0, userPaused: false });
-  const [hovered, setHovered] = useState(false);
-  const [focusWithin, setFocusWithin] = useState(false);
-  const [resumeDuringInteraction, setResumeDuringInteraction] = useState(false);
+  const [interaction, setInteraction] = useState({ hovered: false, focusWithin: false, resumeDuringInteraction: false });
   const [pageVisible, setPageVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
   const slideCount = ALL_AMERICAN_SLIDES.length;
   const autoplayEnabled = shouldAutoplay({
-    userPaused: state.userPaused, hovered, focusWithin, resumeDuringInteraction, pageVisible, reducedMotion
+    userPaused: state.userPaused, ...interaction, pageVisible, reducedMotion
   });
 
   useEffect(() => {
@@ -168,14 +166,23 @@ export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEna
   const renderedIndexes = visibleSlideIndexes(state.activeIndex, slideCount);
   const activeSlide = ALL_AMERICAN_SLIDES[state.activeIndex];
 
+  function updateInteraction(key: "hovered" | "focusWithin", value: boolean) {
+    setInteraction(previous => {
+      const next = { ...previous, [key]: value };
+      // Keep the explicit start while either input is still interacting with the showcase.
+      if (!next.hovered && !next.focusWithin) next.resumeDuringInteraction = false;
+      return next;
+    });
+  }
+
   function step(type: "previous" | "next") {
     // Stepping resets the timer without changing an explicit Pause choice.
-    if (!state.userPaused) setResumeDuringInteraction(true);
+    if (!state.userPaused) setInteraction(previous => ({ ...previous, resumeDuringInteraction: true }));
     dispatch({ type, slideCount });
   }
 
   function togglePlayback() {
-    setResumeDuringInteraction(state.userPaused);
+    setInteraction(previous => ({ ...previous, resumeDuringInteraction: state.userPaused }));
     dispatch({ type: state.userPaused ? "play" : "pause" });
   }
 
@@ -183,19 +190,13 @@ export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEna
     <section
       className={`${styles.showcase} ${activeSlide.landscape ? styles.landscapeFinale : ""}`}
       aria-labelledby="all-american-title"
-      onMouseEnter={() => {
-        setHovered(true);
-        setResumeDuringInteraction(false);
-      }}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => updateInteraction("hovered", true)}
+      onMouseLeave={() => updateInteraction("hovered", false)}
       onFocus={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) {
-          setFocusWithin(true);
-          setResumeDuringInteraction(false);
-        }
+        if (!event.currentTarget.contains(event.relatedTarget)) updateInteraction("focusWithin", true);
       }}
       onBlur={event => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
+        if (!event.currentTarget.contains(event.relatedTarget)) updateInteraction("focusWithin", false);
       }}
     >
       <div className={styles.heading}>
