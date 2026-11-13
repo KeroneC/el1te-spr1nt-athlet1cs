@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, Pause, Play } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import styles from "./home-all-american-showcase.module.css";
 
 export const SHOWCASE_INTERVAL_MS = 5_000;
@@ -24,9 +24,9 @@ export function showcaseReducer(state: ShowcaseState, action: ShowcaseAction): S
     case "tick":
       return state.userPaused ? state : { ...state, activeIndex: (state.activeIndex + 1) % action.slideCount };
     case "next":
-      return { activeIndex: (state.activeIndex + 1) % action.slideCount, userPaused: true };
+      return { ...state, activeIndex: (state.activeIndex + 1) % action.slideCount };
     case "previous":
-      return { activeIndex: (state.activeIndex - 1 + action.slideCount) % action.slideCount, userPaused: true };
+      return { ...state, activeIndex: (state.activeIndex - 1 + action.slideCount) % action.slideCount };
     case "pause":
       return { ...state, userPaused: true };
     case "play":
@@ -46,10 +46,12 @@ export function shouldAutoplay(input: {
   userPaused: boolean;
   hovered: boolean;
   focusWithin: boolean;
+  resumeDuringInteraction: boolean;
   pageVisible: boolean;
   reducedMotion: boolean;
 }) {
-  return !input.userPaused && !input.hovered && !input.focusWithin && input.pageVisible && !input.reducedMotion;
+  return !input.userPaused && input.pageVisible && !input.reducedMotion &&
+    (input.resumeDuringInteraction || (!input.hovered && !input.focusWithin));
 }
 
 type ShowcaseSlide = {
@@ -134,11 +136,13 @@ export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEna
   const [state, dispatch] = useReducer(showcaseReducer, { activeIndex: 0, userPaused: false });
   const [hovered, setHovered] = useState(false);
   const [focusWithin, setFocusWithin] = useState(false);
+  const [resumeDuringInteraction, setResumeDuringInteraction] = useState(false);
   const [pageVisible, setPageVisible] = useState(true);
   const [reducedMotion, setReducedMotion] = useState(false);
-  const focusLeaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const slideCount = ALL_AMERICAN_SLIDES.length;
-  const autoplayEnabled = shouldAutoplay({ userPaused: state.userPaused, hovered, focusWithin, pageVisible, reducedMotion });
+  const autoplayEnabled = shouldAutoplay({
+    userPaused: state.userPaused, hovered, focusWithin, resumeDuringInteraction, pageVisible, reducedMotion
+  });
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -157,34 +161,42 @@ export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEna
 
   useEffect(() => {
     if (!autoplayEnabled) return;
-    const timer = window.setInterval(() => dispatch({ type: "tick", slideCount }), SHOWCASE_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [autoplayEnabled, slideCount]);
-
-  useEffect(() => () => {
-    if (focusLeaveTimer.current) clearTimeout(focusLeaveTimer.current);
-  }, []);
+    const timer = window.setTimeout(() => dispatch({ type: "tick", slideCount }), SHOWCASE_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [autoplayEnabled, slideCount, state.activeIndex]);
 
   const renderedIndexes = visibleSlideIndexes(state.activeIndex, slideCount);
   const activeSlide = ALL_AMERICAN_SLIDES[state.activeIndex];
 
-  function handleBlur() {
-    focusLeaveTimer.current = setTimeout(() => setFocusWithin(false), 0);
+  function step(type: "previous" | "next") {
+    // Stepping resets the timer without changing an explicit Pause choice.
+    if (!state.userPaused) setResumeDuringInteraction(true);
+    dispatch({ type, slideCount });
   }
 
-  function handleFocus() {
-    if (focusLeaveTimer.current) clearTimeout(focusLeaveTimer.current);
-    setFocusWithin(true);
+  function togglePlayback() {
+    setResumeDuringInteraction(state.userPaused);
+    dispatch({ type: state.userPaused ? "play" : "pause" });
   }
 
   return (
     <section
       className={`${styles.showcase} ${activeSlide.landscape ? styles.landscapeFinale : ""}`}
       aria-labelledby="all-american-title"
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={() => {
+        setHovered(true);
+        setResumeDuringInteraction(false);
+      }}
       onMouseLeave={() => setHovered(false)}
-      onFocus={handleFocus}
-      onBlur={handleBlur}
+      onFocus={event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) {
+          setFocusWithin(true);
+          setResumeDuringInteraction(false);
+        }
+      }}
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setFocusWithin(false);
+      }}
     >
       <div className={styles.heading}>
         <p>2026 AAU Junior Olympic Games</p>
@@ -231,18 +243,19 @@ export function HomeAllAmericanShowcase({ archiveEnabled = false }: { archiveEna
           {String(state.activeIndex + 1).padStart(2, "0")} <i>/</i> {String(slideCount).padStart(2, "0")}
         </span>
         <div className={styles.controls} role="group" aria-label="All-American showcase controls">
-          <button type="button" onClick={() => dispatch({ type: "previous", slideCount })} aria-label="Show previous photograph">
+          <button type="button" onClick={() => step("previous")} aria-label="Show previous photograph">
             <ChevronLeft aria-hidden="true" />
           </button>
           <button
             type="button"
-            onClick={() => dispatch({ type: state.userPaused ? "play" : "pause" })}
-            aria-label={state.userPaused ? "Play photograph showcase" : "Pause photograph showcase"}
-            aria-pressed={state.userPaused}
+            onClick={togglePlayback}
+            disabled={reducedMotion}
+            aria-label={reducedMotion ? "Autoplay unavailable with reduced motion" :
+              state.userPaused ? "Play photograph showcase" : "Pause photograph showcase"}
           >
-            {state.userPaused ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
+            {state.userPaused || reducedMotion ? <Play aria-hidden="true" /> : <Pause aria-hidden="true" />}
           </button>
-          <button type="button" onClick={() => dispatch({ type: "next", slideCount })} aria-label="Show next photograph">
+          <button type="button" onClick={() => step("next")} aria-label="Show next photograph">
             <ChevronRight aria-hidden="true" />
           </button>
         </div>

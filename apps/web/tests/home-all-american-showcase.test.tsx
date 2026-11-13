@@ -17,10 +17,10 @@ describe("homepage All-American showcase", () => {
     expect(state).toEqual({ activeIndex: 0, userPaused: false });
   });
 
-  it("pauses after manual navigation and supports previous/next wraparound", () => {
+  it("supports previous/next wraparound without changing the playback choice", () => {
     expect(showcaseReducer({ activeIndex: 0, userPaused: false }, { type: "previous", slideCount: 8 }))
-      .toEqual({ activeIndex: 7, userPaused: true });
-    expect(showcaseReducer({ activeIndex: 7, userPaused: false }, { type: "next", slideCount: 8 }))
+      .toEqual({ activeIndex: 7, userPaused: false });
+    expect(showcaseReducer({ activeIndex: 7, userPaused: true }, { type: "next", slideCount: 8 }))
       .toEqual({ activeIndex: 0, userPaused: true });
     expect(showcaseReducer({ activeIndex: 2, userPaused: true }, { type: "tick", slideCount: 8 }))
       .toEqual({ activeIndex: 2, userPaused: true });
@@ -34,12 +34,17 @@ describe("homepage All-American showcase", () => {
   });
 
   it("stops autoplay for hover, focus, hidden pages, and reduced motion", () => {
-    const base = { userPaused: false, hovered: false, focusWithin: false, pageVisible: true, reducedMotion: false };
+    const base = { userPaused: false, hovered: false, focusWithin: false, resumeDuringInteraction: false, pageVisible: true, reducedMotion: false };
     expect(shouldAutoplay(base)).toBe(true);
     expect(shouldAutoplay({ ...base, hovered: true })).toBe(false);
     expect(shouldAutoplay({ ...base, focusWithin: true })).toBe(false);
     expect(shouldAutoplay({ ...base, pageVisible: false })).toBe(false);
     expect(shouldAutoplay({ ...base, reducedMotion: true })).toBe(false);
+    const interacting = { ...base, hovered: true, focusWithin: true, resumeDuringInteraction: true };
+    expect(shouldAutoplay(interacting)).toBe(true);
+    expect(shouldAutoplay({ ...interacting, userPaused: true })).toBe(false);
+    expect(shouldAutoplay({ ...interacting, pageVisible: false })).toBe(false);
+    expect(shouldAutoplay({ ...interacting, reducedMotion: true })).toBe(false);
   });
 
   it("renders only the active and adjacent photographs with accessible controls", () => {
