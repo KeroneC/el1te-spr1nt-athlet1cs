@@ -198,8 +198,13 @@
   border-right: 0;
 }
 
-.controls button:hover {
+.controls button:enabled:hover {
   background: #e5262a;
+}
+
+.controls button:disabled {
+  color: #a1a1aa;
+  cursor: default;
 }
 
 .controls button:focus-visible {

@@ -126,22 +126,27 @@ public static class IntakeRules
         season.Revision = Guid.NewGuid();
     }
 
-    public static bool CanTransition(IntakeStatus current, IntakeStatus next) =>
-        current == next || (current, next) switch
+    public static bool CanTransition(IntakeKind kind, IntakeStatus current, IntakeStatus next)
+    {
+        if (current == next) return true;
+        if (kind == IntakeKind.Returning && next == IntakeStatus.PaperworkReceived) return false;
+        return (current, next) switch
         {
             (IntakeStatus.New or IntakeStatus.FollowUp or IntakeStatus.Waitlisted,
                 IntakeStatus.FollowUp or IntakeStatus.Waitlisted or IntakeStatus.Offered or IntakeStatus.Closed) => true,
+            (IntakeStatus.Offered, IntakeStatus.Enrolled) => kind == IntakeKind.Returning,
             (IntakeStatus.Offered, IntakeStatus.PaperworkReceived or IntakeStatus.Waitlisted or IntakeStatus.Closed) => true,
             (IntakeStatus.PaperworkReceived, IntakeStatus.Enrolled or IntakeStatus.Offered or IntakeStatus.Closed) => true,
             (IntakeStatus.Enrolled, IntakeStatus.PaperworkReceived or IntakeStatus.Closed) => true,
             (IntakeStatus.Closed, IntakeStatus.FollowUp) => true,
             _ => false
         };
+    }
 
     public static void ApplyReview(RegistrationSubmission submission, ReviewRequest request)
     {
         var errors = new Dictionary<string, string[]>();
-        if (!Enum.IsDefined(request.Status) || !CanTransition(submission.Status, request.Status))
+        if (!Enum.IsDefined(request.Status) || !CanTransition(submission.Kind, submission.Status, request.Status))
             errors["status"] = ["Choose an available status transition."];
         if (!Enum.IsDefined(request.Transfer) || (submission.Kind == IntakeKind.Returning && request.Transfer != TransferStatus.NotNeeded))
             errors["transfer"] = ["Choose a valid transfer status."];

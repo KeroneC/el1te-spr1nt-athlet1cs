@@ -60,7 +60,7 @@ test("homepage All-American showcase is responsive, controllable, and motion saf
 
   await showcase.getByRole("button", { name: "Show next photograph" }).click();
   await expect(page.getByTestId("all-american-progress")).toHaveText(/02\s*\/\s*08/);
-  await expect(showcase.getByRole("button", { name: "Play photograph showcase" })).toBeVisible();
+  await expect(showcase.getByRole("button", { name: "Autoplay unavailable with reduced motion" })).toBeDisabled();
 
   for (let index = 0; index < 6; index += 1) {
     await showcase.getByRole("button", { name: "Show next photograph" }).click();
@@ -70,10 +70,59 @@ test("homepage All-American showcase is responsive, controllable, and motion saf
 
   for (const width of [1024, 800, 769, 768, 390, 340]) {
     await page.setViewportSize({ width, height: 844 });
-    const viewport = await page.evaluate(() => ({
-      clientWidth: document.documentElement.clientWidth,
-      scrollWidth: document.documentElement.scrollWidth
-    }));
-    expect(viewport.scrollWidth, `homepage overflow at ${width}px`).toBeLessThanOrEqual(viewport.clientWidth);
+    await expect.poll(() => page.evaluate(() =>
+      document.documentElement.scrollWidth - document.documentElement.clientWidth
+    ), { message: `homepage overflow at ${width}px` }).toBeLessThanOrEqual(0);
   }
+
+  await page.clock.install();
+  await page.clock.runFor(6_000);
+  await expect(page.getByTestId("all-american-progress")).toHaveText(/08\s*\/\s*08/);
+});
+
+test("homepage showcase resumes from its controls without requiring a click elsewhere", async ({ page }) => {
+  test.setTimeout(45_000);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/");
+
+  const showcase = page.getByRole("region", { name: "9 All-Americans" });
+  const progress = page.getByTestId("all-american-progress");
+  const next = showcase.getByRole("button", { name: "Show next photograph" });
+  const previous = showcase.getByRole("button", { name: "Show previous photograph" });
+  const play = showcase.getByRole("button", { name: "Play photograph showcase" });
+  const pause = showcase.getByRole("button", { name: "Pause photograph showcase" });
+  const check = (index: string) => expect(progress).toHaveText(new RegExp(`${index}\\s*/\\s*08`), { timeout: 8_000 });
+
+  await pause.click();
+  await expect(play).toBeFocused();
+  await next.click();
+  await check("02");
+  const staysStill = () => progress.evaluate(element => new Promise<boolean>(resolve => {
+    // Observe for longer than one autoplay interval; don't depend on a mocked clock for hydration or React effects.
+    const observer = new MutationObserver(() => {
+      clearTimeout(timer);
+      observer.disconnect();
+      resolve(false);
+    });
+    const timer = setTimeout(() => { observer.disconnect(); resolve(true); }, 5_500);
+    observer.observe(element, { childList: true, characterData: true, subtree: true });
+  }));
+  expect(await staysStill()).toBe(true); // An explicit pause survives manual navigation.
+
+  await play.click();
+  await expect(pause).toBeFocused();
+  await check("03"); // The pointer is still over Play.
+  await next.click();
+  await check("04");
+  await expect(next).toBeFocused();
+  await check("05");
+
+  await page.mouse.move(0, 0);
+  await page.getByRole("navigation", { name: "Primary navigation" }).getByRole("button", { name: "Club" }).focus();
+  await previous.focus();
+  expect(await staysStill()).toBe(true); // New keyboard focus suspends autoplay.
+  await previous.press("Enter");
+  await check("04");
+  await expect(previous).toBeFocused();
+  await check("05");
 });

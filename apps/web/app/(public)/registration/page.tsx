@@ -46,7 +46,7 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
             <ul>
               <li>Save the reference shown after you submit.</li>
               <li>Wait for the club to follow up by email.</li>
-              <li>Send completed paperwork only after an offer, using the club’s email or in-person instructions.</li>
+              <li>New athletes: send paperwork only after an offer. Returning athletes: check in online; no paperwork is required.</li>
             </ul>
             <Link className="button button-primary" href="/contact">Ask a registration question<Mail size={17} aria-hidden="true" /></Link>
             <Link className="text-link registration-faq-link" href="/faqs">Read frequently asked questions<ArrowRight size={17} aria-hidden="true" /></Link>
@@ -60,20 +60,20 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
             <RegistrationIntake season={season} channel={channel} kind="Application" />
           </div>
           <div id="returning" className="min-w-0 scroll-mt-28">
-            <h2>Returning athlete? Check in</h2><p className="mb-4">If your athlete already ran with El1te, use this shorter form instead.</p>
+            <h2>Returning athlete? Check in</h2><p className="mb-4">Tell us your athlete plans to return. No registration paperwork is required.</p>
             <RegistrationIntake season={season} channel={channel} kind="Returning" />
           </div>
         </div>
       </section>}
       <section className="content-section tone-muted">
         <div className="site-container">
-          <div className="section-heading"><div><p className="eyebrow">For families offered a spot</p><h2>Preview the paperwork</h2></div><Link className="text-link" href="/forms">All forms<ArrowRight size={17} aria-hidden="true" /></Link></div>
+          <div className="section-heading"><div><p className="eyebrow">For new athletes offered a spot</p><h2>Preview the paperwork</h2></div><Link className="text-link" href="/forms">All forms<ArrowRight size={17} aria-hidden="true" /></Link></div>
           <div className="download-list">
             {FORM_DOWNLOADS.slice(0, 3).map(({ name, description, href, fileType, Icon }) => <article className="download-row" key={name}><div className="download-icon"><Icon aria-hidden="true" /></div><div><h3>{name}</h3><p>{description}</p><span>{fileType}</span></div><a className="button button-secondary" href={href} download>Download<Download size={17} aria-hidden="true" /></a></article>)}
           </div>
         </div>
       </section>
-      <section className="cta-band"><div className="site-container"><div><p className="eyebrow light">After an offer</p><h2>Club staff will explain how to send your packet.</h2><p>Have your application reference ready. Photo consent is optional. This site does not accept documents, signatures, or payments for registration.</p></div><Link className="button button-light" href="/contact">Contact the club</Link></div></section>
+      <section className="cta-band"><div className="site-container"><div><p className="eyebrow light">After an offer for a new athlete</p><h2>Club staff will explain how to send your packet.</h2><p>Have your application reference ready. Photo consent is optional. This site does not accept documents, signatures, or payments for registration.</p></div><Link className="button button-light" href="/contact">Contact the club</Link></div></section>
     </>;
   } catch (error) {
     return <><PageHero title="Registration" /><div className="site-container content-section"><PublicErrorState error={error} /></div></>;

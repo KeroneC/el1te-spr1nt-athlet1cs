@@ -18,7 +18,7 @@ The relay image uses a landscape finale so every athlete remains visible. Portra
 
 ## Interaction and accessibility
 
-The showcase advances every five seconds and provides Previous, Pause/Play, and Next controls. Manual navigation pauses the loop. Autoplay also pauses while the showcase is hovered, contains keyboard focus, or the page is hidden.
+The showcase advances every five seconds and provides Previous, Pause/Play, and Next controls. Previous and Next restart the five-second delay when autoplay is on; they never undo an explicit Pause. Moving the pointer or keyboard focus into the showcase temporarily pauses autoplay. Pressing Play or stepping through a running showcase resumes the timer even while the pointer or focus remains on the control. Autoplay still stops when the page is hidden.
 
 With reduced motion enabled, autoplay and card transitions are disabled while manual controls remain available. Only the active photograph has meaningful alternative text; the two visible depth cards are decorative and hidden from assistive technology. Automatic changes are not announced.
 
