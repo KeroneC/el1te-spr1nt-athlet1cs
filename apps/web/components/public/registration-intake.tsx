@@ -105,7 +105,7 @@ export function RegistrationIntake({ season, channel, kind }: {
     <h3>{application ? "Application received" : "Check-in received"}</h3>
     <p>Save this reference: <strong>{reference}</strong></p>
     <p>This does not reserve a spot. The club will follow up by email. {season.replyWindow}</p>
-    <p>Please wait for an offer before sending completed paperwork.</p>
+    <p>{application ? "Please wait for an offer before sending completed paperwork." : "Returning athletes do not need to submit paperwork."}</p>
     <button type="button" className="button button-secondary" onClick={() => { last.current = null; setReference(""); setPrior(""); }}>
       {application ? "Apply for another athlete" : "Check in another athlete"}
     </button>

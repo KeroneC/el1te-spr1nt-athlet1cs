@@ -70,6 +70,8 @@ test("registration saves both family paths, deduplicates retries, and keeps unre
     await returning.getByLabel("Athlete’s first name").fill("Morgan");
     await returning.getByRole("button", { name: "Submit check-in" }).click();
     await expect(publicPage.getByRole("heading", { name: "Check-in received" })).toBeVisible();
+    await expect(publicPage.locator("#returning").getByRole("status")).toContainText("Returning athletes do not need to submit paperwork.");
+    await expect(publicPage.locator("#apply").getByRole("status")).toContainText("wait for an offer before sending completed paperwork");
     for (const width of [390, 340]) {
       await publicPage.setViewportSize({ width, height: 844 });
       expect(await publicPage.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
@@ -92,7 +94,16 @@ test("registration saves both family paths, deduplicates retries, and keeps unre
     expect((await review("Enrolled", true, "Cleared")).ok()).toBe(true);
     expect(await detail()).toMatchObject({ competitionReady: true, photoConsent: "Declined" });
     await page.getByRole("button", { name: "Returning Check-Ins" }).click();
-    await expect(page.getByRole("button", { name: "Review Morgan" })).toBeVisible();
+    await page.getByRole("button", { name: "Review Morgan" }).click();
+    const checkInStatus = page.getByLabel("Check-in status");
+    await checkInStatus.selectOption("Offered");
+    await page.getByRole("button", { name: "Save review" }).click();
+    await expect(checkInStatus).toHaveValue("Offered");
+    await expect(checkInStatus.getByRole("option", { name: "Paperwork received" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Paperwork instructions for staff to send" })).toHaveCount(0);
+    await checkInStatus.selectOption("Enrolled");
+    await page.getByRole("button", { name: "Save review" }).click();
+    await expect(page.getByRole("listitem").filter({ hasText: / · Enrolled(?: · Competition-ready)?$/ })).toBeVisible();
     const closed = await page.request.put(`${base}/opening`, { data: { year, revision: season!.revision, open: false, launchChecksApproved: false } });
     expect(closed.ok(), await closed.text()).toBe(true);
     season = await closed.json();

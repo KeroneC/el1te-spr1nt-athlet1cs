@@ -43,7 +43,14 @@ const control = "min-h-11 w-full rounded-none border border-slate-300 bg-white p
 const button = "min-h-11 border border-slate-400 bg-white px-4 text-sm font-bold disabled:opacity-50";
 const date = (value: string) => new Date(value).toLocaleString();
 const field = (label: string, children: ReactNode) => <label className="grid min-w-0 gap-1 text-sm font-semibold">{label}{children}</label>;
+const statusLabel = (status: Status, kind: Kind) =>
+  status === "Offered" && kind === "Returning" ? "Offered" : labels[status];
 const option = (value: keyof typeof labels) => <option key={value} value={value}>{labels[value]}</option>;
+const statusOption = (value: Status, kind: Kind) => <option key={value} value={value}>{statusLabel(value, kind)}</option>;
+const nextStatuses = (status: Status, kind: Kind) =>
+  kind === "Application" ? transitions[status] :
+    status === "Offered" ? ["Enrolled", "Waitlisted", "Closed"] as const :
+      transitions[status].filter(value => value !== "PaperworkReceived");
 
 async function call<T>(path: string, method: "POST" | "PUT", body: unknown, signal?: AbortSignal): Promise<T> {
   const response = await fetch(`/api/admin/registration/${path}`, {
@@ -116,7 +123,8 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     await action(async () => {
       await call("review", "PUT", { id: detail.id, revision: detail.revision, status: form.get("status"),
         transfer: detail.kind === "Returning" ? "NotNeeded" : form.get("transfer"),
-        photoConsent: form.get("photoConsent"), competitionReady: form.get("competitionReady") === "on" });
+        photoConsent: detail.kind === "Returning" ? detail.photoConsent : form.get("photoConsent"),
+        competitionReady: form.get("competitionReady") === "on" });
       setDetail(await call<Detail>("detail", "POST", { id: detail.id }));
       reload();
     }, "Review saved. No email was sent.");
@@ -209,16 +217,16 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
         ["Affiliations", detail.affiliations?.replaceAll(",", ", ")], ["Last meet", detail.lastMeetMonth]
       ].filter(([, value]) => value).map(([name, value]) => <div key={name}><dt className="font-bold">{name}</dt><dd>{value}</dd></div>)}</dl>
       <form method="post" className="grid gap-4 sm:grid-cols-2" onSubmit={saveReview} key={detail.revision}>
-        {field("Application status", <select name="status" className={control} defaultValue={detail.status}>{[detail.status, ...transitions[detail.status]].map(option)}</select>)}
+        {field(detail.kind === "Returning" ? "Check-in status" : "Application status", <select name="status" className={control} defaultValue={detail.status}>{[detail.status, ...nextStatuses(detail.status, detail.kind)].map(status => statusOption(status, detail.kind))}</select>)}
         {detail.kind === "Application" && field("Transfer review", <select name="transfer" className={control} defaultValue={detail.transfer}>{(["NeedsReview", "NotNeeded", "Cleared"] as const).map(option)}</select>)}
-        {field("Optional photo consent", <select name="photoConsent" className={control} defaultValue={detail.photoConsent}>{(["NotRecorded", "Granted", "Declined"] as const).map(option)}</select>)}
+        {detail.kind === "Application" && field("Optional photo consent", <select name="photoConsent" className={control} defaultValue={detail.photoConsent}>{(["NotRecorded", "Granted", "Declined"] as const).map(option)}</select>)}
         <label className="flex items-center gap-2"><input type="checkbox" name="competitionReady" defaultChecked={detail.competitionReady} />Competition-ready</label>
         <div><button className={button} disabled={busy}>Save review</button></div>
       </form>
       {detail.kind === "Application" && <p className="text-sm">Verify eligibility outside the app: <a className="underline" href="https://image.aausports.org/dnn/athletics/Club-Release-Form.pdf">AAU club release</a> · <a className="underline" href="https://www.usatf.org/home-normal/top-utility-nav-content/membership/affiliation-update-requests">USATF affiliation updates</a>.</p>}
-      {["Offered", "PaperworkReceived", "Enrolled"].includes(detail.status) && <aside className="border p-3 text-sm"><h3 className="font-bold">Paperwork instructions for staff to send</h3>{handoff.map(line => <p className="mt-1 break-words" key={line}>{line}</p>)}</aside>}
+      {detail.kind === "Application" && ["Offered", "PaperworkReceived", "Enrolled"].includes(detail.status) && <aside className="border p-3 text-sm"><h3 className="font-bold">Paperwork instructions for staff to send</h3>{handoff.map(line => <p className="mt-1 break-words" key={line}>{line}</p>)}</aside>}
       <div><h3 className="font-bold">Review history</h3>{detail.history.length ? <ol className="space-y-2">{detail.history.map((entry, index) =>
-        <li key={index} className="text-sm">{date(entry.changedAtUtc)} · {entry.reviewer ?? entry.changedByUserId} · {labels[entry.status]} · {labels[entry.transfer]} · Photo consent: {labels[entry.photoConsent]}{entry.competitionReady ? " · Competition-ready" : ""}</li>)}</ol> : <p className="text-sm">No staff changes yet.</p>}</div>
+        <li key={index} className="text-sm">{date(entry.changedAtUtc)} · {entry.reviewer ?? entry.changedByUserId} · {statusLabel(entry.status, detail.kind)}{detail.kind === "Application" ? ` · ${labels[entry.transfer]} · Photo consent: ${labels[entry.photoConsent]}` : ""}{entry.competitionReady ? " · Competition-ready" : ""}</li>)}</ol> : <p className="text-sm">No staff changes yet.</p>}</div>
     </section> : <>
       <h2 className="text-xl font-bold">{view === "Application" ? "New Applications" : "Returning Check-Ins"}</h2>
       <form method="post" className="grid gap-3 border bg-white p-4 sm:grid-cols-2 xl:grid-cols-5" key={`${year}:${view}`}
@@ -229,7 +237,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             status: String(values.get("status") ?? ""), ageGroup: String(values.get("ageGroup") ?? ""), transfer: String(values.get("transfer") ?? "") });
         }}>
         {field("Search name, email, or reference", <input name="search" maxLength={120} className={control} />)}
-        {field("Status", <select name="status" className={control}><option value="">All statuses</option>{statusValues.map(option)}</select>)}
+        {field("Status", <select name="status" className={control}><option value="">All statuses</option>{statusValues.filter(status => view === "Application" || status !== "PaperworkReceived").map(status => statusOption(status, view))}</select>)}
         {view === "Application" && <>
           {field("Age group", <select name="ageGroup" className={control}><option value="">All ages</option>
             {current?.ageGroups.split("\n").filter(Boolean).map(age => <option key={age}>{age}</option>)}</select>)}
@@ -239,7 +247,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
       </form>
       <p role="status" className="text-sm">{loadingQueue ? "Loading…" : queue ? `${queue.count} records` : ""}</p>
       {!loadingQueue && queue && (queue.items.length ? <ul className="space-y-2">{queue.items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border bg-white p-4">
-        <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {labels[item.status]}{item.ageGroup && ` · ${item.ageGroup}`}</p>
+        <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {statusLabel(item.status, view)}{item.ageGroup && ` · ${item.ageGroup}`}</p>
           {item.transfer === "NeedsReview" && <p className="text-sm font-semibold">Needs transfer review</p>}</div>
         <button className={button} disabled={busy} onClick={() => void openDetail(item.id)}>Review {item.athleteFirstName}</button>
       </li>)}</ul> : <p>No matching records.</p>)}

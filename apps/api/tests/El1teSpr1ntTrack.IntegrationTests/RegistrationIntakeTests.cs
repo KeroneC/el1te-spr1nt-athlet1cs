@@ -78,6 +78,24 @@ public sealed class RegistrationIntakeTests
     }
 
     [Fact]
+    public void ReturningAthleteCanEnrollAfterAnOfferWithoutPaperwork()
+    {
+        var returning = IntakeRules.Normalize(Request() with { Kind = IntakeKind.Returning }, Season(), Now);
+        var newcomer = IntakeRules.Normalize(Request(), Season(), Now);
+        ReviewRequest Change(RegistrationSubmission item, IntakeStatus status) =>
+            new(item.Id, item.Revision, status, item.Transfer, IntakePhotoConsent.NotRecorded, false);
+
+        foreach (var item in new[] { returning, newcomer })
+            IntakeRules.ApplyReview(item, Change(item, IntakeStatus.Offered));
+
+        Assert.Throws<CmsRequestValidationException>(() => IntakeRules.ApplyReview(returning, Change(returning, IntakeStatus.PaperworkReceived)));
+        Assert.Throws<CmsRequestValidationException>(() => IntakeRules.ApplyReview(newcomer, Change(newcomer, IntakeStatus.Enrolled)));
+        IntakeRules.ApplyReview(returning, Change(returning, IntakeStatus.Enrolled));
+        Assert.Equal(IntakeStatus.Enrolled, returning.Status);
+        Assert.Equal(IntakePhotoConsent.NotRecorded, returning.PhotoConsent);
+    }
+
+    [Fact]
     public void RequiresManualOpeningAndUsesEasternDates()
     {
         var season = Season();

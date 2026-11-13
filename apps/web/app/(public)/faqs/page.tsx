@@ -5,7 +5,7 @@ import { getFaqs } from "@/lib/public/client";
 
 export const metadata: Metadata = { title: "FAQs", description: "Answers to common questions about programs, practices, registration, and support." };
 const registrationFaqs = [
-  { question: "How do I register my child?", answer: "Use the Registration page to apply for a spot or check in as a returning family. If the club offers a spot, staff will explain how to send the completed paperwork." },
+  { question: "How do I register my child?", answer: "New athletes apply on the Registration page. If the club offers a spot, staff will explain how to send completed paperwork. Returning athletes only need to check in online; no paperwork is required." },
   { question: "What ages can join?", answer: "Check the Registration page for the current season’s approved age groups and practice details." }
 ];
 
