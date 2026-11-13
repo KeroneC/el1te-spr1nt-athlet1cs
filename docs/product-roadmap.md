@@ -58,12 +58,10 @@ Delivery status: the launch-hardening foundation and Square-only checkout are im
 
 ## Stage 3: Winter Registration Pilot
 
-- Parent accounts own structured seasonal athlete applications.
-- Applications move through Draft, Submitted, Needs Information, Approved, Declined, or Withdrawn states.
-- Collect registration details plus registration form, waiver, photo consent, and proof-of-age documents.
-- Keep medical and insurance information offline. Do not add registration payment or waiver e-signature in this pilot.
-- Store documents privately, scan uploads, quarantine failures, and allow full-record access only to Admin and SuperAdmin users.
-- Provide parent status/document views and an Admin review queue while preserving the paper fallback.
+- The November 27 pilot uses [short seasonal applications and a separate returning check-in](guides/registration-intake.md), with no parent account or roster lookup.
+- Staff review applications privately, record transfer clearance separately from enrollment, and send decisions manually from the club inbox.
+- Completed paperwork stays out of the app. After an offer, families may email the designated inbox or hand it in person. Photo consent is optional; no payments, e-signatures, or uploads in this pilot.
+- Parent account and document workflows remain deferred. A synthetic demo rehearsal and manual approval are required before opening production intake.
 
 ## Stage 4: Hybrid Store
 

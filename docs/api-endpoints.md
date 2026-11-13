@@ -31,6 +31,14 @@ The public route returns only active records, ordered by display order and then 
 
 Public APIs return only published years. A summary-only year returns no recipient details until its verified roster and medal-recipient totals reconcile and `DetailsComplete` is enabled. Delete operations are reversible deactivation/unpublishing; no permanent-delete Admin route is exposed.
 
+## Seasonal Registration Intake
+
+- Public: `GET /api/public/registration`, `POST /api/public/registration/applications` (new or returning), and `POST /api/public/registration/visit`.
+- Active Admins and SuperAdmins: `GET /api/admin/registration/seasons`, `PUT` to `/season`, `/opening`, and `/review`, and `POST` to `/queue` and `/detail` under the same prefix.
+- SuperAdmin only: `POST /api/admin/registration/closeout`.
+
+The public save returns a reference after a successful database write, without sending email. An identical retry with the same key returns that reference; there is no public receipt lookup. Staff search and detail parameters are sent in private request bodies. See the [registration operating guide](guides/registration-intake.md) for opening and retention controls.
+
 ## Commerce Foundation
 
 - Commerce integration health: `GET /health/commerce`

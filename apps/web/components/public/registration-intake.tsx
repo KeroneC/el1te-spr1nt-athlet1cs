@@ -83,7 +83,7 @@ export function RegistrationIntake({ season, channel, kind }: {
         setUncertain(false);
         setReference(result.reference);
       } else {
-        setUncertain(response.status >= 500);
+        setUncertain(response.status >= 500 || (uncertain && response.status === 429));
         setMessage(result.message ?? "We couldn’t confirm the submission.");
         setErrors(result.errors ?? {});
         setSupport(result.referenceId ?? null);

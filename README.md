@@ -22,8 +22,9 @@ Implemented:
 - Privacy-safe support references, server/browser telemetry controls, Azure workbook, and operational alerts
 - Manually approved, isolated Azure demo and production delivery through GitHub OIDC, Bicep, immutable artifacts, EF migration bundles, recovery controls, and smoke tests
 - Backend unit/integration tests, frontend tests, and Playwright/axe workflows
+- Season registration applications and returning check-ins, closed until a staff-approved opening
 
-Intentionally deferred from the lean launch: Parent/athlete portals, online athlete registration, private documents, Printify/shipping, staff-entered store tender, feedback triage, trusted-device MFA, deployment slots, automatic unreviewed production promotion, and iOS code. Production provisioning, DNS validation, branded-email verification, reviewed content selection, stocktake, Square Production secrets, and the public switch remain supervised launch operations.
+Intentionally deferred from the lean launch: Parent/athlete portals, online registration paperwork, private documents, Printify/shipping, staff-entered store tender, feedback triage, trusted-device MFA, deployment slots, automatic unreviewed production promotion, and iOS code. Production provisioning, DNS validation, branded-email verification, reviewed content selection, stocktake, Square Production secrets, and the public switch remain supervised launch operations.
 
 ## Documentation
 

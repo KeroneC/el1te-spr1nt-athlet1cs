@@ -35,11 +35,15 @@ async function proxy(request: Request, context: Context, method: "POST" | "PUT" 
 async function proxyRead(request: Request, context: Context) {
   const { path } = await context.params;
   if (!isAllowedAdminRead(path)) return NextResponse.json({ message: "The requested admin operation is not available." }, { status: 404 });
+  const registration = path[0] === "registration";
+  const privateHeaders = registration ? { "Cache-Control": "private, no-store" } : undefined;
   try {
-    const search = new URL(request.url).search;
+    const search = registration ? "" : new URL(request.url).search;
     const result = await adminApiFetch<unknown>(`/api/admin/${path.map(encodeURIComponent).join("/")}${search}`);
-    return NextResponse.json(result);
+    return NextResponse.json(result, { headers: privateHeaders });
   } catch (error) {
-    return adminErrorResponse(error, "The request could not be completed.", "admin-read-proxy");
+    const response = adminErrorResponse(error, "The request could not be completed.", "admin-read-proxy");
+    if (registration) response.headers.set("Cache-Control", "private, no-store");
+    return response;
   }
 }
