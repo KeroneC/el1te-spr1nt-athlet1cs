@@ -130,7 +130,7 @@ export const FORM_DOWNLOADS = [
   },
   {
     name: "Photo Consent Form",
-    description: "Required media consent form for athlete photos and team coverage.",
+    description: "Optional permission for the club to use athlete photos and videos.",
     audience: "Parent or guardian",
     href: "/forms/photo-consent-form.pdf",
     fileType: "PDF",
@@ -155,21 +155,6 @@ export const TEAM_VALUES = [
   "Sportsmanship",
   "Discipline",
   "Family support"
-] as const;
-
-export const QUICK_STEPS = [
-  {
-    title: "Review the packet",
-    body: "Start with the registration form and required waiver and consent documents."
-  },
-  {
-    title: "Ask questions early",
-    body: "Contact the club before submitting paperwork if you need help with eligibility, season timing, or form requirements."
-  },
-  {
-    title: "Submit for review",
-    body: "Completed paperwork is reviewed by club staff. This site does not collect sensitive athlete information online."
-  }
 ] as const;
 
 export const FileTextIcon = FileText;

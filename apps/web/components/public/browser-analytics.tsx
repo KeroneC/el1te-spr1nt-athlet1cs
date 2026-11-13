@@ -46,7 +46,7 @@ export function BrowserAnalytics() {
       client.current = instance;
       setBrowserAnalyticsClient(instance, config.releaseSha);
       const route = sanitizePublicRoute(initialPathname.current);
-      if (route) instance.trackPageView({ name: route, uri: route });
+      if (route) instance.trackPageView({ name: route, uri: route, refUri: "" });
       const navigation = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
       if (navigation) instance.trackMetric({ name: "NavigationDuration", average: navigation.duration });
     }).catch(() => { /* Analytics must never interrupt the website. */ });
@@ -55,7 +55,7 @@ export function BrowserAnalytics() {
 
   useEffect(() => {
     const route = sanitizePublicRoute(pathname);
-    if (route && client.current) client.current.trackPageView({ name: route, uri: route });
+    if (route && client.current) client.current.trackPageView({ name: route, uri: route, refUri: "" });
   }, [pathname]);
 
   useReportWebVitals(metric => {

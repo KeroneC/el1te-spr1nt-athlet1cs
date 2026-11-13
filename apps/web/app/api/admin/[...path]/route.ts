@@ -14,12 +14,21 @@ export function DELETE(request: Request, context: Context) { return proxy(reques
 async function proxy(request: Request, context: Context, method: "POST" | "PUT" | "DELETE") {
   const { path } = await context.params;
   if (!isAllowedAdminMutation(path, method)) return NextResponse.json({ message: "The requested admin operation is not available." }, { status: 404 });
+  const registration = path[0] === "registration";
+  const privateHeaders = registration ? { "Cache-Control": "private, no-store" } : undefined;
+  if (registration && (request.headers.get("sec-fetch-site") === "cross-site" ||
+      !request.headers.get("content-type")?.toLowerCase().startsWith("application/json")))
+    return NextResponse.json({ message: "The request could not be completed." }, { status: 400, headers: privateHeaders });
   try {
     const body = await readAdminMutationBody(request, method);
+    if (registration && (body?.length ?? 0) > 8192)
+      return NextResponse.json({ message: "The request is too large." }, { status: 413, headers: privateHeaders });
     const result = await adminApiFetch<unknown>(`/api/admin/${path.map(encodeURIComponent).join("/")}`, { method, body });
-    return method === "DELETE" ? new NextResponse(null, { status: 204 }) : NextResponse.json(result, { status: method === "POST" ? 201 : 200 });
+    return method === "DELETE" ? new NextResponse(null, { status: 204 }) : NextResponse.json(result, { status: method === "POST" && !registration ? 201 : 200, headers: privateHeaders });
   } catch (error) {
-    return adminErrorResponse(error, "The request could not be completed.", "admin-mutation-proxy");
+    const response = adminErrorResponse(error, "The request could not be completed.", "admin-mutation-proxy");
+    if (registration) response.headers.set("Cache-Control", "private, no-store");
+    return response;
   }
 }
 

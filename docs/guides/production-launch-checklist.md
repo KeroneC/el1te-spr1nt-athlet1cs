@@ -1,6 +1,6 @@
 # Production Launch Checklist
 
-This checklist is the release gate for the lean public launch: public CMS, Admin, and Square-hosted payment for physically held club inventory with practice/event handoff. Parent registration, Printify, shipping, feedback, and staff-entered tender are excluded.
+This checklist is the release gate for the lean public launch: public CMS, Admin, and Square-hosted payment for physically held club inventory with practice/event handoff. The short seasonal intake follows the separate [registration opening checklist](registration-intake.md#before-opening). Parent accounts and document uploads, Printify, shipping, feedback, and staff-entered tender are excluded.
 
 ## Organization approvals
 

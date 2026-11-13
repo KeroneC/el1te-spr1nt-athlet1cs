@@ -27,7 +27,9 @@ public sealed class LaunchPromotionTests
             source.AddRange(uploader, media, new LegacyPhoto { Sha256 = new string('a', 64) },
                 new Announcement { Title = "Published", Slug = "published", Summary = "Summary", Body = "Body", IsPublished = true, ImageUrl = media.PublicUrl },
                 new Announcement { Title = "Draft", Slug = "draft", Summary = "Summary", Body = "Body", IsPublished = false },
-                new ContactSubmission { Name = "Private", Email = "private@example.test", Message = "Do not export" });
+                new ContactSubmission { Name = "Private", Email = "private@example.test", Message = "Do not export" },
+                new RegistrationSeason { Year = 2026 },
+                new RegistrationSubmission { SeasonYear = 2026, Kind = IntakeKind.Application, GuardianEmail = "intake-only@example.test", AthleteFirstName = "Synthetic" });
             await source.SaveChangesAsync();
             var sourceStorage = new LocalMediaStorage(new MediaStorageOptions { LocalRoot = sourceRoot });
             await sourceStorage.SaveAsAsync(new MemoryStream([1, 2, 3, 4]), media.StorageKey, default);
@@ -35,7 +37,9 @@ public sealed class LaunchPromotionTests
 
             var manifest = await PromotionEngine.ExportAsync(source, args, sourceStorage);
 
-            Assert.DoesNotContain(manifest.Records, value => value.Type is nameof(User) or nameof(ContactSubmission) or nameof(LegacyPhoto));
+            Assert.DoesNotContain(manifest.Records, value => value.Type is nameof(User) or nameof(ContactSubmission)
+                or nameof(LegacyPhoto) or nameof(RegistrationSeason) or nameof(RegistrationSubmission) or nameof(RegistrationReview) or nameof(RegistrationCount));
+            Assert.DoesNotContain("intake-only@example.test", System.Text.Json.JsonSerializer.Serialize(manifest));
             Assert.Contains(manifest.Records, value => value.Type == nameof(Announcement) && value.Status == "Draft" && !value.Include);
             var mediaRecord = Assert.Single(manifest.Records, value => value.Type == nameof(MediaAsset));
             Assert.True(mediaRecord.Include);

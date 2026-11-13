@@ -2941,6 +2941,256 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.ToTable("ProductVisualizerLayers");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationCount", b =>
+                {
+                    b.Property<int>("SeasonYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Applications")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Enrolled")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Returning")
+                        .HasColumnType("int");
+
+                    b.Property<long>("Visits")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("SeasonYear", "Channel");
+
+                    b.ToTable("RegistrationCounts");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset>("ChangedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid>("ChangedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("CompetitionReady")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("PhotoConsent")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Transfer")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SubmissionId");
+
+                    b.ToTable("RegistrationReviews");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationSeason", b =>
+                {
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.Property<string>("AgeGroups")
+                        .IsRequired()
+                        .HasMaxLength(400)
+                        .HasColumnType("nvarchar(400)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Fees")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<bool>("IsOpen")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("OpenedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("OpenedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateOnly>("OpeningDate")
+                        .HasColumnType("date");
+
+                    b.Property<string>("PaperworkEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("PaperworkHandoff")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PracticeLocation")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("PracticeSchedule")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTimeOffset?>("PurgedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("ReplyWindow")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("RetentionOwner")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("ReviewOwner")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<Guid>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.HasKey("Year");
+
+                    b.ToTable("RegistrationSeasons");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationSubmission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Affiliations")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("AgeGroup")
+                        .HasMaxLength(40)
+                        .HasColumnType("nvarchar(40)");
+
+                    b.Property<string>("AthleteFirstName")
+                        .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<int?>("Availability")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Channel")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ClubName")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<bool>("CompetitionReady")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Experience")
+                        .HasMaxLength(250)
+                        .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("GuardianEmail")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("GuardianName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("GuardianPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<int>("Kind")
+                        .HasColumnType("int");
+
+                    b.Property<string>("LastMeetMonth")
+                        .HasMaxLength(7)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(7)");
+
+                    b.Property<int>("PhotoConsent")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("PriorClub")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReceiptReference")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("RequestDigest")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(64)");
+
+                    b.Property<Guid>("RequestKey")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("Revision")
+                        .IsConcurrencyToken()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("SeasonYear")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("SubmittedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("Transfer")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReceiptReference")
+                        .IsUnique();
+
+                    b.HasIndex("SeasonYear", "RequestKey")
+                        .IsUnique();
+
+                    b.HasIndex("SeasonYear", "GuardianEmail", "SubmittedAtUtc");
+
+                    b.HasIndex("SeasonYear", "Kind", "Status", "SubmittedAtUtc");
+
+                    b.ToTable("RegistrationSubmissions");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.SiteSetting", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3953,6 +4203,33 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("ProductOptionValue");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationCount", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.RegistrationSeason", null)
+                        .WithMany()
+                        .HasForeignKey("SeasonYear")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationReview", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.RegistrationSubmission", null)
+                        .WithMany("History")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationSubmission", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.RegistrationSeason", null)
+                        .WithMany()
+                        .HasForeignKey("SeasonYear")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.SquareCatalogImportRun", b =>
                 {
                     b.HasOne("El1teSpr1ntTrack.Core.Entities.User", "ActorUser")
@@ -4094,6 +4371,11 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("OrderItems");
 
                     b.Navigation("ReservationItems");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationSubmission", b =>
+                {
+                    b.Navigation("History");
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.User", b =>
