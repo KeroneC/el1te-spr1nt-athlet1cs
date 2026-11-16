@@ -63,6 +63,7 @@ function isAllowedStoreMutation(path: string[], method: "POST" | "PUT" | "DELETE
 
 export function isAllowedAdminRead(path: string[]): boolean {
   if (path[0] === "all-americans") return path.length === 1 || (path.length === 2 && idPattern.test(path[1] ?? ""));
+  if (path[0] === "registration") return path.length === 2 && path[1] === "seasons";
   if (path[0] !== "store") return false;
   const storePath = path.slice(1);
   if (storePath.length === 1) {

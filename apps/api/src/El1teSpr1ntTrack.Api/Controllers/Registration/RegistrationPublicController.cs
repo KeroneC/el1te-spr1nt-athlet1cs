@@ -24,6 +24,12 @@ internal static class RegistrationDatabase
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 public sealed class RegistrationPublicController(El1teDbContext db, IClock clock) : ControllerBase
 {
+    private IActionResult IntakeClosed() => Conflict(new ProblemDetails
+    {
+        Title = "Applications are not open.",
+        Extensions = { ["code"] = "intake_closed" }
+    });
+
     [HttpGet]
     public async Task<IActionResult> Season(CancellationToken token)
     {
@@ -51,14 +57,14 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
         var season = await RegistrationDatabase.LockSeason(db, request.SeasonYear, token);
         if (season is null || season.PurgedAtUtc is not null)
-            return Conflict(new ProblemDetails { Title = "Applications are not open." });
+            return IntakeClosed();
         var now = clock.UtcNow;
         var existing = await db.RegistrationSubmissions.AsNoTracking()
             .Where(x => x.SeasonYear == season.Year && x.RequestKey == request.RequestKey)
             .Select(x => new { x.RequestDigest, x.ReceiptReference, x.AgeGroup }).SingleOrDefaultAsync(token);
         if (existing is null && (!IntakeRules.IsOpen(season, now) ||
             await db.RegistrationSeasons.AnyAsync(x => x.Year > season.Year && x.PurgedAtUtc == null, token)))
-            return Conflict(new ProblemDetails { Title = "Applications are not open." });
+            return IntakeClosed();
         var submission = IntakeRules.Normalize(request, season, now, existing?.AgeGroup);
         submission.RequestDigest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
         {
@@ -69,7 +75,11 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         if (existing is not null)
             return existing.RequestDigest == submission.RequestDigest
                 ? Ok(new { reference = existing.ReceiptReference })
-                : Conflict(new ProblemDetails { Title = "This retry does not match the original application. Start a new form for another athlete." });
+                : Conflict(new ProblemDetails
+                {
+                    Title = "This retry does not match the original application. Start a new form for another athlete.",
+                    Extensions = { ["code"] = "retry_conflict" }
+                });
 
         if (await db.RegistrationSubmissions.CountAsync(x => x.SeasonYear == season.Year &&
             x.GuardianEmail == submission.GuardianEmail && x.SubmittedAtUtc >= now.AddHours(-1), token) >= 10)

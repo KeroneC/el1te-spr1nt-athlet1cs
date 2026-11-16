@@ -160,6 +160,38 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .registration-aside { border-left: 5px solid var(--figma-red); background: #eef2f3; padding: 1.5rem; }
 .registration-aside h2 { margin-top: 0; font-size: 1.45rem; }
 .registration-aside li { margin-bottom: 0.7rem; color: #334155; line-height: 1.55; }
+.registration-aside ul { padding-inline-start: 1.2rem; list-style: disc; }
+.registration-actions, .registration-help-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1rem; }
+.registration-layout nav.registration-actions, .registration-help-actions { margin-top: 1rem; }
+.registration-path {
+  grid-column: 1 / -1;
+  width: min(100%, 54rem);
+  margin-inline: auto;
+  border: 1px solid var(--figma-border);
+  border-top: 4px solid var(--figma-red);
+  padding: clamp(1rem, 4vw, 2rem);
+  background: var(--figma-muted);
+}
+.registration-path h2 { margin-block: 0 0.5rem; scroll-margin-top: 7rem; }
+.registration-path[hidden] { display: none; }
+.registration-form, .registration-receipt-summary { min-width: 0; }
+.registration-form fieldset:disabled :is(input, select) { background-color: #f4f4f5; color: #3f3f46; }
+.registration-affiliations { min-width: 0; }
+.registration-affiliations label { display: flex; min-height: 2.75rem; align-items: center; gap: 0.6rem; cursor: pointer; }
+.registration-affiliations input[type="checkbox"] { width: 1.125rem; height: 1.125rem; margin: 0; accent-color: var(--figma-red-dark); }
+.registration-affiliations input[aria-invalid="true"] { outline: 1px solid #b42318; outline-offset: 2px; }
+.registration-form input[type="month"] { min-width: 0; }
+.registration-receipt-summary { display: grid; gap: 0.7rem; border-left: 4px solid #2f7d57; padding: 0.875rem 1rem; background-color: #e3f2e9; color: #15432d; }
+.registration-receipt-summary strong { overflow-wrap: anywhere; user-select: all; }
+[data-registration-hub] .button { max-width: 100%; text-align: center; }
+[data-registration-hub] .button svg { flex: 0 0 auto; }
+[data-registration-hub] .button-primary:not(:disabled):hover { border-color: var(--figma-red-dark); background: var(--figma-red-dark); color: #fff; }
+[data-registration-hub] .button[aria-current="location"] { box-shadow: 0 3px 0 var(--figma-red-dark); }
+[data-registration-hub] .button:disabled { opacity: 1; background: #e4e4e7; color: #3f3f46; }
+[data-registration-hub] .button::before { display: none; }
+@media (max-width: 30rem) {
+  .registration-layout nav.registration-actions { align-items: flex-start; flex-direction: column; }
+}
 .form-card-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 1.25rem; }
 .form-card { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; border: 1px solid #d7dee4; background: #fff; padding: 1.5rem; }
 .form-card > svg { width: 2.25rem; height: 2.25rem; margin-bottom: 1rem; color: var(--figma-red); }

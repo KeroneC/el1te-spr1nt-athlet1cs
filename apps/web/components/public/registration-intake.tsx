@@ -7,6 +7,8 @@ import type { PublicRegistrationSeason, RegistrationChannel } from "@/lib/regist
 
 type Kind = "Application" | "Returning";
 const yesNo = [["Yes", "Yes"], ["No", "No"], ["Unsure", "Not sure"]];
+const affiliationOptions = ["AAU", "USATF", "Other", "Unsure"] as const;
+type Affiliation = typeof affiliationOptions[number];
 
 export function RegistrationVisit({ year, channel }: { year: number; channel: RegistrationChannel }) {
   const last = useRef("");
@@ -22,32 +24,41 @@ export function RegistrationVisit({ year, channel }: { year: number; channel: Re
   return null;
 }
 
-export function RegistrationIntake({ season, channel, kind }: {
+export function RegistrationIntake({ season, channel, kind, intakeClosed = false, onIntakeClosed }: {
   season: PublicRegistrationSeason; channel: RegistrationChannel; kind: Kind;
+  intakeClosed?: boolean; onIntakeClosed?: () => void;
 }) {
   const prefix = useId();
   const application = kind === "Application";
   const [prior, setPrior] = useState("");
+  const [affiliations, setAffiliations] = useState<Affiliation[]>([]);
   const [errors, setErrors] = useState<Record<string, string[]>>({});
   const [message, setMessage] = useState("");
   const [reference, setReference] = useState("");
   const [support, setSupport] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [uncertain, setUncertain] = useState(false);
+  const [closed, setClosed] = useState(false);
+  const [conflict, setConflict] = useState(false);
+  const [copied, setCopied] = useState<"copied" | "manual" | null>(null);
   const last = useRef<{ key: string; payload: string } | null>(null);
   const locked = useRef(false);
   const formRef = useRef<HTMLFormElement>(null);
   const noticeRef = useRef<HTMLDivElement>(null);
+  const referenceRef = useRef<HTMLElement>(null);
+  const blocked = closed || (intakeClosed && !uncertain);
+  const statusHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
 
-  function props(name: string) {
+  function props(name: string, hasHint = false) {
+    const descriptions = [hasHint && `${prefix}-${name}-hint`, errors[name] && `${prefix}-${name}-error`].filter(Boolean);
     return { id: `${prefix}-${name}`, name, "aria-invalid": Boolean(errors[name]),
-      "aria-describedby": errors[name] ? `${prefix}-${name}-error` : undefined };
+      "aria-describedby": descriptions.length ? descriptions.join(" ") : undefined };
   }
 
   function field(name: string, label: string, control: ReactNode, hint?: string) {
     return <div className="form-field">
       <label htmlFor={`${prefix}-${name}`}>{label}</label>
-      {hint && <p className="text-sm text-slate-600">{hint}</p>}{control}
+      {control}{hint && <p id={`${prefix}-${name}-hint`} className="text-sm text-slate-600">{hint}</p>}
       {errors[name] && <p id={`${prefix}-${name}-error`} className="field-error">{errors[name][0]}</p>}
     </div>;
   }
@@ -57,9 +68,42 @@ export function RegistrationIntake({ season, channel, kind }: {
       {options.map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select>;
   }
 
+  function toggleAffiliation(value: Affiliation, checked: boolean) {
+    setAffiliations(previous => !checked ? previous.filter(item => item !== value) :
+      value === "Unsure" ? [value] : [...previous.filter(item => item !== "Unsure" && item !== value), value]);
+  }
+
+  async function copyReference() {
+    try {
+      await navigator.clipboard.writeText(reference);
+      setCopied("copied");
+    } catch {
+      const value = referenceRef.current;
+      const selection = window.getSelection();
+      if (value && selection) {
+        const range = document.createRange();
+        range.selectNodeContents(value);
+        selection.removeAllRanges();
+        selection.addRange(range);
+      }
+      setCopied("manual");
+    }
+  }
+
+  function startAnother() {
+    last.current = null;
+    setReference("");
+    setPrior("");
+    setAffiliations([]);
+    setCopied(null);
+    window.requestAnimationFrame(() => {
+      document.getElementById(`${prefix}-${application ? "guardianName" : "guardianEmail"}`)?.focus();
+    });
+  }
+
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (locked.current) return;
+    if (locked.current || blocked || conflict) return;
     const form = new FormData(event.currentTarget);
     const payload = uncertain && last.current ? last.current.payload : JSON.stringify({
       seasonYear: season.year, kind, channel,
@@ -83,6 +127,11 @@ export function RegistrationIntake({ season, channel, kind }: {
         setUncertain(false);
         setReference(result.reference);
       } else {
+        if (response.status === 409 && result.code === "intake_closed") {
+          setClosed(true);
+          onIntakeClosed?.();
+        }
+        if (response.status === 409 && result.code === "retry_conflict") setConflict(true);
         setUncertain(response.status >= 500 || (uncertain && response.status === 429));
         setMessage(result.message ?? "We couldn’t confirm the submission.");
         setErrors(result.errors ?? {});
@@ -101,18 +150,24 @@ export function RegistrationIntake({ season, channel, kind }: {
     }
   }
 
-  if (reference) return <div className="contact-form" ref={noticeRef} tabIndex={-1} role="status">
-    <h3>{application ? "Application received" : "Check-in received"}</h3>
-    <p>Save this reference: <strong>{reference}</strong></p>
-    <p>This does not reserve a spot. The club will follow up by email. {season.replyWindow}</p>
-    <p>{application ? "Please wait for an offer before sending completed paperwork." : "Returning athletes do not need to submit paperwork."}</p>
-    <button type="button" className="button button-secondary" onClick={() => { last.current = null; setReference(""); setPrior(""); }}>
-      {application ? "Apply for another athlete" : "Check in another athlete"}
-    </button>
+  if (reference) return <div className="contact-form registration-receipt">
+    <div ref={noticeRef} tabIndex={-1} role="status" className="registration-receipt-summary">
+      <h3>{application ? "Application received" : "Check-in received"}</h3>
+      <p>Save this reference: <strong ref={referenceRef}>{reference}</strong></p>
+      <p>No automatic confirmation email is sent. This does not reserve a spot. The club will follow up by email. {season.replyWindow}</p>
+      <p>{application ? "Please wait for an offer before sending completed paperwork." : "Returning athletes do not need to submit paperwork."}</p>
+    </div>
+    <div className="registration-actions">
+      <button type="button" className="button button-primary" onClick={() => void copyReference()}>Copy reference</button>
+      {!intakeClosed && <button type="button" className="button button-secondary" onClick={startAnother}>
+        {application ? "Apply for another athlete" : "Check in another athlete"}
+      </button>}
+    </div>
+    {copied && <p className="text-sm" role="status">{copied === "copied" ? "Reference copied." : "Copy the reference above manually."}</p>}
   </div>;
 
-  return <form method="post" className="contact-form" ref={formRef} onSubmit={submit}>
-    <fieldset disabled={busy || uncertain} className="grid min-w-0 gap-4">
+  return <form method="post" className="contact-form registration-form" ref={formRef} onSubmit={submit} aria-busy={busy}>
+    <fieldset disabled={busy || uncertain || blocked || conflict} className="grid min-w-0 gap-4">
       <legend className="sr-only">{application ? "New athlete application" : "Returning athlete check-in"}</legend>
       <div className="form-grid">
         {application && field("guardianName", "Parent or guardian name", <input {...props("guardianName")} autoComplete="name" maxLength={100} required readOnly={uncertain} />)}
@@ -122,20 +177,24 @@ export function RegistrationIntake({ season, channel, kind }: {
         {application && <>
           {field("ageGroup", "Age group", select("ageGroup", season.ageGroups.map(group => [group, group])))}
           {field("availability", "Can your athlete attend the listed practices?", select("availability", yesNo))}
-          {field("experience", "Track experience (optional)", <input {...props("experience")} maxLength={250} readOnly={uncertain} />,
+          {field("experience", "Track experience (optional)", <input {...props("experience", true)} maxLength={250} readOnly={uncertain} />,
             "A short answer is enough. Please do not enter medical or other sensitive information.")}
           {field("priorClub", "Has your athlete trained or competed with another track and field club?", select("priorClub", yesNo, { value: prior, onChange: event => setPrior(event.target.value) }))}
           {prior === "Yes" && <>
             {field("clubName", "Current or most recent club", <input {...props("clubName")} maxLength={120} required readOnly={uncertain} />)}
-            <fieldset className="min-w-0 space-y-2" aria-describedby={errors.affiliations ? `${prefix}-affiliations-error` : undefined}>
-              <legend className="font-semibold">Governing bodies (select all that apply, or Not sure)</legend>
-              {["AAU", "USATF", "Other", "Unsure"].map(value => <label key={value} className="flex items-center gap-2">
-                <input type="checkbox" name="affiliations" value={value} aria-invalid={Boolean(errors.affiliations)} />
+            <fieldset className="registration-affiliations" aria-describedby={`${prefix}-affiliations-hint${errors.affiliations ? ` ${prefix}-affiliations-error` : ""}`}>
+              <legend className="font-semibold">Governing bodies</legend>
+              <p id={`${prefix}-affiliations-hint`} className="text-sm text-slate-600">Select all that apply, or choose Not sure on its own.</p>
+              {affiliationOptions.map(value => <label key={value}>
+                <input type="checkbox" name="affiliations" value={value} checked={affiliations.includes(value)}
+                  onChange={event => toggleAffiliation(value, event.target.checked)} aria-invalid={Boolean(errors.affiliations)}
+                  aria-describedby={errors.affiliations ? `${prefix}-affiliations-error` : undefined} />
                 {value === "Unsure" ? "Not sure" : value}
               </label>)}
               {errors.affiliations && <p id={`${prefix}-affiliations-error`} className="field-error">{errors.affiliations[0]}</p>}
             </fieldset>
-            {field("lastMeetMonth", "Last meet month and year (optional)", <input {...props("lastMeetMonth")} type="month" placeholder="YYYY-MM" readOnly={uncertain} />)}
+            {field("lastMeetMonth", "Last meet month and year (optional)", <input {...props("lastMeetMonth", true)} type="month" placeholder="YYYY-MM" readOnly={uncertain} />,
+              "If a date picker isn’t available, enter YYYY-MM.")}
           </>}
         </>}
       </div>
@@ -144,9 +203,13 @@ export function RegistrationIntake({ season, channel, kind }: {
       <p className="text-sm">For parents and guardians. This {application ? "application" : "check-in"} doesn’t reserve a spot.</p>
       <p className="text-sm">We use this information to review and follow up. Do not attach or include private documents. <a className="underline" href="/privacy">Privacy notice</a></p>
     </fieldset>
-    {message && <div ref={noticeRef} tabIndex={-1} role="alert" className="form-status error">{message}<SupportReference referenceId={support} /></div>}
-    <button type="submit" className="button button-primary" disabled={busy}>
-      {busy ? "Submitting…" : uncertain ? "Retry submission" : application ? "Submit application" : "Submit check-in"}
-    </button>
+    {(message || blocked) && <div ref={noticeRef} tabIndex={-1} role="alert" className="form-status error">
+      {message || "Applications are not open. No new submission was saved."}<SupportReference referenceId={support} />
+    </div>}
+    {blocked ? <a className="button button-secondary" href={statusHref}>Check registration status</a> :
+      conflict ? <a className="button button-secondary" href="/contact">Contact the club</a> :
+      <button type="submit" className="button button-primary" disabled={busy}>
+        {busy ? "Submitting…" : uncertain ? "Retry submission" : application ? "Submit application" : "Submit check-in"}
+      </button>}
   </form>;
 }

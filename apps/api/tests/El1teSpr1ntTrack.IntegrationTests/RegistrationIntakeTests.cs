@@ -109,6 +109,43 @@ public sealed class RegistrationIntakeTests
     }
 
     [Fact]
+    public void StaffAvailabilityDistinguishesThePublicWindowFromTheManualSwitch()
+    {
+        var season = Season();
+        var beforeOpening = IntakeRules.LocalDate(new DateTimeOffset(2026, 11, 27, 4, 59, 0, TimeSpan.Zero));
+        var openingDay = IntakeRules.LocalDate(Now);
+        var upcoming = RegistrationAdminController.GetAvailability(season, [season], beforeOpening);
+        Assert.Equal("Upcoming", upcoming.PublicState);
+        Assert.Contains("Eastern time", upcoming.OpeningBlockedReason);
+        Assert.Equal("Closed", RegistrationAdminController.GetAvailability(season, [season], openingDay).PublicState);
+
+        season.IsOpen = true;
+        Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], openingDay).PublicState);
+        Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], season.EndDate).PublicState);
+        var ended = RegistrationAdminController.GetAvailability(season, [season], season.EndDate.AddDays(1));
+        Assert.Equal("Ended", ended.PublicState);
+        Assert.True(season.IsOpen);
+        Assert.Equal("This season has already ended.", ended.OpeningBlockedReason);
+    }
+
+    [Fact]
+    public void OnlyTheLatestUnpurgedSeasonCanOpenAndSwitchesCannotOverlap()
+    {
+        var season = Season();
+        var older = new RegistrationSeason { Year = 2026, IsOpen = true };
+        var newer = new RegistrationSeason { Year = 2028 };
+        var today = IntakeRules.LocalDate(Now);
+
+        Assert.Equal("Only the latest season can be opened.",
+            RegistrationAdminController.GetAvailability(season, [season, newer], today).OpeningBlockedReason);
+        newer.PurgedAtUtc = Now;
+        Assert.Equal("Close the other season’s intake before opening this one.",
+            RegistrationAdminController.GetAvailability(season, [older, season, newer], today).OpeningBlockedReason);
+        older.IsOpen = false;
+        Assert.Null(RegistrationAdminController.GetAvailability(season, [older, season, newer], today).OpeningBlockedReason);
+    }
+
+    [Fact]
     public void DatabaseScopesIdempotencyToSeasonAndCascadesPrivateHistory()
     {
         using var db = new El1teDbContext(new DbContextOptionsBuilder<El1teDbContext>()

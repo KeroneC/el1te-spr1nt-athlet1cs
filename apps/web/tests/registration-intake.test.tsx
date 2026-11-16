@@ -2,8 +2,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { POST } from "@/app/api/public/registration/[action]/route";
 import { RegistrationIntake } from "@/components/public/registration-intake";
+import { RegistrationPaths } from "@/components/public/registration-paths";
+import { FormDownloadList } from "@/components/public/form-download-list";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "@/lib/admin/mutation-policy";
-import { registrationChannel, type PublicRegistrationSeason } from "@/lib/registration";
+import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
+import { registrationChannel, upcomingRegistrationDate, type PublicRegistrationSeason } from "@/lib/registration";
 
 const season: PublicRegistrationSeason = {
   year: 2027, title: "Test season", openingDate: "2026-11-27", ageGroups: ["12U"], isOpen: true,
@@ -31,6 +34,30 @@ describe("registration intake", () => {
     expect(application).not.toContain('type="file"');
   });
 
+  it("starts with two direct links and no active form until a path is selected", () => {
+    const markup = renderToStaticMarkup(
+      <RegistrationPaths season={season} channel="direct" aside={null}><p>Season information</p></RegistrationPaths>
+    );
+    for (const path of ["apply", "returning"]) {
+      expect(markup).toContain(`href="#${path}"`);
+      expect(markup).toContain(`id="${path}" class="registration-path" hidden=""`);
+    }
+  });
+
+  it("only advertises an upcoming date until that Eastern calendar day arrives", () => {
+    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T04:59:00Z"))).toBe("2026-11-27");
+    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T05:00:00Z"))).toBeNull();
+    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-28T05:00:00Z"))).toBeNull();
+  });
+
+  it("identifies every paperwork download by name", () => {
+    const markup = renderToStaticMarkup(<FormDownloadList forms={REGISTRATION_DOWNLOADS} />);
+    for (const form of REGISTRATION_DOWNLOADS) {
+      expect(markup).toContain(`aria-label="Download ${form.name}"`);
+      expect(markup).toContain(`href="${form.href}"`);
+    }
+  });
+
   it("passes the retry key and returns only a non-lookup receipt", async () => {
     upstream.mockResolvedValue(response(201, { reference: "EL-0123456789ABCDEF", extra: "never expose" }));
     const result = await call("applications", { requestKey: "retry-key", channel: "anything" });
@@ -48,11 +75,13 @@ describe("registration intake", () => {
   });
 
   it("keeps closed-intake and rate-limit errors actionable", async () => {
-    upstream.mockResolvedValueOnce(response(409, { title: "Applications are not open." }));
+    upstream.mockResolvedValueOnce(response(409, { code: "intake_closed" }));
+    upstream.mockResolvedValueOnce(response(409, { code: "retry_conflict" }));
     upstream.mockResolvedValueOnce(response(429, {}));
     const result = await call("applications", {});
     expect(result.status).toBe(409);
-    expect(await result.json()).toMatchObject({ message: expect.stringContaining("not open") });
+    expect(await result.json()).toMatchObject({ code: "intake_closed", message: expect.stringContaining("not open") });
+    expect(await (await call("applications", {})).json()).toMatchObject({ code: "retry_conflict" });
     expect((await call("applications", {})).status).toBe(429);
   });
 

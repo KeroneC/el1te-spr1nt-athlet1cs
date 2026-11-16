@@ -24,5 +24,5 @@ Test-Endpoint "/" "El1te Spr1nt Athlet1cs"
 Test-Endpoint "/news" "Club announcements"
 Test-Endpoint "/events" "Schedule"
 Test-Endpoint "/gallery" "Gallery"
-Test-Endpoint "/registration" "Registration information"
+Test-Endpoint "/registration" 'data-registration-hub="true"'
 Test-Endpoint "/admin/login" "Admin sign in"
