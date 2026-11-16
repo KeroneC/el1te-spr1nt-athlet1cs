@@ -162,8 +162,14 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     tell("queue");
     setRefresh(value => value + 1);
   }
+  function backToQueue() {
+    setDetail(null); setDraft(null); setConflict(null); tell("review");
+  }
   function navigate(nextView: View, nextYear = year) {
-    if (nextView === view && nextYear === year) return;
+    if (nextView === view && nextYear === year) {
+      if (detail) backToQueue();
+      return;
+    }
     setView(nextView); setYear(nextYear); setDetail(null); setDraft(null); setConflict(null); setFeedback({});
     setFilters(emptyFilters); setDraftFilters(emptyFilterValues); setQueue({ state: "loading" }); focusRow.current = null;
   }
@@ -350,8 +356,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
       </form>}
       <Feedback notice={feedback.closeout} />
     </> : detail && draft ? <section className={panel}>
-      <button type="button" className={secondary} disabled={Boolean(pending)}
-        onClick={() => { setDetail(null); setDraft(null); setConflict(null); tell("review"); }}>Back to queue</button>
+      <button type="button" className={secondary} disabled={Boolean(pending)} onClick={backToQueue}>Back to queue</button>
       <h2 ref={heading} tabIndex={-1} className="scroll-mt-20 break-words text-xl font-black text-track-ink">{detail.athleteFirstName} · {detail.receiptReference}</h2>
       <dl className="grid gap-3 break-words sm:grid-cols-2">{[
         ["Guardian", detail.guardianName], ["Email", detail.guardianEmail], ["Phone", detail.guardianPhone], ["Age group", detail.ageGroup],

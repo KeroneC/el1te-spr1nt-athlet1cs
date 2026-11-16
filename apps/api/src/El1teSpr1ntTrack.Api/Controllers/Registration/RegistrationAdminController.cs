@@ -28,9 +28,9 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
             return new("Closed", "Only the latest season can be opened.");
         if (today > season.EndDate) return new("Ended", "This season has already ended.");
         if (today < season.OpeningDate) return new("Upcoming", "Intake can’t open before the opening date (Eastern time).");
-        if (seasons.Any(other => other.Year != season.Year && other.IsOpen))
-            return new("Closed", "Close the other season’s intake before opening this one.");
-        return new(season.IsOpen ? "Open" : "Closed", null);
+        var publicState = season.IsOpen ? "Open" : "Closed";
+        return new(publicState, seasons.Any(other => other.Year != season.Year && other.IsOpen)
+            ? "Close the other season’s intake before opening this one." : null);
     }
 
     private static object SeasonView(RegistrationSeason season, IEnumerable<RegistrationSeason> seasons, DateOnly today) => new
