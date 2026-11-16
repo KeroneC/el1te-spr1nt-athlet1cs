@@ -183,6 +183,7 @@ h1, h2, h3 { font-family: var(--font-display); text-transform: uppercase; }
 .registration-form input[type="month"] { min-width: 0; }
 .registration-receipt-summary { display: grid; gap: 0.7rem; border-left: 4px solid #2f7d57; padding: 0.875rem 1rem; background-color: #e3f2e9; color: #15432d; }
 .registration-receipt-summary strong { overflow-wrap: anywhere; user-select: all; }
+.registration-copy-status { min-height: 1.25rem; }
 [data-registration-hub] .button { max-width: 100%; text-align: center; }
 [data-registration-hub] .button svg { flex: 0 0 auto; }
 [data-registration-hub] .button-primary:not(:disabled):hover { border-color: var(--figma-red-dark); background: var(--figma-red-dark); color: #fff; }

@@ -163,7 +163,9 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
         {application ? "Apply for another athlete" : "Check in another athlete"}
       </button>}
     </div>
-    {copied && <p className="text-sm" role="status">{copied === "copied" ? "Reference copied." : "Copy the reference above manually."}</p>}
+    <p className="registration-copy-status text-sm" aria-live="polite">
+      {copied === "copied" ? "Reference copied." : copied === "manual" ? "Copy the reference above manually." : ""}
+    </p>
   </div>;
 
   return <form method="post" className="contact-form registration-form" ref={formRef} onSubmit={submit} aria-busy={busy}>
