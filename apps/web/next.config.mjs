@@ -11,6 +11,8 @@ if (process.env.NODE_ENV === "production" && (!process.env.API_BASE_URL || !proc
 const nextConfig = {
   output: "standalone",
   outputFileTracingRoot: path.join(__dirname, "../.."),
+  // Keep narrow-screen browser tests free of the dev-only bottom-left badge.
+  ...(process.env.EL1TE_PLAYWRIGHT_TEST === "true" ? { devIndicators: false } : {}),
   async headers() {
     const securityHeaders = [
       { key: "X-Content-Type-Options", value: "nosniff" },

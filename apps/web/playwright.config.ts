@@ -55,7 +55,7 @@ export default defineConfig({
       url: webUrl,
       timeout: 120_000,
       reuseExistingServer: false,
-      env: { API_BASE_URL: apiUrl, PUBLIC_REVALIDATE_SECONDS: "0", HOME_ALL_AMERICAN_SHOWCASE_ENABLED: "true", ALL_AMERICANS_ARCHIVE_ENABLED: "true" },
+      env: { API_BASE_URL: apiUrl, PUBLIC_REVALIDATE_SECONDS: "0", HOME_ALL_AMERICAN_SHOWCASE_ENABLED: "true", ALL_AMERICANS_ARCHIVE_ENABLED: "true", EL1TE_PLAYWRIGHT_TEST: "true" },
     },
   ],
 });

@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
+import { expect, test as base, type APIRequestContext, type BrowserContext, type Locator, type Page } from "@playwright/test";
 import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 const adminPath = "/api/admin/registration";
@@ -7,6 +7,35 @@ const submitPath = "/api/public/registration/applications";
 const responsiveWidths = [340, 390, 768, 1280];
 const referencePattern = /^EL-[A-F0-9]{16}$/;
 const guardianEmail = "synthetic-registration@example.test";
+const sqlTag = "@registration-sql";
+const seasonYear = (retry: number) => new Date().getUTCFullYear() + 1 + retry;
+const seasonTitle = (year: number) => "E2E Registration Season " + year;
+
+const test = base.extend<{ family: BrowserContext }>({
+  family: async ({ browser, baseURL }, provide) => {
+    const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
+    await provide(context);
+    await context.close();
+  }
+});
+
+test.afterEach("close a test season if the browser journey failed", async ({ page }, testInfo) => {
+  if (!testInfo.tags.includes(sqlTag) || testInfo.status === testInfo.expectedStatus) return;
+  // Hooks have their own timeout even if the preceding browser action exhausted
+  // the test budget. Only close the exact synthetic season created by this test.
+  test.setTimeout(30_000);
+  const response = await page.request.get(adminPath + "/seasons", { timeout: 8_000 });
+  if (response.status() === 401 || response.status() === 403) return;
+  expect(response.ok()).toBe(true);
+  const year = seasonYear(testInfo.retry);
+  const { seasons } = await response.json() as { seasons: { year: number; title: string; revision: string; isOpen: boolean }[] };
+  const season = seasons.find(item => item.year === year && item.title === seasonTitle(year));
+  if (!season?.isOpen) return;
+  const closed = await page.request.put(adminPath + "/opening", {
+    timeout: 8_000, data: { year, revision: season.revision, open: false, launchChecksApproved: false }
+  });
+  expect(closed.ok(), await closed.text()).toBe(true);
+});
 
 async function checkLayout(page: Page, active: Locator, widths = responsiveWidths) {
   for (const width of widths) {
@@ -56,20 +85,19 @@ async function fillReturning(form: Locator, firstName: string, email = guardianE
   await form.getByLabel("Athlete’s first name").fill(firstName);
 }
 
-test("families and staff can complete both registration paths through the browser", async ({ page, browser, baseURL }, testInfo) => {
+test("families and staff can complete both registration paths through the browser", { tag: sqlTag }, async ({ page, family }, testInfo) => {
   test.setTimeout(150_000);
+  page.setDefaultTimeout(15_000);
+  family.setDefaultTimeout(15_000);
   const currentYear = new Date().getUTCFullYear();
-  const year = currentYear + 1 + testInfo.retry;
+  const year = seasonYear(testInfo.retry);
   const openingDate = String(currentYear - 1) + "-01-01";
   const futureOpening = String(year) + "-01-01";
   const endDate = String(year) + "-12-31";
-  const title = "E2E Registration Season " + year;
-  const family = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 } });
+  const title = seasonTitle(year);
   const publicPage = await family.newPage();
   const stalePage = await family.newPage();
   const submissionRequests: unknown[] = [];
-  let staffSignedIn = false;
-  let sessionExpired = false;
 
   await family.addInitScript(() => {
     let copied = false;
@@ -81,10 +109,9 @@ test("families and staff can complete both registration paths through the browse
     } });
   });
 
-  try {
+  await test.step("registration rehearsal", async () => {
     await test.step("staff create, validate and open a season without API shortcuts", async () => {
       await signInAsE2eSuperAdmin(page);
-      staffSignedIn = true;
       await page.goto("/admin/registration");
       await page.getByRole("button", { name: "Season Settings", exact: true }).click();
       await page.getByLabel("Season", { exact: true }).selectOption("0");
@@ -283,7 +310,8 @@ test("families and staff can complete both registration paths through the browse
       await expect(page.getByText(/synthetic queue outage/i)).toBeVisible();
       await expect(page.getByText("ESA-1234567890ABCDEF", { exact: true })).toBeVisible();
       await page.unroute("**" + adminPath + "/queue");
-      await page.getByRole("button", { name: "Retry", exact: true }).click();
+      await page.getByRole("button", { name: "Retry", exact: true }).press("Enter");
+      await expect(page.getByRole("button", { name: "Review Jordan" })).toBeVisible();
 
       const search = page.getByLabel("Search name, email, or reference");
       const applyFilters = page.getByRole("button", { name: "Apply filters", exact: true });
@@ -386,7 +414,7 @@ test("families and staff can complete both registration paths through the browse
       const reload = page.getByRole("button", { name: "Reload record" });
       await expect(reload).toBeVisible();
       await page.unroute("**" + adminPath + "/detail");
-      await reload.click();
+      await reload.press("Enter");
       await expect(returningStatus).toHaveValue("Enrolled");
       await expect(page.getByRole("heading", { name: "Paperwork instructions for staff to send" })).toHaveCount(0);
     });
@@ -411,18 +439,8 @@ test("families and staff can complete both registration paths through the browse
       await page.route("**" + adminPath + "/queue", route => route.fulfill({ status: 401, json: { message: "Synthetic expired session" } }));
       await page.getByRole("button", { name: "Returning Check-Ins", exact: true }).click();
       await expect(page).toHaveURL(/\/admin\/login\?reason=expired$/);
-      sessionExpired = true;
     });
-  } finally {
-    if (staffSignedIn && !sessionExpired) {
-      const season = await loadSeason(page.request, year);
-      if (season?.isOpen) {
-        const closed = await page.request.put(adminPath + "/opening", { data: { year, revision: season.revision, open: false, launchChecksApproved: false } });
-        expect(closed.ok(), await closed.text()).toBe(true);
-      }
-    }
-    await family.close();
-  }
+  });
 });
 
 test("blank registration downloads stay available and individually named", async ({ page }) => {
