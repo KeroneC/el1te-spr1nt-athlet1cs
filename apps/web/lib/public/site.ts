@@ -107,11 +107,11 @@ export function footerLinkGroups(allAmericansEnabled = false) {
     : group);
 }
 
-export const FORM_DOWNLOADS = [
+export const REGISTRATION_DOWNLOADS = [
   {
     name: "Athlete Registration Form",
     description: "Core family and athlete paperwork for club review before participation.",
-    audience: "Families interested in joining",
+    audience: "New athletes offered a spot",
     href: "/forms/athlete-registration-form.pdf",
     fileType: "PDF",
     actionLabel: "Download",
@@ -121,7 +121,7 @@ export const FORM_DOWNLOADS = [
   {
     name: "Liability Waiver",
     description: "Required waiver for participation in club activities.",
-    audience: "Parent or guardian",
+    audience: "Parent or guardian of a new athlete offered a spot",
     href: "/forms/liability-waiver.pdf",
     fileType: "PDF",
     actionLabel: "Download",
@@ -131,13 +131,17 @@ export const FORM_DOWNLOADS = [
   {
     name: "Photo Consent Form",
     description: "Optional permission for the club to use athlete photos and videos.",
-    audience: "Parent or guardian",
+    audience: "Parent or guardian of a new athlete offered a spot (optional)",
     href: "/forms/photo-consent-form.pdf",
     fileType: "PDF",
     actionLabel: "Download",
     isDownload: true,
     Icon: FileCheck2
-  },
+  }
+] as const;
+
+export const FORM_DOWNLOADS = [
+  ...REGISTRATION_DOWNLOADS,
   {
     name: "BVN Memorial Scholarship Information",
     description: "Scholarship details and eligibility criteria for eligible team members.",

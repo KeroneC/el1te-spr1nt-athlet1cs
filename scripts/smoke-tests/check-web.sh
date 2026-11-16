@@ -28,5 +28,5 @@ request "/" "El1te Spr1nt Athlet1cs"
 request "/news" "Club announcements"
 request "/events" "Schedule"
 request "/gallery" "Gallery"
-request "/registration" "Registration information"
+request "/registration" 'data-registration-hub="true"'
 request "/admin/login" "Admin sign in"

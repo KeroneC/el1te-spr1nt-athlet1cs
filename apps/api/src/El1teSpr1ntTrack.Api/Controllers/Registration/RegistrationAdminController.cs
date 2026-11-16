@@ -17,7 +17,30 @@ namespace El1teSpr1ntTrack.Api.Controllers.Registration;
 public sealed class RegistrationAdminController(El1teDbContext db, IClock clock) : ControllerBase
 {
     private Guid StaffId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
-    private IActionResult ConflictMessage(string message) => Conflict(new ProblemDetails { Title = message });
+    private IActionResult ConflictMessage(string message) => Conflict(new ProblemDetails { Title = message, Detail = message });
+
+    public sealed record SeasonAvailability(string PublicState, string? OpeningBlockedReason);
+
+    public static SeasonAvailability GetAvailability(RegistrationSeason season, IEnumerable<RegistrationSeason> seasons, DateOnly today)
+    {
+        if (season.PurgedAtUtc is not null) return new("Closed", "This season has been closed out.");
+        if (seasons.Any(other => other.Year > season.Year && other.PurgedAtUtc is null))
+            return new("Closed", "Only the latest season can be opened.");
+        if (today > season.EndDate) return new("Ended", "This season has already ended.");
+        if (today < season.OpeningDate) return new("Upcoming", "Intake can’t open before the opening date (Eastern time).");
+        var publicState = season.IsOpen ? "Open" : "Closed";
+        return new(publicState, seasons.Any(other => other.Year != season.Year && other.IsOpen)
+            ? "Close the other season’s intake before opening this one." : null);
+    }
+
+    private static object SeasonView(RegistrationSeason season, IEnumerable<RegistrationSeason> seasons, DateOnly today) => new
+    {
+        season.Year, season.Revision, season.Title, season.OpeningDate, season.EndDate, season.AgeGroups,
+        season.PracticeLocation, season.PracticeSchedule, season.Fees, season.ReplyWindow, season.PaperworkEmail,
+        season.PaperworkHandoff, season.ReviewOwner, season.RetentionOwner, season.IsOpen, season.PurgedAtUtc,
+        season.OpenedAtUtc, season.OpenedByUserId,
+        availability = GetAvailability(season, seasons, today)
+    };
 
     [HttpGet("seasons")]
     public async Task<IActionResult> Seasons(CancellationToken token)
@@ -37,7 +60,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         var today = IntakeRules.LocalDate(clock.UtcNow);
         return Ok(new
         {
-            seasons, counts,
+            seasons = seasons.Select(season => SeasonView(season, seasons, today)), counts,
             closeoutEligibleYears = seasons.Where(x => !x.IsOpen && x.PurgedAtUtc is null &&
                 today.DayNumber - x.EndDate.DayNumber >= 90).Select(x => x.Year)
         });
@@ -50,7 +73,8 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         var season = await RegistrationDatabase.LockSeason(db, request.Year, token);
         if (season?.PurgedAtUtc is not null || season?.IsOpen == true || season?.Revision != request.Revision)
             return ConflictMessage("Close intake before editing, or refresh to load the latest season.");
-        if (season is null && await db.RegistrationSeasons.AnyAsync(x => x.IsOpen, token))
+        var otherSeasons = await db.RegistrationSeasons.AsNoTracking().Where(x => x.Year != request.Year).ToListAsync(token);
+        if (season is null && otherSeasons.Any(x => x.IsOpen))
             return ConflictMessage("Close the current intake before adding another season.");
         var created = season is null;
         season ??= new RegistrationSeason { Year = request.Year };
@@ -66,7 +90,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         }
         await db.SaveChangesAsync(token);
         await transaction.CommitAsync(token);
-        return Ok(season);
+        return Ok(SeasonView(season, otherSeasons, IntakeRules.LocalDate(clock.UtcNow)));
     }
 
     public sealed record OpeningRequest(int Year, Guid Revision, bool Open, bool LaunchChecksApproved);
@@ -83,9 +107,12 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         if (season.Revision != request.Revision || season.PurgedAtUtc is not null)
             return ConflictMessage("Refresh to load the latest season state.");
         var today = IntakeRules.LocalDate(clock.UtcNow);
-        if (request.Open && (!request.LaunchChecksApproved || today < season.OpeningDate || today > season.EndDate ||
-            seasons.First(x => x.PurgedAtUtc is null).Year != season.Year || seasons.Any(x => x.Year != season.Year && x.IsOpen)))
-            return ConflictMessage("Approve the launch checks and open the latest season on or after its opening date. Close any prior intake first.");
+        if (request.Open)
+        {
+            var blocked = GetAvailability(season, seasons, today).OpeningBlockedReason;
+            if (blocked is not null) return ConflictMessage(blocked);
+            if (!request.LaunchChecksApproved) return ConflictMessage("Approve the launch checks before opening intake.");
+        }
         season.IsOpen = request.Open;
         if (request.Open)
         {
@@ -95,7 +122,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         season.Revision = Guid.NewGuid();
         await db.SaveChangesAsync(token);
         await transaction.CommitAsync(token);
-        return Ok(season);
+        return Ok(SeasonView(season, seasons, today));
     }
 
     public sealed record QueueRequest(int Year, IntakeKind Kind, int Page, string? Search, string? AgeGroup,

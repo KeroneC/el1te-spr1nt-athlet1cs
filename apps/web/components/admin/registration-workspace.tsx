@@ -1,23 +1,25 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { FormEvent, ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import type { FormEvent } from "react";
+import { AdminApiError } from "@/lib/admin/api-error";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
-import { FormNotice } from "./form-controls";
+import { validSupportReference } from "@/lib/observability/support-reference";
+import { Field, FormNotice, FormSection, SelectField, TextArea, fieldError } from "./form-controls";
 
-const labels = {
+const statusLabels = {
   New: "New", FollowUp: "Follow-up", Waitlisted: "Waitlisted", Offered: "Offered · paperwork pending",
-  PaperworkReceived: "Paperwork received", Enrolled: "Enrolled", Closed: "Closed",
-  NeedsReview: "Needs transfer review", NotNeeded: "No transfer needed", Cleared: "Transfer cleared",
-  NotRecorded: "Not recorded", Granted: "Granted", Declined: "Declined"
+  PaperworkReceived: "Paperwork received", Enrolled: "Enrolled", Closed: "Closed"
 } as const;
-type Status = "New" | "FollowUp" | "Waitlisted" | "Offered" | "PaperworkReceived" | "Enrolled" | "Closed";
-type Transfer = "NeedsReview" | "NotNeeded" | "Cleared";
-type Consent = "NotRecorded" | "Granted" | "Declined";
+const transferLabels = { NeedsReview: "Needs transfer review", NotNeeded: "No transfer needed", Cleared: "Transfer cleared" } as const;
+const consentLabels = { NotRecorded: "Not recorded", Granted: "Granted", Declined: "Declined" } as const;
+type Status = keyof typeof statusLabels;
+type Transfer = keyof typeof transferLabels;
+type Consent = keyof typeof consentLabels;
 type Kind = "Application" | "Returning";
-const statusValues: Status[] = ["New", "FollowUp", "Waitlisted", "Offered", "PaperworkReceived", "Enrolled", "Closed"];
-const transitions: Record<Status, Status[]> = {
+type View = Kind | "Settings";
+
+const transitions: Record<Status, readonly Status[]> = {
   New: ["FollowUp", "Waitlisted", "Offered", "Closed"], FollowUp: ["Waitlisted", "Offered", "Closed"],
   Waitlisted: ["FollowUp", "Offered", "Closed"], Offered: ["PaperworkReceived", "Waitlisted", "Closed"],
   PaperworkReceived: ["Enrolled", "Offered", "Closed"], Enrolled: ["PaperworkReceived", "Closed"], Closed: ["FollowUp"]
@@ -26,6 +28,7 @@ type Season = {
   year: number; revision: string; title: string; openingDate: string; endDate: string; ageGroups: string;
   practiceLocation: string; practiceSchedule: string; fees: string; replyWindow: string; paperworkEmail: string;
   paperworkHandoff: string; reviewOwner: string; retentionOwner: string; isOpen: boolean; purgedAtUtc: string | null;
+  availability: { publicState: "Open" | "Closed" | "Upcoming" | "Ended"; openingBlockedReason: string | null };
 };
 type Count = { seasonYear: number; channel: "Direct" | "Facebook" | "Instagram"; visits: number; applications: number; returning: number; enrolled: number };
 export type RegistrationOverview = { seasons: Season[]; counts: Count[]; closeoutEligibleYears: number[] };
@@ -37,225 +40,413 @@ type Detail = Row & Review & {
   lastMeetMonth: string | null; history: (Review & { changedAtUtc: string; reviewer: string | null; changedByUserId: string })[];
 };
 type Queue = { items: Row[]; page: number; totalPages: number; count: number };
-type Filters = { page: number; search: string; ageGroup: string; status: string; transfer: string };
-const emptyFilters: Filters = { page: 1, search: "", ageGroup: "", status: "", transfer: "" };
-const control = "min-h-11 w-full rounded-none border border-slate-300 bg-white px-3";
-const button = "min-h-11 border border-slate-400 bg-white px-4 text-sm font-bold disabled:opacity-50";
-const date = (value: string) => new Date(value).toLocaleString();
-const field = (label: string, children: ReactNode) => <label className="grid min-w-0 gap-1 text-sm font-semibold">{label}{children}</label>;
-const statusLabel = (status: Status, kind: Kind) =>
-  status === "Offered" && kind === "Returning" ? "Offered" : labels[status];
-const option = (value: keyof typeof labels) => <option key={value} value={value}>{labels[value]}</option>;
-const statusOption = (value: Status, kind: Kind) => <option key={value} value={value}>{statusLabel(value, kind)}</option>;
-const nextStatuses = (status: Status, kind: Kind) =>
-  kind === "Application" ? transitions[status] :
-    status === "Offered" ? ["Enrolled", "Waitlisted", "Closed"] as const :
-      transitions[status].filter(value => value !== "PaperworkReceived");
+type QueueState = { state: "loading" } | { state: "ready"; data: Queue } | { state: "error"; notice: Notice };
+type FilterValues = { search: string; ageGroup: string; status: string; transfer: string };
+type Filters = FilterValues & { page: number };
+type Area = "settings" | "opening" | "closeout" | "review" | "queue";
+type Notice = { message: string; success?: boolean; referenceId?: string | null; errors?: Record<string, string[]> };
 
-async function call<T>(path: string, method: "POST" | "PUT", body: unknown, signal?: AbortSignal): Promise<T> {
+const emptyFilterValues: FilterValues = { search: "", ageGroup: "", status: "", transfer: "" };
+const emptyFilters: Filters = { ...emptyFilterValues, page: 1 };
+const baseButton = "inline-flex min-h-11 items-center justify-center px-4 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-track-red focus-visible:ring-offset-2 disabled:opacity-60";
+const primary = `${baseButton} bg-track-red text-white enabled:hover:bg-red-800`;
+const secondary = `${baseButton} border border-slate-300 bg-white text-track-ink enabled:hover:border-track-red`;
+const destructive = `${baseButton} border border-red-700 bg-white text-red-800 enabled:hover:bg-red-50`;
+const panel = "min-w-0 space-y-4 border border-slate-200 bg-white p-4 sm:p-5";
+const date = (value: string) => new Date(value).toLocaleString();
+const hasFilters = ({ search, ageGroup, status, transfer }: FilterValues) => Boolean(search.trim() || ageGroup || status || transfer);
+const statusLabel = (status: Status, kind: Kind) => status === "Offered" && kind === "Returning" ? "Offered" : statusLabels[status];
+const statusOptions = (statuses: readonly Status[], kind: Kind) => statuses.map(status => [status, statusLabel(status, kind)] as const);
+const nextStatuses = (status: Status, kind: Kind): readonly Status[] =>
+  kind === "Application" ? transitions[status] :
+    status === "Offered" ? ["Enrolled", "Waitlisted", "Closed"] : transitions[status].filter(value => value !== "PaperworkReceived");
+const eligible = (review: Review) => review.status === "Enrolled" && review.transfer !== "NeedsReview";
+const noticeFrom = (error: unknown, fallback: string): Notice => error instanceof AdminApiError
+  ? { message: error.message, referenceId: error.referenceId, errors: error.fieldErrors }
+  : { message: fallback };
+
+async function call<T>(path: string, method: "GET" | "POST" | "PUT", body?: unknown, signal?: AbortSignal): Promise<T> {
+  const timeout = AbortSignal.timeout(15_000);
   const response = await fetch(`/api/admin/registration/${path}`, {
-    method, body: JSON.stringify(body), headers: { "Content-Type": "application/json" }, cache: "no-store", signal
+    method, cache: "no-store", signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+    ...(body !== undefined && { body: JSON.stringify(body), headers: { "Content-Type": "application/json" } })
   });
-  if (redirectForAdminResponse(response)) throw new Error("Sign in again to continue.");
   const result = await response.json().catch(() => null);
-  if (!response.ok) {
-    const errors: string[][] = Object.values(result?.errors ?? {});
-    throw new Error(errors.flat()[0] ?? result?.message ?? "The request could not be completed.");
-  }
+  if (redirectForAdminResponse(response)) throw new AdminApiError(response.status, "Sign in again to continue.");
+  if (!response.ok) throw new AdminApiError(response.status, result?.message ?? "The request could not be completed.",
+    result?.errors, validSupportReference(result?.referenceId));
   return result as T;
 }
 
+function Feedback({ notice }: { notice?: Notice }) {
+  return <FormNotice message={notice?.message ?? null} success={notice?.success} referenceId={notice?.referenceId} />;
+}
+
 export function RegistrationWorkspace({ initial, canCloseout }: { initial: RegistrationOverview; canCloseout: boolean }) {
-  const router = useRouter();
+  const [overview, setOverview] = useState(initial);
   const [year, setYear] = useState(initial.seasons[0]?.year ?? 0);
-  const [view, setView] = useState<Kind | "Settings">(initial.seasons.length ? "Application" : "Settings");
+  const [view, setView] = useState<View>(initial.seasons.length ? "Application" : "Settings");
+  const [draftFilters, setDraftFilters] = useState<FilterValues>(emptyFilterValues);
   const [filters, setFilters] = useState<Filters>(emptyFilters);
-  const [queue, setQueue] = useState<Queue | null>(null);
+  const [queue, setQueue] = useState<QueueState>({ state: "loading" });
   const [detail, setDetail] = useState<Detail | null>(null);
-  const [notice, setNotice] = useState({ message: "", success: false });
-  const [busy, setBusy] = useState(false);
-  const [loadingQueue, setLoadingQueue] = useState(false);
+  const [draft, setDraft] = useState<Review | null>(null);
+  const [feedback, setFeedback] = useState<Partial<Record<Area, Notice>>>({});
+  const [conflict, setConflict] = useState<"record" | "season" | null>(null);
+  const [approvedRevision, setApprovedRevision] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
   const [refresh, setRefresh] = useState(0);
+  const locked = useRef(false);
   const heading = useRef<HTMLHeadingElement>(null);
-  const current = initial.seasons.find(season => season.year === year);
+  const queueHeading = useRef<HTMLHeadingElement>(null);
+  const focusRow = useRef<string | null>(null);
+  const rowButtons = useRef(new Map<string, HTMLButtonElement>());
+  const seasonForm = useRef<HTMLFormElement>(null);
+  const reviewForm = useRef<HTMLFormElement>(null);
+  const current = overview.seasons.find(season => season.year === year);
+  const currentYear = current?.year;
+  const otherOpenSeason = overview.seasons.find(season => season.isOpen && season.year !== year);
+  const settingsLockedReason = current?.isOpen ? "Close the intake switch before editing this season." :
+    current?.purgedAtUtc ? "Season details are read-only after closeout." :
+      !current && otherOpenSeason ? "Close the current intake before adding a season." :
+        conflict === "season" ? "Reload the season before making another change." : null;
+  const openingReason = current?.availability?.openingBlockedReason;
+  const launchApproved = !!current && approvedRevision === current.revision;
 
   useEffect(() => {
-    if (view === "Settings" || !current?.year) return;
+    if (view === "Settings" || !currentYear) return;
     const controller = new AbortController();
     void call<Queue>("queue", "POST", {
-      ...filters, year: current.year, kind: view, status: filters.status || null, transfer: filters.transfer || null
-    }, controller.signal).then(value => {
-      if (controller.signal.aborted) return;
-      setQueue(value); setLoadingQueue(false);
+      ...filters, year: currentYear, kind: view, status: filters.status || null, transfer: filters.transfer || null
+    }, controller.signal).then(data => {
+      if (!controller.signal.aborted) setQueue({ state: "ready", data });
     }).catch((error: unknown) => {
-      if (controller.signal.aborted) return;
-      setLoadingQueue(false);
-      setNotice({ message: error instanceof Error ? error.message : "The queue could not be loaded.", success: false });
+      if (!controller.signal.aborted) setQueue({ state: "error", notice: noticeFrom(error, "Couldn’t load this queue. Try again.") });
     });
     return () => controller.abort();
-  }, [current?.year, view, filters, refresh]);
+  }, [currentYear, view, filters, refresh]);
 
-  useEffect(() => { if (detail) heading.current?.focus(); }, [detail]);
+  const detailId = detail?.id;
+  useEffect(() => { if (detailId) heading.current?.focus(); }, [detailId]);
+  useEffect(() => {
+    if (detailId || !focusRow.current || queue.state === "loading" || pending) return;
+    (rowButtons.current.get(focusRow.current) ?? queueHeading.current)?.focus();
+    focusRow.current = null;
+  }, [detailId, pending, queue]);
+  useEffect(() => {
+    if (pending) return;
+    if (feedback.settings?.errors) seasonForm.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    if (feedback.review?.errors) reviewForm.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [feedback.settings, feedback.review, pending]);
 
-  async function action(run: () => Promise<void>, message = "") {
-    if (busy) return;
-    setBusy(true); setNotice({ message: "", success: false });
-    try {
-      await run();
-      if (message) setNotice({ message, success: true });
-    } catch (error) { setNotice({ message: error instanceof Error ? error.message : "Try again.", success: false }); }
-    finally { setBusy(false); }
+  const tell = (area: Area, notice?: Notice) => setFeedback(previous => ({ ...previous, [area]: notice }));
+  async function action(area: Area, key: string, run: () => Promise<void>, fallback: string) {
+    if (locked.current) return;
+    locked.current = true;
+    setPending(key);
+    tell(area);
+    try { await run(); }
+    catch (error) {
+      const uncertainWrite = !(error instanceof AdminApiError) || error.status >= 500;
+      const recordChanged = error instanceof AdminApiError && (error.status === 409 || error.status === 404);
+      if (uncertainWrite || recordChanged) {
+        if (key === "review") setConflict("record");
+        if (key === "settings" || key === "open-intake" || key === "close-intake" || key === "closeout") setConflict("season");
+      }
+      tell(area, noticeFrom(error, fallback));
+    } finally { locked.current = false; setPending(null); }
   }
-  const reload = () => { setRefresh(value => value + 1); router.refresh(); };
-  function navigate(nextView: Kind | "Settings", nextYear = year) {
-    setView(nextView); setYear(nextYear); setDetail(null); setQueue(null); setFilters({ ...emptyFilters });
-    setNotice({ message: "", success: false }); setLoadingQueue(nextView !== "Settings" && nextYear !== 0);
-  }
 
+  function retryQueue() {
+    setQueue({ state: "loading" });
+    tell("queue");
+    setRefresh(value => value + 1);
+  }
+  function backToQueue() {
+    setDetail(null); setDraft(null); setConflict(null); tell("review");
+  }
+  function navigate(nextView: View, nextYear = year) {
+    if (nextView === view && nextYear === year) {
+      if (detail) backToQueue();
+      return;
+    }
+    setView(nextView); setYear(nextYear); setDetail(null); setDraft(null); setConflict(null); setFeedback({});
+    setFilters(emptyFilters); setDraftFilters(emptyFilterValues); setQueue({ state: "loading" }); focusRow.current = null;
+  }
+  function showDetail(item: Detail) {
+    setDetail(item);
+    setDraft({ status: item.status, transfer: item.transfer, photoConsent: item.photoConsent, competitionReady: item.competitionReady });
+  }
+  function changeDraft(change: Partial<Review>) {
+    setDraft(previous => {
+      if (!previous) return previous;
+      const next = { ...previous, ...change };
+      return eligible(next) ? next : { ...next, competitionReady: false };
+    });
+  }
   async function openDetail(id: string) {
-    await action(async () => { setDetail(await call<Detail>("detail", "POST", { id })); });
+    await action("queue", id, async () => {
+      const item = await call<Detail>("detail", "POST", { id });
+      focusRow.current = id;
+      setConflict(null);
+      tell("review");
+      showDetail(item);
+    }, "Couldn’t load this record. Try opening it again.");
   }
-
   async function saveReview(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!detail) return;
-    const form = new FormData(event.currentTarget);
-    await action(async () => {
-      await call("review", "PUT", { id: detail.id, revision: detail.revision, status: form.get("status"),
-        transfer: detail.kind === "Returning" ? "NotNeeded" : form.get("transfer"),
-        photoConsent: detail.kind === "Returning" ? detail.photoConsent : form.get("photoConsent"),
-        competitionReady: form.get("competitionReady") === "on" });
-      setDetail(await call<Detail>("detail", "POST", { id: detail.id }));
-      reload();
-    }, "Review saved. No email was sent.");
+    if (!detail || !draft || conflict === "record") return;
+    await action("review", "review", async () => {
+      await call("review", "PUT", { ...draft, id: detail.id, revision: detail.revision, competitionReady: eligible(draft) && draft.competitionReady });
+      retryQueue();
+      try {
+        showDetail(await call<Detail>("detail", "POST", { id: detail.id }));
+        tell("review", { message: "Review saved. No email was sent.", success: true });
+      } catch (error) {
+        setConflict("record");
+        const notice = noticeFrom(error, "Couldn’t load the updated record.");
+        tell("review", { message: "Review saved. No email was sent. Reload the record before editing again.", referenceId: notice.referenceId });
+      }
+    }, "Couldn’t confirm the review was saved. Reload the record before retrying.");
   }
-
+  function updateSeason(saved: Season) {
+    setOverview(previous => ({
+      ...previous,
+      seasons: [saved, ...previous.seasons.filter(season => season.year !== saved.year)].sort((a, b) => b.year - a.year),
+      closeoutEligibleYears: saved.isOpen ? previous.closeoutEligibleYears.filter(value => value !== saved.year) : previous.closeoutEligibleYears
+    }));
+  }
   async function saveSeason(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
-    const body = Object.fromEntries(form);
-    await action(async () => {
+    if (settingsLockedReason) return;
+    const body = Object.fromEntries(new FormData(event.currentTarget));
+    await action("settings", "settings", async () => {
       const saved = await call<Season>("season", "PUT", { ...body, year: Number(body.year),
-        revision: current?.revision ?? null, ageGroups: String(body.ageGroups).split(/\r?\n/).map(x => x.trim()).filter(Boolean) });
-      setYear(saved.year); router.refresh();
-    }, "Season saved. Intake is still closed.");
+        revision: current?.revision ?? null, ageGroups: String(body.ageGroups).split(/\r?\n/).map(value => value.trim()).filter(Boolean) });
+      updateSeason(saved); setYear(saved.year);
+      tell("settings", { message: "Season saved. Intake is still closed.", success: true });
+    }, "Couldn’t confirm the season was saved. Reload the season before retrying.");
+  }
+  async function reloadSeason(area: Area) {
+    await action(area, "reload-season", async () => {
+      setOverview(await call<RegistrationOverview>("seasons", "GET"));
+      setConflict(null);
+      tell(area, { message: "Season status reloaded.", success: true });
+    }, "Couldn’t reload the season. Try again.");
+  }
+  async function changeOpening(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!current || conflict === "season") return;
+    const open = !current.isOpen;
+    if (open && (openingReason || !launchApproved)) return;
+    await action("opening", open ? "open-intake" : "close-intake", async () => {
+      const saved = await call<Season>("opening", "PUT", { year, revision: current.revision, open, launchChecksApproved: launchApproved });
+      updateSeason(saved);
+      tell("opening", { message: open ? "Intake opened." : "Intake closed.", success: true });
+      try { setOverview(await call<RegistrationOverview>("seasons", "GET")); }
+      catch (error) {
+        const notice = noticeFrom(error, "Couldn’t update the season summary.");
+        tell("opening", { message: `Intake ${open ? "opened" : "closed"}. Refresh season status and totals to see the latest summary.`, referenceId: notice.referenceId });
+      }
+    }, "Couldn’t confirm the intake change. Reload the season before retrying.");
   }
 
-  const handoff = current && detail ? [
-    `Email PDFs or clear photos to ${current.paperworkEmail} with ${detail.receiptReference} in the subject, or hand them in person: ${current.paperworkHandoff}`,
-    "Photo consent is optional and does not affect enrollment."
-  ] : [];
+  const seasonError = (name: string) => fieldError(feedback.settings?.errors ?? {}, name);
+  const reviewError = (name: string) => fieldError(feedback.review?.errors ?? {}, name);
 
   return <div className="space-y-5">
-    <div className="flex flex-wrap items-end gap-3">
-      {field("Season", <select className={control} value={year} disabled={busy} onChange={e => navigate(e.target.value === "0" ? "Settings" : view, Number(e.target.value))}>
-        <option value={0}>Add a season</option>{initial.seasons.map(item => <option key={item.year} value={item.year}>{item.year} — {item.title}</option>)}
-      </select>)}
-      {([["Application", "New Applications"], ["Returning", "Returning Check-Ins"], ["Settings", "Season Settings"]] as const).map(([value, label]) =>
-        <button type="button" key={value} className={button} aria-pressed={view === value} disabled={busy || (value !== "Settings" && !current)}
-          onClick={() => navigate(value)}>{label}</button>)}
+    <div className="grid gap-3 sm:grid-cols-[minmax(0,18rem)_1fr] sm:items-end">
+      <SelectField label="Season" name="registrationSeason" value={year} disabled={Boolean(pending)}
+        options={[["0", "Add a season"], ...overview.seasons.map(item => [String(item.year), `${item.year} — ${item.title}`] as const)]}
+        onChange={event => navigate(event.target.value === "0" ? "Settings" : view, Number(event.target.value))} />
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Registration workspace views">
+        {([["Application", "New Applications"], ["Returning", "Returning Check-Ins"], ["Settings", "Season Settings"]] as const).map(([value, label]) =>
+          <button type="button" key={value} className={view === value ? primary : secondary} aria-pressed={view === value}
+            disabled={Boolean(pending) || (value !== "Settings" && !current)} onClick={() => navigate(value)}>{label}</button>)}
+      </div>
     </div>
-    <FormNotice message={notice.message} success={notice.success} />
+
     {view === "Settings" ? <>
-      <form method="post" className="grid gap-4 border border-slate-200 bg-white p-4 sm:grid-cols-2" onSubmit={saveSeason} key={current?.revision ?? "new"}>
-        {current ? <input type="hidden" name="year" value={current.year} /> : field("Season year", <input name="year" type="number" min={2026} max={2100} defaultValue={2027} required className={control} />)}
-        {field("Season title", <input name="title" maxLength={120} defaultValue={current?.title} required className={control} />)}
-        {field("Opening date (Eastern)", <input name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required className={control} />)}
-        {field("Season end date (Eastern)", <input name="endDate" type="date" defaultValue={current?.endDate} required className={control} />)}
-        {field("Eligible age groups (one per line)", <textarea name="ageGroups" maxLength={400} defaultValue={current?.ageGroups} required className={control} />)}
-        {field("Practice location", <input name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required className={control} />)}
-        {field("Practice schedule", <textarea name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required className={control} />)}
-        {field("Fees", <input name="fees" maxLength={250} defaultValue={current?.fees} required className={control} />)}
-        {field("Expected reply window (shown to families)", <input name="replyWindow" maxLength={250} defaultValue={current?.replyWindow} required className={control} />)}
-        {field("Designated club paperwork inbox (staff only)", <input name="paperworkEmail" type="email" maxLength={254} defaultValue={current?.paperworkEmail} required className={control} />)}
-        {field("In-person handoff instructions (staff only)", <textarea name="paperworkHandoff" maxLength={500} defaultValue={current?.paperworkHandoff} required className={control} />)}
-        {field("Review owner", <input name="reviewOwner" maxLength={120} defaultValue={current?.reviewOwner} required className={control} />)}
-        {field("Retention owner", <input name="retentionOwner" maxLength={120} defaultValue={current?.retentionOwner} required className={control} />)}
-        <div className="sm:col-span-2"><button className={button} disabled={busy || current?.isOpen || Boolean(current?.purgedAtUtc)}>Save season details</button></div>
+      {current && <section className={panel} aria-labelledby="registration-intake-status-title">
+        <h2 id="registration-intake-status-title" className="text-lg font-black text-track-ink">Intake status</h2>
+        <dl className="grid gap-3 sm:grid-cols-2">
+          <div><dt className="text-sm font-bold text-slate-600">Public registration</dt><dd className="font-bold">{current.availability?.publicState ?? (current.isOpen ? "Open" : "Closed")}</dd></div>
+          <div><dt className="text-sm font-bold text-slate-600">Manual intake switch</dt><dd className="font-bold">{current.isOpen ? "On" : "Off"}</dd></div>
+        </dl>
+        {!current.purgedAtUtc && <form method="post" className="space-y-3" onSubmit={changeOpening} key={current.revision}>
+          {!current.isOpen && openingReason && <p className="text-sm font-semibold text-slate-700" id="registration-opening-reason">{openingReason}</p>}
+          {!current.isOpen && !openingReason && <label className="flex min-h-11 items-start gap-3 text-sm">
+            <input type="checkbox" name="approved" className="mt-0.5 h-5 w-5 shrink-0 accent-track-red" required
+              checked={launchApproved} onChange={event => setApprovedRevision(event.target.checked ? current.revision : null)}
+              disabled={Boolean(pending) || conflict === "season"} />
+            <span>The club approved season details, blank forms, the privacy notice, decision and handoff instructions, and review and retention owners. The public page and Admin queue have been checked.</span>
+          </label>}
+          <button type="submit" className={current.isOpen ? secondary : primary}
+            disabled={Boolean(pending) || conflict === "season" || (!current.isOpen && (Boolean(openingReason) || !launchApproved))}
+            aria-describedby={!current.isOpen && openingReason ? "registration-opening-reason" : undefined}>
+            {pending === "open-intake" ? "Opening intake…" : pending === "close-intake" ? "Closing intake…" : current.isOpen ? "Close intake" : "Open intake"}
+          </button>
+        </form>}
+        <Feedback notice={feedback.opening} />
+      </section>}
+      {conflict === "season" && <div className={panel}>
+        <button type="button" className={secondary} disabled={Boolean(pending)} onClick={() => void reloadSeason("opening")}>
+          {pending === "reload-season" ? "Reloading season…" : "Reload season"}
+        </button>
+        {!current && <Feedback notice={feedback.opening} />}
+      </div>}
+      <form method="post" className="space-y-3" onSubmit={saveSeason} key={current?.revision ?? "new"} ref={seasonForm}>
+        <fieldset className="min-w-0 space-y-4" disabled={Boolean(pending) || Boolean(settingsLockedReason)}
+          aria-describedby={settingsLockedReason ? "registration-settings-locked" : undefined}>
+          <legend className="sr-only">Season settings</legend>
+          {current ? <input type="hidden" name="year" value={current.year} /> : null}
+          <FormSection title="Season details">
+            {!current && <Field label="Season year" name="year" type="number" min={2026} max={2100} defaultValue={Math.max(2027, (overview.seasons[0]?.year ?? 2026) + 1)} required error={seasonError("year")} />}
+            <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
+            <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
+            <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
+            <TextArea label="Eligible age groups (one per line)" name="ageGroups" maxLength={400} defaultValue={current?.ageGroups} required error={seasonError("ageGroups")} />
+            <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required error={seasonError("practiceLocation")} />
+            <TextArea label="Practice schedule" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />
+            <Field label="Fees" name="fees" maxLength={250} defaultValue={current?.fees} required error={seasonError("fees")} />
+            <Field label="Expected reply window (shown to families)" name="replyWindow" maxLength={250} defaultValue={current?.replyWindow} required error={seasonError("replyWindow")} />
+          </FormSection>
+          <FormSection title="Staff handoff and ownership" description="These details are for staff, not the public registration page.">
+            <Field label="Designated club paperwork inbox (staff only)" name="paperworkEmail" type="email" maxLength={254} defaultValue={current?.paperworkEmail} required error={seasonError("paperworkEmail")} />
+            <TextArea label="In-person handoff instructions (staff only)" name="paperworkHandoff" maxLength={500} defaultValue={current?.paperworkHandoff} required error={seasonError("paperworkHandoff")} />
+            <Field label="Review owner" name="reviewOwner" maxLength={120} defaultValue={current?.reviewOwner} required error={seasonError("reviewOwner")} />
+            <Field label="Retention owner" name="retentionOwner" maxLength={120} defaultValue={current?.retentionOwner} required error={seasonError("retentionOwner")} />
+          </FormSection>
+          <button type="submit" className={primary}>{pending === "settings" ? "Saving season…" : "Save season details"}</button>
+        </fieldset>
+        {settingsLockedReason && <p id="registration-settings-locked" className="text-sm font-semibold text-slate-700">{settingsLockedReason}</p>}
+        <Feedback notice={feedback.settings} />
       </form>
-      {current && !current.purgedAtUtc && <form method="post" className="space-y-3 border bg-white p-4" key={current.revision} onSubmit={event => {
-        event.preventDefault();
-        const approved = new FormData(event.currentTarget).get("approved") === "on";
-        void action(async () => {
-          await call("opening", "PUT", { year, revision: current.revision, open: !current.isOpen, launchChecksApproved: approved });
-          router.refresh();
-        }, current.isOpen ? "Intake closed." : "Intake opened.");
-      }}>
-        <p className="font-bold">Intake switch: {current.isOpen ? "Open" : "Closed"}</p>
-        {!current.isOpen && <label className="flex items-start gap-2 text-sm"><input type="checkbox" name="approved" className="mt-1" required />
-          <span>The club approved season details, blank forms, the privacy notice, decision and handoff instructions, and review and retention owners. The public page and Admin queue have been checked.</span>
-        </label>}
-        <button className={button} disabled={busy}>{current.isOpen ? "Close intake" : "Open intake"}</button>
-      </form>}
-      {current && <section className="space-y-3 border bg-white p-4">
-        <h2 className="font-bold">Season totals</h2><p className="text-sm">Aggregate page visits, not unique people. No ad-platform tracking.</p>
-        <ul className="space-y-1 text-sm">{initial.counts.filter(x => x.seasonYear === year).map(count => <li key={count.channel}>
+      {current && <section className={panel}>
+        <h2 className="text-lg font-black text-track-ink">Season totals</h2><p className="text-sm text-slate-600">Aggregate page visits, not unique people. No ad-platform tracking.</p>
+        <ul className="space-y-1 text-sm">{overview.counts.filter(count => count.seasonYear === year).map(count => <li key={count.channel}>
           {count.channel === "Direct" ? "Direct / other" : count.channel}: {count.visits} visits · {count.applications} applications · {count.returning} check-ins · {count.enrolled} enrolled
         </li>)}</ul>
         {current.purgedAtUtc && <p className="text-sm">Identifiable intake records removed on {date(current.purgedAtUtc)}.</p>}
+        <button type="button" className={secondary} disabled={Boolean(pending)} onClick={() => void reloadSeason("opening")}>
+          {pending === "reload-season" ? "Refreshing…" : "Refresh season status and totals"}
+        </button>
       </section>}
-      {current && canCloseout && initial.closeoutEligibleYears.includes(current.year) && <form method="post" className="space-y-3 border border-red-200 bg-white p-4" key={`closeout-${current.revision}`}
-        onSubmit={event => {
+      {current && !current.purgedAtUtc && canCloseout && overview.closeoutEligibleYears.includes(current.year) && <form method="post"
+        className={`${panel} border-red-200`} key={`closeout-${current.revision}`} onSubmit={event => {
           event.preventDefault();
           const confirmYear = new FormData(event.currentTarget).get("confirmYear");
-          void action(async () => {
+          void action("closeout", "closeout", async () => {
             await call("closeout", "POST", { year, revision: current.revision, confirmYear });
-            router.refresh();
-          }, "Identifiable submissions and their review history were removed. Aggregate counts were retained.");
+            setOverview(previous => ({ ...previous, closeoutEligibleYears: previous.closeoutEligibleYears.filter(value => value !== year) }));
+            tell("closeout", { message: "Identifiable submissions and their review history were removed. Aggregate counts were retained.", success: true });
+            try { setOverview(await call<RegistrationOverview>("seasons", "GET")); }
+            catch (error) {
+              const notice = noticeFrom(error, "Couldn’t update the season summary.");
+              tell("closeout", { message: "Closeout completed. Refresh season status and totals to see the updated summary.", referenceId: notice.referenceId });
+            }
+          }, "Couldn’t confirm closeout. Refresh the season before retrying.");
         }}>
-        <h2 className="font-bold">Season closeout</h2>
+        <h2 className="text-lg font-black text-track-ink">Season closeout</h2>
         <p className="text-sm">After 90 days, permanently remove this season’s applications, check-ins and review history. This does not delete paperwork in the club inbox.</p>
-        {field("Type the season year to confirm", <input name="confirmYear" required pattern={String(year)} inputMode="numeric" className={control} />)}
-        <button className={button} disabled={busy}>Remove identifiable intake records</button>
+        <Field label="Type the season year to confirm" name="confirmYear" required pattern={String(year)} inputMode="numeric" disabled={Boolean(pending)} />
+        <button type="submit" className={destructive} disabled={Boolean(pending) || conflict === "season"}>
+          {pending === "closeout" ? "Removing records…" : "Remove identifiable intake records"}
+        </button>
       </form>}
-    </> : detail ? <section className="space-y-4 border bg-white p-4">
-      <button className={button} disabled={busy} onClick={() => setDetail(null)}>Back to queue</button>
-      <h2 ref={heading} tabIndex={-1} className="text-xl font-bold">{detail.athleteFirstName} · {detail.receiptReference}</h2>
+      <Feedback notice={feedback.closeout} />
+    </> : detail && draft ? <section className={panel}>
+      <button type="button" className={secondary} disabled={Boolean(pending)} onClick={backToQueue}>Back to queue</button>
+      <h2 ref={heading} tabIndex={-1} className="scroll-mt-20 break-words text-xl font-black text-track-ink">{detail.athleteFirstName} · {detail.receiptReference}</h2>
       <dl className="grid gap-3 break-words sm:grid-cols-2">{[
         ["Guardian", detail.guardianName], ["Email", detail.guardianEmail], ["Phone", detail.guardianPhone], ["Age group", detail.ageGroup],
         ["Practice availability", detail.availability], ["Experience", detail.experience], ["Previous club", detail.clubName ?? detail.priorClub],
         ["Affiliations", detail.affiliations?.replaceAll(",", ", ")], ["Last meet", detail.lastMeetMonth]
       ].filter(([, value]) => value).map(([name, value]) => <div key={name}><dt className="font-bold">{name}</dt><dd>{value}</dd></div>)}</dl>
-      <form method="post" className="grid gap-4 sm:grid-cols-2" onSubmit={saveReview} key={detail.revision}>
-        {field(detail.kind === "Returning" ? "Check-in status" : "Application status", <select name="status" className={control} defaultValue={detail.status}>{[detail.status, ...nextStatuses(detail.status, detail.kind)].map(status => statusOption(status, detail.kind))}</select>)}
-        {detail.kind === "Application" && field("Transfer review", <select name="transfer" className={control} defaultValue={detail.transfer}>{(["NeedsReview", "NotNeeded", "Cleared"] as const).map(option)}</select>)}
-        {detail.kind === "Application" && field("Optional photo consent", <select name="photoConsent" className={control} defaultValue={detail.photoConsent}>{(["NotRecorded", "Granted", "Declined"] as const).map(option)}</select>)}
-        <label className="flex items-center gap-2"><input type="checkbox" name="competitionReady" defaultChecked={detail.competitionReady} />Competition-ready</label>
-        <div><button className={button} disabled={busy}>Save review</button></div>
+      <form method="post" ref={reviewForm} onSubmit={saveReview}>
+        <fieldset className="grid min-w-0 gap-4 sm:grid-cols-2" disabled={Boolean(pending) || conflict === "record"}>
+          <legend className="sr-only">Review update</legend>
+          <SelectField label={detail.kind === "Returning" ? "Check-in status" : "Application status"} name="status"
+            value={draft.status} options={statusOptions([detail.status, ...nextStatuses(detail.status, detail.kind)], detail.kind)}
+            onChange={event => changeDraft({ status: event.target.value as Status })} error={reviewError("status")} />
+          {detail.kind === "Application" && <>
+            <SelectField label="Transfer review" name="transfer" value={draft.transfer} options={Object.entries(transferLabels)}
+              onChange={event => changeDraft({ transfer: event.target.value as Transfer })} error={reviewError("transfer")} />
+            <SelectField label="Optional photo consent" name="photoConsent" value={draft.photoConsent} options={Object.entries(consentLabels)}
+              onChange={event => changeDraft({ photoConsent: event.target.value as Consent })} error={reviewError("photoConsent")} />
+          </>}
+          <div>
+            <label className="flex min-h-11 items-center gap-3 font-bold"><input type="checkbox" name="competitionReady"
+              className="h-5 w-5 shrink-0 accent-track-red" checked={draft.competitionReady && eligible(draft)}
+              disabled={!eligible(draft)} aria-describedby="competition-ready-help" aria-invalid={Boolean(reviewError("competitionReady"))}
+              onChange={event => changeDraft({ competitionReady: event.target.checked })} />Competition-ready</label>
+            <p id="competition-ready-help" className={`text-sm ${reviewError("competitionReady") ? "font-semibold text-red-700" : "text-slate-600"}`}>
+              {reviewError("competitionReady") ?? (!eligible(draft) ? "Enrollment and resolved transfer review are required before marking competition-ready." : "Mark only when all applicable requirements are confirmed.")}</p>
+          </div>
+          <div className="sm:col-span-2"><button type="submit" className={primary}>{pending === "review" ? "Saving review…" : "Save review"}</button></div>
+        </fieldset>
       </form>
+      <Feedback notice={feedback.review} />
+      {conflict === "record" && <button type="button" className={secondary} disabled={Boolean(pending)}
+        onClick={() => void action("review", "reload-record", async () => {
+          showDetail(await call<Detail>("detail", "POST", { id: detail.id }));
+          setConflict(null); retryQueue();
+          tell("review", { message: "Latest record loaded. Review the current values before saving.", success: true });
+        }, "Couldn’t reload the record. Try again.")}>{pending === "reload-record" ? "Reloading record…" : "Reload record"}</button>}
       {detail.kind === "Application" && <p className="text-sm">Verify eligibility outside the app: <a className="underline" href="https://image.aausports.org/dnn/athletics/Club-Release-Form.pdf">AAU club release</a> · <a className="underline" href="https://www.usatf.org/home-normal/top-utility-nav-content/membership/affiliation-update-requests">USATF affiliation updates</a>.</p>}
-      {detail.kind === "Application" && ["Offered", "PaperworkReceived", "Enrolled"].includes(detail.status) && <aside className="border p-3 text-sm"><h3 className="font-bold">Paperwork instructions for staff to send</h3>{handoff.map(line => <p className="mt-1 break-words" key={line}>{line}</p>)}</aside>}
+      {detail.kind === "Application" && current && ["Offered", "PaperworkReceived", "Enrolled"].includes(detail.status) && <aside className="space-y-1 border border-slate-200 bg-slate-50 p-3 text-sm">
+        <h3 className="font-bold">Paperwork instructions for staff to send</h3>
+        <p className="break-words">Email PDFs or clear photos to {current.paperworkEmail} with {detail.receiptReference} in the subject, or hand them in person: {current.paperworkHandoff}</p>
+        <p>Photo consent is optional and does not affect enrollment.</p>
+      </aside>}
       <div><h3 className="font-bold">Review history</h3>{detail.history.length ? <ol className="space-y-2">{detail.history.map((entry, index) =>
-        <li key={index} className="text-sm">{date(entry.changedAtUtc)} · {entry.reviewer ?? entry.changedByUserId} · {statusLabel(entry.status, detail.kind)}{detail.kind === "Application" ? ` · ${labels[entry.transfer]} · Photo consent: ${labels[entry.photoConsent]}` : ""}{entry.competitionReady ? " · Competition-ready" : ""}</li>)}</ol> : <p className="text-sm">No staff changes yet.</p>}</div>
+        <li key={index} className="break-words text-sm"><time dateTime={entry.changedAtUtc}>{date(entry.changedAtUtc)}</time> · {entry.reviewer ?? entry.changedByUserId} · {statusLabel(entry.status, detail.kind)}{detail.kind === "Application" ? ` · ${transferLabels[entry.transfer]} · Photo consent: ${consentLabels[entry.photoConsent]}` : ""}{entry.competitionReady ? " · Competition-ready" : ""}</li>)}</ol> : <p className="text-sm">No staff changes yet.</p>}</div>
     </section> : <>
-      <h2 className="text-xl font-bold">{view === "Application" ? "New Applications" : "Returning Check-Ins"}</h2>
-      <form method="post" className="grid gap-3 border bg-white p-4 sm:grid-cols-2 xl:grid-cols-5" key={`${year}:${view}`}
-        onSubmit={event => {
-          event.preventDefault();
-          const values = new FormData(event.currentTarget);
-          setLoadingQueue(true); setNotice({ message: "", success: false }); setFilters({ page: 1, search: String(values.get("search") ?? ""),
-            status: String(values.get("status") ?? ""), ageGroup: String(values.get("ageGroup") ?? ""), transfer: String(values.get("transfer") ?? "") });
-        }}>
-        {field("Search name, email, or reference", <input name="search" maxLength={120} className={control} />)}
-        {field("Status", <select name="status" className={control}><option value="">All statuses</option>{statusValues.filter(status => view === "Application" || status !== "PaperworkReceived").map(status => statusOption(status, view))}</select>)}
+      <h2 ref={queueHeading} tabIndex={-1} className="scroll-mt-20 text-xl font-black text-track-ink">{view === "Application" ? "New Applications" : "Returning Check-Ins"}</h2>
+      <form method="post" className="grid min-w-0 gap-4 border border-slate-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4"
+        onSubmit={event => { event.preventDefault(); setFilters({ ...draftFilters, page: 1 }); retryQueue(); }}>
+        <Field label="Search name, email, or reference" name="search" maxLength={120} value={draftFilters.search}
+          onChange={event => setDraftFilters(previous => ({ ...previous, search: event.target.value }))} />
+        <SelectField label="Status" name="queueStatus" value={draftFilters.status}
+          options={[["", "All statuses"], ...statusOptions((Object.keys(statusLabels) as Status[]).filter(status => view === "Application" || status !== "PaperworkReceived"), view)]}
+          onChange={event => setDraftFilters(previous => ({ ...previous, status: event.target.value }))} />
         {view === "Application" && <>
-          {field("Age group", <select name="ageGroup" className={control}><option value="">All ages</option>
-            {current?.ageGroups.split("\n").filter(Boolean).map(age => <option key={age}>{age}</option>)}</select>)}
-          {field("Transfer review", <select name="transfer" className={control}><option value="">All transfers</option>{(["NeedsReview", "NotNeeded", "Cleared"] as const).map(option)}</select>)}
+          <SelectField label="Age group" name="queueAgeGroup" value={draftFilters.ageGroup}
+            options={[["", "All ages"], ...(current?.ageGroups.split("\n").filter(Boolean).map(age => [age, age] as const) ?? [])]}
+            onChange={event => setDraftFilters(previous => ({ ...previous, ageGroup: event.target.value }))} />
+          <SelectField label="Transfer review" name="queueTransfer" value={draftFilters.transfer}
+            options={[["", "All transfers"], ...Object.entries(transferLabels)]}
+            onChange={event => setDraftFilters(previous => ({ ...previous, transfer: event.target.value }))} />
         </>}
-        <button className={`${button} self-end`} disabled={loadingQueue}>Apply filters</button>
+        <div className="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4">
+          <button type="submit" className={primary} disabled={Boolean(pending) || queue.state === "loading"}>Apply filters</button>
+          <button type="button" className={secondary} disabled={Boolean(pending) || (!hasFilters(draftFilters) && !hasFilters(filters))}
+            onClick={() => { setDraftFilters(emptyFilterValues); setFilters(emptyFilters); retryQueue(); }}>Clear filters</button>
+        </div>
       </form>
-      <p role="status" className="text-sm">{loadingQueue ? "Loading…" : queue ? `${queue.count} records` : ""}</p>
-      {!loadingQueue && queue && (queue.items.length ? <ul className="space-y-2">{queue.items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border bg-white p-4">
-        <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {statusLabel(item.status, view)}{item.ageGroup && ` · ${item.ageGroup}`}</p>
-          {item.transfer === "NeedsReview" && <p className="text-sm font-semibold">Needs transfer review</p>}</div>
-        <button className={button} disabled={busy} onClick={() => void openDetail(item.id)}>Review {item.athleteFirstName}</button>
-      </li>)}</ul> : <p>No matching records.</p>)}
-      {queue && queue.totalPages > 1 && <nav className="flex items-center gap-3" aria-label="Registration queue pages">
-        <button className={button} disabled={loadingQueue || queue.page <= 1} onClick={() => { setLoadingQueue(true); setFilters({ ...filters, page: queue.page - 1 }); }}>Previous</button>
-        <span>Page {queue.page} of {queue.totalPages}</span>
-        <button className={button} disabled={loadingQueue || queue.page >= queue.totalPages} onClick={() => { setLoadingQueue(true); setFilters({ ...filters, page: queue.page + 1 }); }}>Next</button>
-      </nav>}
+      <Feedback notice={feedback.queue} />
+      {queue.state === "loading" && <p role="status" className="text-sm">Loading records…</p>}
+      {queue.state === "error" && <div className="space-y-3">
+        <Feedback notice={queue.notice} />
+        <button type="button" className={secondary} onClick={retryQueue}>Retry</button>
+      </div>}
+      {queue.state === "ready" && <>
+        <p role="status" className="text-sm">{queue.data.count === 0 ? hasFilters(filters) ? "No matching records. Clear filters to see all records." : "No submissions yet." :
+          `${queue.data.count} ${queue.data.count === 1 ? "record" : "records"}${hasFilters(filters) ? " · filters applied" : ""}`}</p>
+        <ul className="space-y-2">{queue.data.items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white p-4">
+          <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {statusLabel(item.status, view)}{item.ageGroup && ` · ${item.ageGroup}`}</p>
+            {item.transfer === "NeedsReview" && <p className="text-sm font-semibold">Needs transfer review</p>}</div>
+          <button type="button" className={secondary} ref={node => { if (node) rowButtons.current.set(item.id, node); else rowButtons.current.delete(item.id); }}
+            disabled={Boolean(pending)} onClick={() => void openDetail(item.id)}>{pending === item.id ? "Opening review…" : `Review ${item.athleteFirstName}`}</button>
+        </li>)}</ul>
+        {queue.data.totalPages > 1 && <nav className="flex flex-wrap items-center gap-3" aria-label="Registration queue pages">
+          <button type="button" className={secondary} disabled={Boolean(pending) || queue.data.page <= 1}
+            onClick={() => { setFilters({ ...filters, page: queue.data.page - 1 }); retryQueue(); }}>Previous</button>
+          <span className="text-sm">Page {queue.data.page} of {queue.data.totalPages}</span>
+          <button type="button" className={secondary} disabled={Boolean(pending) || queue.data.page >= queue.data.totalPages}
+            onClick={() => { setFilters({ ...filters, page: queue.data.page + 1 }); retryQueue(); }}>Next</button>
+        </nav>}
+      </>}
     </>}
   </div>;
 }

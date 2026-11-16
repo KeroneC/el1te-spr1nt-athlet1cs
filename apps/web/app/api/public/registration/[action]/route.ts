@@ -48,10 +48,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
         problems.has(name) && Array.isArray(value) && typeof value[0] === "string"));
       return answer(400, { message: "Check your answers and try again.", errors });
     }
-    if (upstream.status === 409)
-      return answer(409, { message: data?.title === "Applications are not open."
-        ? "Applications are not open. Check the Registration page for updates."
-        : "This retry did not match the original submission. If you already applied, contact the club before submitting again." });
+    if (upstream.status === 409) {
+      const closed = data?.code === "intake_closed" || data?.title === "Applications are not open.";
+      return answer(409, closed
+        ? { code: "intake_closed", message: "Applications are not open. No new submission was saved." }
+        : { code: "retry_conflict", message: "This retry did not match the original submission. If you already applied, contact the club before submitting again." });
+    }
     if (upstream.status === 429) return answer(429, { message: "Too many submissions. Try again later or contact the club." });
     const referenceId = validSupportReference(upstream.headers.get(SUPPORT_REFERENCE_HEADER)) ?? validSupportReference(data?.referenceId);
     return answer(503, { message: "We couldn’t confirm your submission. Retry this same form or contact the club.", referenceId });
