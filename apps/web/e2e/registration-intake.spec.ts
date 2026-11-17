@@ -515,4 +515,8 @@ test("blank registration downloads stay available and individually named", async
   await page.goto("/faqs");
   await page.getByText("How do I register my child?", { exact: true }).click();
   await expect(page.getByText(/returning athletes.*no paperwork is required/i)).toBeVisible();
+  await page.getByText("What ages can join?", { exact: true }).click();
+  await expect(page.getByText(/athletes must turn six by the first practice/i)).toBeVisible();
+  await page.goto("/privacy#registration-privacy");
+  await expect(page.getByRole("heading", { name: "Athlete applications and check-ins" })).toBeVisible();
 });

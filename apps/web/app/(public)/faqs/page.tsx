@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "FAQs", description: "Answers to comm
 const registrationFaqs = [
   { question: "How do I register my child?", answer: "New athletes apply on the Registration page. If the club offers a spot, staff will explain how to send completed paperwork. Returning athletes only need to check in online; no paperwork is required." },
   { question: "Will I get a confirmation email?", answer: "No automatic confirmation email is sent. Save the reference shown on screen. The club will follow up separately by email. An application or check-in does not reserve a spot." },
-  { question: "What ages can join?", answer: "Check the Registration page for the current season’s approved age groups and practice details." }
+  { question: "What ages can join?", answer: "Athletes must turn six by the first practice. Check the Registration page for that date and the current season’s practice details." }
 ];
 
 export default async function FaqPage() {
