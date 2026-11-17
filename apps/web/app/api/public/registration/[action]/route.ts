@@ -4,7 +4,10 @@ import { SUPPORT_REFERENCE_HEADER, validSupportReference } from "@/lib/observabi
 
 const headers = { "Cache-Control": "no-store" };
 const problems = new Set(["form", "guardianEmail", "guardianName", "guardianPhone",
-  "athleteFirstName", "ageGroup", "availability", "experience", "priorClub", "clubName", "affiliations", "lastMeetMonth"]);
+  "athleteFirstName", "ageGroup", "availability", "experience", "priorClub", "clubName", "affiliations", "lastMeetMonth",
+  "athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict", "gender", "streetAddress", "addressLine2",
+  "city", "state", "postalCode", "secondaryGuardianName", "secondaryGuardianEmail", "secondaryGuardianPhone",
+  "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship"]);
 
 export async function POST(request: Request, { params }: { params: Promise<{ action: string }> }) {
   const { action } = await params;
@@ -23,7 +26,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
       const chunk = await reader.read();
       if (chunk.done) break;
       size += chunk.value.byteLength;
-      if (size > (action === "visit" ? 512 : 4096)) {
+      if (size > (action === "visit" ? 512 : 8192)) {
         await reader.cancel();
         return answer(413, { message: "This form is too large." });
       }
@@ -50,6 +53,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
     }
     if (upstream.status === 409) {
       const closed = data?.code === "intake_closed" || data?.title === "Applications are not open.";
+      if (data?.code === "form_outdated") return answer(409, {
+        code: "form_outdated", message: "The application has been updated. Reload the form to continue. No new submission was saved."
+      });
       return answer(409, closed
         ? { code: "intake_closed", message: "Applications are not open. No new submission was saved." }
         : { code: "retry_conflict", message: "This retry did not match the original submission. If you already applied, contact the club before submitting again." });

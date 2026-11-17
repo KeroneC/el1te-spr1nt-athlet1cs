@@ -14,6 +14,8 @@ public sealed class RegistrationSeason
     public string Title { get; set; } = "";
     public DateOnly OpeningDate { get; set; }
     public DateOnly EndDate { get; set; }
+    public DateOnly? FirstPracticeDate { get; set; }
+    // Retained for reading legacy seasons and verifying receipt replays.
     public string AgeGroups { get; set; } = "";
     public string PracticeLocation { get; set; } = "";
     public string PracticeSchedule { get; set; } = "";
@@ -39,10 +41,27 @@ public sealed class RegistrationSubmission
     public string ReceiptReference { get; set; } = "";
     public Guid RequestKey { get; set; }
     public string RequestDigest { get; set; } = "";
+    public int? ApplicationVersion { get; set; }
     public string GuardianEmail { get; set; } = "";
     public string? GuardianName { get; set; }
     public string? GuardianPhone { get; set; }
     public string AthleteFirstName { get; set; } = "";
+    public string? AthleteLastName { get; set; }
+    public DateOnly? DateOfBirth { get; set; }
+    public string? SchoolGrade { get; set; }
+    public string? SchoolDistrict { get; set; }
+    public string? Gender { get; set; }
+    public string? StreetAddress { get; set; }
+    public string? AddressLine2 { get; set; }
+    public string? City { get; set; }
+    public string? State { get; set; }
+    public string? PostalCode { get; set; }
+    public string? SecondaryGuardianName { get; set; }
+    public string? SecondaryGuardianEmail { get; set; }
+    public string? SecondaryGuardianPhone { get; set; }
+    public string? EmergencyContactName { get; set; }
+    public string? EmergencyContactPhone { get; set; }
+    public string? EmergencyContactRelationship { get; set; }
     public string? AgeGroup { get; set; }
     public PracticeAvailability? Availability { get; set; }
     public string? Experience { get; set; }

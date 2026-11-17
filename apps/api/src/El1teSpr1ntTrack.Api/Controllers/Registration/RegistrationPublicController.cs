@@ -1,6 +1,5 @@
 using System.Data;
 using System.Security.Cryptography;
-using System.Text.Json;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.Entities;
 using El1teSpr1ntTrack.Infrastructure.Data;
@@ -30,6 +29,18 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         Extensions = { ["code"] = "intake_closed" }
     });
 
+    private IActionResult FormOutdated() => Conflict(new ProblemDetails
+    {
+        Title = "This form has been updated. Reload to use the current application.",
+        Extensions = { ["code"] = "form_outdated" }
+    });
+
+    private IActionResult RetryConflict() => Conflict(new ProblemDetails
+    {
+        Title = "This retry does not match the original application. Start a new form for another athlete.",
+        Extensions = { ["code"] = "retry_conflict" }
+    });
+
     [HttpGet]
     public async Task<IActionResult> Season(CancellationToken token)
     {
@@ -43,6 +54,7 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
             practiceSchedule = season.OpenedAtUtc is null ? null : season.PracticeSchedule,
             fees = season.OpenedAtUtc is null ? null : season.Fees,
             replyWindow = season.OpenedAtUtc is null ? null : season.ReplyWindow,
+            firstPracticeDate = season.OpenedAtUtc is null ? null : season.FirstPracticeDate,
             ageGroups = season.OpenedAtUtc is null ? Array.Empty<string>() : IntakeRules.Ages(season),
             isOpen = IntakeRules.IsOpen(season, clock.UtcNow)
         });
@@ -51,7 +63,7 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
     [HttpPost("applications")]
     [EnableRateLimiting("registration-intake")]
     [Consumes("application/json")]
-    [RequestSizeLimit(4096)]
+    [RequestSizeLimit(8192)]
     public async Task<IActionResult> Submit(IntakeRequest request, CancellationToken token)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted, token);
@@ -61,25 +73,21 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         var now = clock.UtcNow;
         var existing = await db.RegistrationSubmissions.AsNoTracking()
             .Where(x => x.SeasonYear == season.Year && x.RequestKey == request.RequestKey)
-            .Select(x => new { x.RequestDigest, x.ReceiptReference, x.AgeGroup }).SingleOrDefaultAsync(token);
+            .Select(x => new { x.RequestDigest, x.ReceiptReference, x.AgeGroup, x.Kind, x.ApplicationVersion }).SingleOrDefaultAsync(token);
         if (existing is null && (!IntakeRules.IsOpen(season, now) ||
             await db.RegistrationSeasons.AnyAsync(x => x.Year > season.Year && x.PurgedAtUtc == null, token)))
             return IntakeClosed();
-        var submission = IntakeRules.Normalize(request, season, now, existing?.AgeGroup);
-        submission.RequestDigest = Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(new
-        {
-            submission.RequestKey, submission.Kind, submission.GuardianEmail, submission.GuardianName,
-            submission.GuardianPhone, submission.AthleteFirstName, submission.AgeGroup, submission.Availability,
-            submission.Experience, submission.PriorClub, submission.ClubName, submission.Affiliations, submission.LastMeetMonth
-        })));
+        if (existing is null && !IntakeRules.IsCurrentApplication(request))
+            return FormOutdated();
+        if (existing is not null && (request.Kind != existing.Kind || (request.Kind == IntakeKind.Application &&
+            (request.ApplicationVersion ?? 1) != (existing.ApplicationVersion ?? 1))))
+            return RetryConflict();
+        var submission = IntakeRules.Normalize(request, season, now, existing?.AgeGroup, enforceCurrentEligibility: existing is null);
+        submission.RequestDigest = IntakeRules.RequestDigest(submission);
         if (existing is not null)
             return existing.RequestDigest == submission.RequestDigest
                 ? Ok(new { reference = existing.ReceiptReference })
-                : Conflict(new ProblemDetails
-                {
-                    Title = "This retry does not match the original application. Start a new form for another athlete.",
-                    Extensions = { ["code"] = "retry_conflict" }
-                });
+                : RetryConflict();
 
         if (await db.RegistrationSubmissions.CountAsync(x => x.SeasonYear == season.Year &&
             x.GuardianEmail == submission.GuardianEmail && x.SubmittedAtUtc >= now.AddHours(-1), token) >= 10)

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
-import { ArrowRight, Mail } from "lucide-react";
+import { ArrowRight, CalendarDays, CircleDollarSign, ClipboardList, Clock3, Mail, MapPin, Users } from "lucide-react";
 import Link from "next/link";
-import { PageHero } from "@/components/public/ui";
 import { FormDownloadList } from "@/components/public/form-download-list";
 import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
 import { getRegistrationSeason } from "@/lib/public/registration";
 import { registrationChannel, registrationDate, registrationOpeningDate, upcomingRegistrationDate } from "@/lib/registration";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
+import styles from "@/components/public/registration.module.css";
 
 export const metadata: Metadata = {
   title: "Registration Hub",
@@ -22,68 +22,68 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const planned = state !== "unavailable" && !season?.isOpen
     ? upcomingRegistrationDate(season?.openingDate ?? registrationOpeningDate)
     : null;
-  const seasonDetails = <>
-    {season?.title && <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-      {[
-        ["Eligible age groups", season.ageGroups.join(", ")], ["Practice location", season.practiceLocation],
-        ["Practice schedule", season.practiceSchedule], ["Fees", season.fees], ["When you’ll hear back", season.replyWindow]
-      ].map(([label, value]) => <div key={label}><dt className="font-bold">{label}</dt><dd className="whitespace-pre-line break-words">{value}</dd></div>)}
-    </dl>}
-    <p className="mt-5">Staff review submissions individually. An application or returning check-in does not reserve a spot.</p>
-  </>;
-  const aside = <aside className="registration-aside">
-    <h2>What happens next?</h2>
-    <ul>
-      <li>Save the reference shown after you submit. An automatic confirmation email won’t be sent.</li>
-      <li>Wait for the club to follow up by email.</li>
-      <li>New athletes send paperwork only after an offer. Returning athletes check in online; no paperwork is required.</li>
-    </ul>
-    <div className="registration-help-actions">
-      <Link className="button button-secondary" href="/contact">Ask a registration question<Mail size={17} aria-hidden="true" /></Link>
-      <Link className="text-link registration-faq-link" href="/faqs">Read frequently asked questions<ArrowRight size={17} aria-hidden="true" /></Link>
-    </div>
-  </aside>;
-  return <div data-registration-hub="true">
-    <PageHero eyebrow="Registration Hub" title={season?.title ?? "Registration"}
-      summary="Apply for a spot with El1te Spr1nt Athlet1cs or let us know your athlete plans to return." />
+  const seasonDetails = [
+    { label: "Eligibility", value: "Ages 6 and up", Icon: Users },
+    { label: "First practice", value: season?.firstPracticeDate ? registrationDate(season.firstPracticeDate) : null, Icon: CalendarDays },
+    { label: "Practice location", value: season?.practiceLocation, Icon: MapPin },
+    { label: "Practice schedule", value: season?.practiceSchedule, Icon: CalendarDays },
+    { label: "Fees", value: season?.fees, Icon: CircleDollarSign },
+    { label: "When you’ll hear back", value: season?.replyWindow, Icon: Clock3 }
+  ];
+  const intro = <div className={styles.intro}>
+    <p className={styles.heroOverline}><span aria-hidden="true" />El1te track &amp; field <span aria-hidden="true" /> Registration</p>
+    <h1>Find your <em>starting lane</em></h1>
+    <p>New to El1te or back for another season? Start here.</p>
+  </div>;
+
+  return <div data-registration-hub="true" className={styles.page}>
     {season && <RegistrationVisit year={season.year} channel={channel} />}
-    <section className="content-section">
-      <div className="site-container registration-layout">
-        {season?.isOpen
-          ? <RegistrationPaths season={season} channel={channel} aside={aside}>{seasonDetails}</RegistrationPaths>
-          : <>
-            <div>
-              <p className="eyebrow">Season details</p>
-              <h2>{state === "unavailable" ? "Registration is temporarily unavailable"
-                : planned ? "Applications open soon" : "Applications are currently closed"}</h2>
-              {state === "unavailable" ? <>
-                <p className="section-intro">We can’t check registration status right now. Try again or ask the club a question.</p>
-                <a className="button button-primary" href={retryHref}>Check registration status</a>
-              </> : planned
-                ? <p className="section-intro">Planned opening: {registrationDate(planned)}. Check back here for availability.</p>
-                : <p className="section-intro">Check back here for the next opening, or contact the club with questions.</p>}
-              {state !== "unavailable" && seasonDetails}
-            </div>
-            {aside}
-          </>}
+    {season?.isOpen ? <RegistrationPaths season={season} channel={channel} intro={intro} /> :
+      <section className={styles.hero} aria-label="Registration">
+        <div className={`site-container ${styles.heroContent}`}>
+          {intro}
+          <div className={styles.statusPanel}>
+            <h2 className={styles.statusPill}>{state === "unavailable" ? "Registration is temporarily unavailable"
+              : planned ? "Applications open soon" : "Applications are currently closed"}</h2>
+            {state === "unavailable" ? <>
+              <p>We can’t check registration status right now. Try again or ask the club a question.</p>
+              <a className={styles.primaryAction} href={retryHref}>Check registration status</a>
+            </> : planned ? <p>Planned opening: <strong>{registrationDate(planned)}</strong>. Check back here for availability.</p>
+              : <p>Check back here for the next opening, or <Link href="/contact">contact the club</Link> with questions.</p>}
+          </div>
+        </div>
+      </section>}
+    <section className={styles.seasonSection} aria-labelledby="registration-season-heading">
+      <div className={`site-container ${styles.seasonLayout}`}>
+        <div>
+          <p className={styles.pathOverline}>{season?.title || "Club registration"}</p>
+          <h2 id="registration-season-heading">Season at a glance</h2>
+          <dl className={styles.seasonDetails}>
+            {seasonDetails.filter(({ value }) => value).map(({ label, value, Icon }) => <div key={label}>
+              <Icon size={19} aria-hidden="true" /><dt>{label}</dt><dd>{value}</dd>
+            </div>)}
+          </dl>
+        </div>
+        <aside className={styles.help} aria-label="Registration help">
+          <h3>What happens next?</h3>
+          <p>Save your reference after submitting. Staff review applications individually and follow up by email; submitting doesn’t reserve a spot.</p>
+          <div className={styles.helpActions}>
+            <Link href="/contact">Ask a registration question <Mail size={16} aria-hidden="true" /></Link>
+            <Link href="/faqs">Read frequently asked questions <ArrowRight size={16} aria-hidden="true" /></Link>
+          </div>
+        </aside>
       </div>
     </section>
-    <section className="content-section tone-muted">
+    <section className={styles.paperworkSection} aria-labelledby="registration-paperwork-heading">
       <div className="site-container">
-        <div className="section-heading">
-          <div><p className="eyebrow">For new athletes offered a spot</p><h2>Preview the paperwork</h2></div>
-          <Link className="text-link" href="/forms">All forms<ArrowRight size={17} aria-hidden="true" /></Link>
+        <div className={styles.paperworkHeader}>
+          <ClipboardList size={23} aria-hidden="true" />
+          <div><p className={styles.pathOverline}>For new athletes offered a spot</p><h2 id="registration-paperwork-heading">Preview the paperwork</h2></div>
+          <Link className={styles.secondaryAction} href="/forms">All forms <ArrowRight size={17} aria-hidden="true" /></Link>
         </div>
+        <p className={styles.paperworkIntro}>Wait for an offer and club instructions before sending completed forms or proof of age. Photo consent is optional. Returning athletes do not need paperwork.</p>
         <FormDownloadList forms={REGISTRATION_DOWNLOADS} />
       </div>
     </section>
-    <section className="cta-band"><div className="site-container">
-      <div>
-        <p className="eyebrow light">After an offer for a new athlete</p>
-        <h2>Club staff will explain how to send your packet.</h2>
-        <p>Have your application reference ready. Photo consent is optional. This site does not accept documents, signatures, or payments for registration.</p>
-      </div>
-      <Link className="button button-light" href="/contact">Contact the club</Link>
-    </div></section>
   </div>;
 }
