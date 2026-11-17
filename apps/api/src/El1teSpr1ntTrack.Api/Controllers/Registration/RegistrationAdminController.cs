@@ -28,6 +28,8 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
             return new("Closed", "Only the latest season can be opened.");
         if (today > season.EndDate) return new("Ended", "This season has already ended.");
         if (today < season.OpeningDate) return new("Upcoming", "Intake can’t open before the opening date (Eastern time).");
+        if (!IntakeRules.HasValidFirstPracticeDate(season))
+            return new("Closed", "Set a first practice date within the season before opening intake.");
         var publicState = season.IsOpen ? "Open" : "Closed";
         return new(publicState, seasons.Any(other => other.Year != season.Year && other.IsOpen)
             ? "Close the other season’s intake before opening this one." : null);
@@ -35,7 +37,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
 
     private static object SeasonView(RegistrationSeason season, IEnumerable<RegistrationSeason> seasons, DateOnly today) => new
     {
-        season.Year, season.Revision, season.Title, season.OpeningDate, season.EndDate, season.AgeGroups,
+        season.Year, season.Revision, season.Title, season.OpeningDate, season.EndDate, season.FirstPracticeDate, season.AgeGroups,
         season.PracticeLocation, season.PracticeSchedule, season.Fees, season.ReplyWindow, season.PaperworkEmail,
         season.PaperworkHandoff, season.ReviewOwner, season.RetentionOwner, season.IsOpen, season.PurgedAtUtc,
         season.OpenedAtUtc, season.OpenedByUserId,
@@ -162,6 +164,9 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         {
             x.Id, x.SeasonYear, x.Kind, x.Revision, x.ReceiptReference, x.GuardianEmail, x.GuardianName, x.GuardianPhone,
             x.AthleteFirstName, x.AgeGroup, x.Availability, x.Experience, x.PriorClub, x.ClubName, x.Affiliations, x.LastMeetMonth,
+            x.AthleteLastName, x.DateOfBirth, x.SchoolGrade, x.SchoolDistrict, x.Gender, x.StreetAddress, x.AddressLine2,
+            x.City, x.State, x.PostalCode, x.SecondaryGuardianName, x.SecondaryGuardianEmail, x.SecondaryGuardianPhone,
+            x.EmergencyContactName, x.EmergencyContactPhone, x.EmergencyContactRelationship,
             x.Status, x.Transfer, x.PhotoConsent, x.CompetitionReady, x.SubmittedAtUtc,
             history = x.History.OrderByDescending(h => h.ChangedAtUtc).ThenByDescending(h => h.Id).Select(h => new
             {

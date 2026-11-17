@@ -12,10 +12,104 @@ namespace El1teSpr1ntTrack.IntegrationTests;
 public sealed class RegistrationIntakeTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 27, 12, 0, 0, TimeSpan.Zero);
-    private static RegistrationSeason Season() => new() { Year = 2027, AgeGroups = "10U\n12U", OpeningDate = new(2026, 11, 27), EndDate = new(2027, 8, 1) };
+    private static RegistrationSeason Season() => new()
+    {
+        Year = 2027, AgeGroups = "10U\n12U", OpeningDate = new(2026, 11, 27),
+        FirstPracticeDate = new(2026, 12, 5), EndDate = new(2027, 8, 1)
+    };
     private static IntakeRequest Request() => new(2027, Guid.NewGuid(), IntakeKind.Application, "instagram", "guardian@example.test",
         "Jordan", "Test Guardian", null, "12U", PracticeAvailability.Yes, null,
         PriorClubAnswer.Yes, "Previous Club", ["USATF", "AAU"], "2026-10", null);
+
+    private static IntakeRequest FullRequest() => Request() with
+    {
+        ApplicationVersion = IntakeRules.CurrentApplicationVersion, AthleteLastName = "Test",
+        DateOfBirth = "2020-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable",
+        GuardianPhone = "412-555-0100", StreetAddress = "1 Synthetic Lane", City = "Sample City", State = "PA",
+        PostalCode = "15201", EmergencyContactName = "Example Contact", EmergencyContactPhone = "412-555-0101",
+        EmergencyContactRelationship = "Family friend", AgeGroup = null
+    };
+
+    [Theory]
+    [InlineData("2020-12-06")]
+    [InlineData("2027-01-01")]
+    [InlineData("2020-02-30")]
+    [InlineData("12/05/2020")]
+    [InlineData("")]
+    public void FullApplicationRejectsBirthDatesThatAreInvalidFutureOrBelowSix(string birthDate)
+    {
+        var error = Assert.Throws<CmsRequestValidationException>(() => IntakeRules.Normalize(
+            FullRequest() with { DateOfBirth = birthDate }, Season(), Now));
+        Assert.Contains("dateOfBirth", error.Errors.Keys);
+    }
+
+    [Fact]
+    public void FullApplicationAcceptsExactSixthBirthdayByFirstPracticeAndLeavesOptionalFieldsBlank()
+    {
+        var request = FullRequest();
+        var item = IntakeRules.Normalize(request, Season(), Now);
+        Assert.Equal(new DateOnly(2020, 12, 5), item.DateOfBirth);
+        Assert.Equal("Not applicable", item.SchoolGrade);
+        Assert.Equal("Not sure / not applicable", item.SchoolDistrict);
+        Assert.Null(item.AgeGroup);
+        Assert.Null(item.Gender);
+        Assert.Null(item.SecondaryGuardianName);
+        Assert.Equal("Family friend", item.EmergencyContactRelationship);
+        Assert.NotNull(IntakeRules.Normalize(request with { DateOfBirth = "1999-01-01" }, Season(), Now).DateOfBirth);
+    }
+
+    [Fact]
+    public void FullApplicationRequiresHouseholdAndEmergencyContactButReturningIgnoresThem()
+    {
+        var request = FullRequest() with { GuardianPhone = "", StreetAddress = "", EmergencyContactPhone = "", SchoolGrade = "14" };
+        var error = Assert.Throws<CmsRequestValidationException>(() => IntakeRules.Normalize(request, Season(), Now));
+        foreach (var field in new[] { "guardianPhone", "streetAddress", "emergencyContactPhone", "schoolGrade" })
+            Assert.Contains(field, error.Errors.Keys);
+        var returning = IntakeRules.Normalize(request with { Kind = IntakeKind.Returning }, Season(), Now);
+        Assert.Null(returning.ApplicationVersion);
+        Assert.Null(returning.DateOfBirth);
+        Assert.Null(returning.StreetAddress);
+        Assert.Null(returning.EmergencyContactName);
+        Assert.Null(returning.SchoolDistrict);
+    }
+
+    [Fact]
+    public void StaleReceiptDigestStaysCompatibleAndNewDigestIncludesPrivateFields()
+    {
+        foreach (var kind in new[] { IntakeKind.Application, IntakeKind.Returning })
+        {
+            var item = IntakeRules.Normalize(Request() with { Kind = kind }, Season(), Now);
+            var legacyBytes = System.Text.Json.JsonSerializer.SerializeToUtf8Bytes(new
+            {
+                item.RequestKey, item.Kind, item.GuardianEmail, item.GuardianName,
+                item.GuardianPhone, item.AthleteFirstName, item.AgeGroup, item.Availability,
+                item.Experience, item.PriorClub, item.ClubName, item.Affiliations, item.LastMeetMonth
+            });
+            Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(legacyBytes)), IntakeRules.RequestDigest(item));
+        }
+        Assert.False(IntakeRules.IsCurrentApplication(Request()));
+
+        var request = FullRequest();
+        var season = Season();
+        var original = IntakeRules.RequestDigest(IntakeRules.Normalize(request, season, Now));
+        var changed = IntakeRules.RequestDigest(IntakeRules.Normalize(request with { EmergencyContactPhone = "412-555-0199" }, season, Now));
+        Assert.NotEqual(original, changed);
+        season.FirstPracticeDate = season.OpeningDate;
+        Assert.Equal(original, IntakeRules.RequestDigest(IntakeRules.Normalize(request, season, Now, enforceCurrentEligibility: false)));
+    }
+
+    [Fact]
+    public void ExistingSeasonWithoutFirstPracticeFailsClosedWithoutLosingManualState()
+    {
+        var season = Season();
+        season.IsOpen = true;
+        season.FirstPracticeDate = null;
+        Assert.False(IntakeRules.IsOpen(season, Now));
+        var status = RegistrationAdminController.GetAvailability(season, [season], IntakeRules.LocalDate(Now));
+        Assert.Equal("Closed", status.PublicState);
+        Assert.Contains("first practice", status.OpeningBlockedReason);
+        Assert.True(season.IsOpen);
+    }
 
     [Fact]
     public void ApplicationFlagsPriorClubAndPreservesBothAffiliations()

@@ -3018,6 +3018,9 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
 
+                    b.Property<DateOnly?>("FirstPracticeDate")
+                        .HasColumnType("date");
+
                     b.Property<bool>("IsOpen")
                         .HasColumnType("bit");
 
@@ -3088,6 +3091,10 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AddressLine2")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
                     b.Property<string>("Affiliations")
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
@@ -3096,8 +3103,15 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .HasMaxLength(40)
                         .HasColumnType("nvarchar(40)");
 
+                    b.Property<int?>("ApplicationVersion")
+                        .HasColumnType("int");
+
                     b.Property<string>("AthleteFirstName")
                         .IsRequired()
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<string>("AthleteLastName")
                         .HasMaxLength(80)
                         .HasColumnType("nvarchar(80)");
 
@@ -3107,6 +3121,10 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Property<int>("Channel")
                         .HasColumnType("int");
 
+                    b.Property<string>("City")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
                     b.Property<string>("ClubName")
                         .HasMaxLength(120)
                         .HasColumnType("nvarchar(120)");
@@ -3114,9 +3132,28 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Property<bool>("CompetitionReady")
                         .HasColumnType("bit");
 
+                    b.Property<DateOnly?>("DateOfBirth")
+                        .HasColumnType("date");
+
+                    b.Property<string>("EmergencyContactName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("EmergencyContactPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("EmergencyContactRelationship")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
                     b.Property<string>("Experience")
                         .HasMaxLength(250)
                         .HasColumnType("nvarchar(250)");
+
+                    b.Property<string>("Gender")
+                        .HasMaxLength(25)
+                        .HasColumnType("nvarchar(25)");
 
                     b.Property<string>("GuardianEmail")
                         .IsRequired()
@@ -3142,6 +3179,10 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Property<int>("PhotoConsent")
                         .HasColumnType("int");
 
+                    b.Property<string>("PostalCode")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<int?>("PriorClub")
                         .HasColumnType("int");
 
@@ -3164,11 +3205,39 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("SchoolDistrict")
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<string>("SchoolGrade")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<int>("SeasonYear")
                         .HasColumnType("int");
 
+                    b.Property<string>("SecondaryGuardianEmail")
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("SecondaryGuardianName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SecondaryGuardianPhone")
+                        .HasMaxLength(32)
+                        .HasColumnType("nvarchar(32)");
+
+                    b.Property<string>("State")
+                        .HasMaxLength(60)
+                        .HasColumnType("nvarchar(60)");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
+
+                    b.Property<string>("StreetAddress")
+                        .HasMaxLength(160)
+                        .HasColumnType("nvarchar(160)");
 
                     b.Property<DateTimeOffset>("SubmittedAtUtc")
                         .HasColumnType("datetimeoffset");

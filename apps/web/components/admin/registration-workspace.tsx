@@ -6,6 +6,7 @@ import { AdminApiError } from "@/lib/admin/api-error";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
 import { validSupportReference } from "@/lib/observability/support-reference";
 import { Field, FormNotice, FormSection, SelectField, TextArea, fieldError } from "./form-controls";
+import { applicationReviewName, RegistrationReviewDetails, type RegistrationReviewDetailsRecord } from "./registration-review-details";
 
 const statusLabels = {
   New: "New", FollowUp: "Follow-up", Waitlisted: "Waitlisted", Offered: "Offered · paperwork pending",
@@ -25,28 +26,27 @@ const transitions: Record<Status, readonly Status[]> = {
   PaperworkReceived: ["Enrolled", "Offered", "Closed"], Enrolled: ["PaperworkReceived", "Closed"], Closed: ["FollowUp"]
 };
 type Season = {
-  year: number; revision: string; title: string; openingDate: string; endDate: string; ageGroups: string;
+  year: number; revision: string; title: string; openingDate: string; endDate: string; firstPracticeDate: string | null;
   practiceLocation: string; practiceSchedule: string; fees: string; replyWindow: string; paperworkEmail: string;
   paperworkHandoff: string; reviewOwner: string; retentionOwner: string; isOpen: boolean; purgedAtUtc: string | null;
   availability: { publicState: "Open" | "Closed" | "Upcoming" | "Ended"; openingBlockedReason: string | null };
 };
 type Count = { seasonYear: number; channel: "Direct" | "Facebook" | "Instagram"; visits: number; applications: number; returning: number; enrolled: number };
 export type RegistrationOverview = { seasons: Season[]; counts: Count[]; closeoutEligibleYears: number[] };
-type Row = { id: string; receiptReference: string; athleteFirstName: string; ageGroup: string | null; status: Status; transfer: Transfer; competitionReady: boolean; submittedAtUtc: string };
+type Row = { id: string; receiptReference: string; athleteFirstName: string; status: Status; transfer: Transfer; competitionReady: boolean; submittedAtUtc: string };
 type Review = { status: Status; transfer: Transfer; photoConsent: Consent; competitionReady: boolean };
-type Detail = Row & Review & {
-  kind: Kind; seasonYear: number; revision: string; guardianEmail: string; guardianName: string | null; guardianPhone: string | null;
-  availability: string | null; experience: string | null; priorClub: string | null; clubName: string | null; affiliations: string | null;
-  lastMeetMonth: string | null; history: (Review & { changedAtUtc: string; reviewer: string | null; changedByUserId: string })[];
+type Detail = Row & Review & RegistrationReviewDetailsRecord & {
+  seasonYear: number; revision: string;
+  history: (Review & { changedAtUtc: string; reviewer: string | null; changedByUserId: string })[];
 };
 type Queue = { items: Row[]; page: number; totalPages: number; count: number };
 type QueueState = { state: "loading" } | { state: "ready"; data: Queue } | { state: "error"; notice: Notice };
-type FilterValues = { search: string; ageGroup: string; status: string; transfer: string };
+type FilterValues = { search: string; status: string; transfer: string };
 type Filters = FilterValues & { page: number };
 type Area = "settings" | "opening" | "closeout" | "review" | "queue";
 type Notice = { message: string; success?: boolean; referenceId?: string | null; errors?: Record<string, string[]> };
 
-const emptyFilterValues: FilterValues = { search: "", ageGroup: "", status: "", transfer: "" };
+const emptyFilterValues: FilterValues = { search: "", status: "", transfer: "" };
 const emptyFilters: Filters = { ...emptyFilterValues, page: 1 };
 const baseButton = "inline-flex min-h-11 items-center justify-center px-4 py-2 text-sm font-bold outline-none focus-visible:ring-2 focus-visible:ring-track-red focus-visible:ring-offset-2 disabled:opacity-60";
 const primary = `${baseButton} bg-track-red text-white enabled:hover:bg-red-800`;
@@ -54,7 +54,7 @@ const secondary = `${baseButton} border border-slate-300 bg-white text-track-ink
 const destructive = `${baseButton} border border-red-700 bg-white text-red-800 enabled:hover:bg-red-50`;
 const panel = "min-w-0 space-y-4 border border-slate-200 bg-white p-4 sm:p-5";
 const date = (value: string) => new Date(value).toLocaleString();
-const hasFilters = ({ search, ageGroup, status, transfer }: FilterValues) => Boolean(search.trim() || ageGroup || status || transfer);
+const hasFilters = ({ search, status, transfer }: FilterValues) => Boolean(search.trim() || status || transfer);
 const statusLabel = (status: Status, kind: Kind) => status === "Offered" && kind === "Returning" ? "Offered" : statusLabels[status];
 const statusOptions = (statuses: readonly Status[], kind: Kind) => statuses.map(status => [status, statusLabel(status, kind)] as const);
 const nextStatuses = (status: Status, kind: Kind): readonly Status[] =>
@@ -110,7 +110,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     current?.purgedAtUtc ? "Season details are read-only after closeout." :
       !current && otherOpenSeason ? "Close the current intake before adding a season." :
         conflict === "season" ? "Reload the season before making another change." : null;
-  const openingReason = current?.availability?.openingBlockedReason;
+  const openingReason = current?.availability?.openingBlockedReason ??
+    (current && !current.firstPracticeDate ? "Set the first practice date before opening intake." : null);
+  const publicState = current?.availability?.publicState ?? (current?.isOpen && !openingReason ? "Open" : "Closed");
   const launchApproved = !!current && approvedRevision === current.revision;
 
   useEffect(() => {
@@ -221,8 +223,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     if (settingsLockedReason) return;
     const body = Object.fromEntries(new FormData(event.currentTarget));
     await action("settings", "settings", async () => {
-      const saved = await call<Season>("season", "PUT", { ...body, year: Number(body.year),
-        revision: current?.revision ?? null, ageGroups: String(body.ageGroups).split(/\r?\n/).map(value => value.trim()).filter(Boolean) });
+      const saved = await call<Season>("season", "PUT", { ...body, year: Number(body.year), revision: current?.revision ?? null });
       updateSeason(saved); setYear(saved.year);
       tell("settings", { message: "Season saved. Intake is still closed.", success: true });
     }, "Couldn’t confirm the season was saved. Reload the season before retrying.");
@@ -270,16 +271,16 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
       {current && <section className={panel} aria-labelledby="registration-intake-status-title">
         <h2 id="registration-intake-status-title" className="text-lg font-black text-track-ink">Intake status</h2>
         <dl className="grid gap-3 sm:grid-cols-2">
-          <div><dt className="text-sm font-bold text-slate-600">Public registration</dt><dd className="font-bold">{current.availability?.publicState ?? (current.isOpen ? "Open" : "Closed")}</dd></div>
+          <div><dt className="text-sm font-bold text-slate-600">Public registration</dt><dd className="font-bold">{publicState}</dd></div>
           <div><dt className="text-sm font-bold text-slate-600">Manual intake switch</dt><dd className="font-bold">{current.isOpen ? "On" : "Off"}</dd></div>
         </dl>
         {!current.purgedAtUtc && <form method="post" className="space-y-3" onSubmit={changeOpening} key={current.revision}>
-          {!current.isOpen && openingReason && <p className="text-sm font-semibold text-slate-700" id="registration-opening-reason">{openingReason}</p>}
+          {openingReason && (!current.isOpen || publicState !== "Open") && <p className="text-sm font-semibold text-slate-700" id="registration-opening-reason">{openingReason}</p>}
           {!current.isOpen && !openingReason && <label className="flex min-h-11 items-start gap-3 text-sm">
             <input type="checkbox" name="approved" className="mt-0.5 h-5 w-5 shrink-0 accent-track-red" required
               checked={launchApproved} onChange={event => setApprovedRevision(event.target.checked ? current.revision : null)}
               disabled={Boolean(pending) || conflict === "season"} />
-            <span>The club approved season details, blank forms, the privacy notice, decision and handoff instructions, and review and retention owners. The public page and Admin queue have been checked.</span>
+            <span>The club approved season details, blank forms, the updated privacy notice, post-offer paperwork and handoff instructions, and review and retention owners. The public page and Admin queue have been checked.</span>
           </label>}
           <button type="submit" className={current.isOpen ? secondary : primary}
             disabled={Boolean(pending) || conflict === "season" || (!current.isOpen && (Boolean(openingReason) || !launchApproved))}
@@ -304,8 +305,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             {!current && <Field label="Season year" name="year" type="number" min={2026} max={2100} defaultValue={Math.max(2027, (overview.seasons[0]?.year ?? 2026) + 1)} required error={seasonError("year")} />}
             <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
             <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
+            <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date" defaultValue={current?.firstPracticeDate ?? ""}
+              error={seasonError("firstPracticeDate")} hint="Required before opening. A new athlete must be at least six on this date." />
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
-            <TextArea label="Eligible age groups (one per line)" name="ageGroups" maxLength={400} defaultValue={current?.ageGroups} required error={seasonError("ageGroups")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required error={seasonError("practiceLocation")} />
             <TextArea label="Practice schedule" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />
             <Field label="Fees" name="fees" maxLength={250} defaultValue={current?.fees} required error={seasonError("fees")} />
@@ -357,12 +359,8 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
       <Feedback notice={feedback.closeout} />
     </> : detail && draft ? <section className={panel}>
       <button type="button" className={secondary} disabled={Boolean(pending)} onClick={backToQueue}>Back to queue</button>
-      <h2 ref={heading} tabIndex={-1} className="scroll-mt-20 break-words text-xl font-black text-track-ink">{detail.athleteFirstName} · {detail.receiptReference}</h2>
-      <dl className="grid gap-3 break-words sm:grid-cols-2">{[
-        ["Guardian", detail.guardianName], ["Email", detail.guardianEmail], ["Phone", detail.guardianPhone], ["Age group", detail.ageGroup],
-        ["Practice availability", detail.availability], ["Experience", detail.experience], ["Previous club", detail.clubName ?? detail.priorClub],
-        ["Affiliations", detail.affiliations?.replaceAll(",", ", ")], ["Last meet", detail.lastMeetMonth]
-      ].filter(([, value]) => value).map(([name, value]) => <div key={name}><dt className="font-bold">{name}</dt><dd>{value}</dd></div>)}</dl>
+      <h2 ref={heading} tabIndex={-1} className="scroll-mt-20 break-words text-xl font-black text-track-ink">{applicationReviewName(detail)} · {detail.receiptReference}</h2>
+      <RegistrationReviewDetails detail={detail} />
       <form method="post" ref={reviewForm} onSubmit={saveReview}>
         <fieldset className="grid min-w-0 gap-4 sm:grid-cols-2" disabled={Boolean(pending) || conflict === "record"}>
           <legend className="sr-only">Review update</legend>
@@ -403,22 +401,18 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
         <li key={index} className="break-words text-sm"><time dateTime={entry.changedAtUtc}>{date(entry.changedAtUtc)}</time> · {entry.reviewer ?? entry.changedByUserId} · {statusLabel(entry.status, detail.kind)}{detail.kind === "Application" ? ` · ${transferLabels[entry.transfer]} · Photo consent: ${consentLabels[entry.photoConsent]}` : ""}{entry.competitionReady ? " · Competition-ready" : ""}</li>)}</ol> : <p className="text-sm">No staff changes yet.</p>}</div>
     </section> : <>
       <h2 ref={queueHeading} tabIndex={-1} className="scroll-mt-20 text-xl font-black text-track-ink">{view === "Application" ? "New Applications" : "Returning Check-Ins"}</h2>
-      <form method="post" className="grid min-w-0 gap-4 border border-slate-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-4"
+      <form method="post" className="grid min-w-0 gap-4 border border-slate-200 bg-white p-4 sm:grid-cols-2 xl:grid-cols-3"
         onSubmit={event => { event.preventDefault(); setFilters({ ...draftFilters, page: 1 }); retryQueue(); }}>
         <Field label="Search name, email, or reference" name="search" maxLength={120} value={draftFilters.search}
           onChange={event => setDraftFilters(previous => ({ ...previous, search: event.target.value }))} />
         <SelectField label="Status" name="queueStatus" value={draftFilters.status}
           options={[["", "All statuses"], ...statusOptions((Object.keys(statusLabels) as Status[]).filter(status => view === "Application" || status !== "PaperworkReceived"), view)]}
           onChange={event => setDraftFilters(previous => ({ ...previous, status: event.target.value }))} />
-        {view === "Application" && <>
-          <SelectField label="Age group" name="queueAgeGroup" value={draftFilters.ageGroup}
-            options={[["", "All ages"], ...(current?.ageGroups.split("\n").filter(Boolean).map(age => [age, age] as const) ?? [])]}
-            onChange={event => setDraftFilters(previous => ({ ...previous, ageGroup: event.target.value }))} />
+        {view === "Application" &&
           <SelectField label="Transfer review" name="queueTransfer" value={draftFilters.transfer}
             options={[["", "All transfers"], ...Object.entries(transferLabels)]}
-            onChange={event => setDraftFilters(previous => ({ ...previous, transfer: event.target.value }))} />
-        </>}
-        <div className="flex flex-wrap gap-2 sm:col-span-2 xl:col-span-4">
+            onChange={event => setDraftFilters(previous => ({ ...previous, transfer: event.target.value }))} />}
+        <div className="col-span-full flex flex-wrap gap-2">
           <button type="submit" className={primary} disabled={Boolean(pending) || queue.state === "loading"}>Apply filters</button>
           <button type="button" className={secondary} disabled={Boolean(pending) || (!hasFilters(draftFilters) && !hasFilters(filters))}
             onClick={() => { setDraftFilters(emptyFilterValues); setFilters(emptyFilters); retryQueue(); }}>Clear filters</button>
@@ -434,7 +428,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
         <p role="status" className="text-sm">{queue.data.count === 0 ? hasFilters(filters) ? "No matching records. Clear filters to see all records." : "No submissions yet." :
           `${queue.data.count} ${queue.data.count === 1 ? "record" : "records"}${hasFilters(filters) ? " · filters applied" : ""}`}</p>
         <ul className="space-y-2">{queue.data.items.map(item => <li key={item.id} className="flex flex-wrap items-center justify-between gap-3 border border-slate-200 bg-white p-4">
-          <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {statusLabel(item.status, view)}{item.ageGroup && ` · ${item.ageGroup}`}</p>
+          <div className="min-w-0 break-words"><strong>{item.athleteFirstName}</strong><p className="text-sm">{item.receiptReference} · {statusLabel(item.status, view)}</p>
             {item.transfer === "NeedsReview" && <p className="text-sm font-semibold">Needs transfer review</p>}</div>
           <button type="button" className={secondary} ref={node => { if (node) rowButtons.current.set(item.id, node); else rowButtons.current.delete(item.id); }}
             disabled={Boolean(pending)} onClick={() => void openDetail(item.id)}>{pending === item.id ? "Opening review…" : `Review ${item.athleteFirstName}`}</button>

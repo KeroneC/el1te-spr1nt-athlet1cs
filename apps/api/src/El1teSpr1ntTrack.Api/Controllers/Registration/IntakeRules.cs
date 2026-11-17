@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Text.Json;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
 using El1teSpr1ntTrack.Core.Entities;
 
@@ -8,18 +10,42 @@ namespace El1teSpr1ntTrack.Api.Controllers.Registration;
 public sealed record IntakeRequest(int SeasonYear, Guid RequestKey, IntakeKind Kind, string? Channel,
     string? GuardianEmail, string? AthleteFirstName, string? GuardianName,
     string? GuardianPhone, string? AgeGroup, PracticeAvailability? Availability, string? Experience,
-    PriorClubAnswer? PriorClub, string? ClubName, string[]? Affiliations, string? LastMeetMonth, string? Website);
+    PriorClubAnswer? PriorClub, string? ClubName, string[]? Affiliations, string? LastMeetMonth, string? Website)
+{
+    public int? ApplicationVersion { get; init; }
+    public string? AthleteLastName { get; init; }
+    public string? DateOfBirth { get; init; }
+    public string? SchoolGrade { get; init; }
+    public string? SchoolDistrict { get; init; }
+    public string? Gender { get; init; }
+    public string? StreetAddress { get; init; }
+    public string? AddressLine2 { get; init; }
+    public string? City { get; init; }
+    public string? State { get; init; }
+    public string? PostalCode { get; init; }
+    public string? SecondaryGuardianName { get; init; }
+    public string? SecondaryGuardianEmail { get; init; }
+    public string? SecondaryGuardianPhone { get; init; }
+    public string? EmergencyContactName { get; init; }
+    public string? EmergencyContactPhone { get; init; }
+    public string? EmergencyContactRelationship { get; init; }
+}
 
 public sealed record SeasonRequest(int Year, Guid? Revision, string? Title, DateOnly OpeningDate, DateOnly EndDate,
     string[]? AgeGroups, string? PracticeLocation, string? PracticeSchedule, string? Fees, string? ReplyWindow,
-    string? PaperworkEmail, string? PaperworkHandoff, string? ReviewOwner, string? RetentionOwner);
+    string? PaperworkEmail, string? PaperworkHandoff, string? ReviewOwner, string? RetentionOwner, string? FirstPracticeDate = null);
 
 public sealed record ReviewRequest(Guid Id, Guid Revision, IntakeStatus Status, TransferStatus Transfer,
     IntakePhotoConsent PhotoConsent, bool CompetitionReady);
 
 public static class IntakeRules
 {
+    public const int CurrentApplicationVersion = 2;
+    private const int MinimumAge = 6;
     private static readonly TimeZoneInfo Eastern = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
+    private static readonly HashSet<string> SchoolGrades = new(
+        new[] { "Pre-K", "K", "Not applicable" }.Concat(Enumerable.Range(1, 12).Select(i => i.ToString(CultureInfo.InvariantCulture))),
+        StringComparer.Ordinal);
     public static DateOnly LocalDate(DateTimeOffset now) => DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(now, Eastern).DateTime);
     public static string[] Ages(RegistrationSeason season) => season.AgeGroups.Split('\n', StringSplitOptions.RemoveEmptyEntries);
     public static IntakeChannel Channel(string? value) => value switch
@@ -27,10 +53,15 @@ public static class IntakeRules
         "facebook" => IntakeChannel.Facebook, "instagram" => IntakeChannel.Instagram, _ => IntakeChannel.Direct
     };
 
-    public static bool IsOpen(RegistrationSeason season, DateTimeOffset now) =>
-        season.IsOpen && season.PurgedAtUtc is null && LocalDate(now) >= season.OpeningDate && LocalDate(now) <= season.EndDate;
+    public static bool HasValidFirstPracticeDate(RegistrationSeason season) =>
+        season.FirstPracticeDate is { } date && date >= season.OpeningDate && date <= season.EndDate;
 
-    public static RegistrationSubmission Normalize(IntakeRequest request, RegistrationSeason season, DateTimeOffset now, string? originalAgeGroup = null)
+    public static bool IsOpen(RegistrationSeason season, DateTimeOffset now) =>
+        season.IsOpen && season.PurgedAtUtc is null && HasValidFirstPracticeDate(season)
+        && LocalDate(now) >= season.OpeningDate && LocalDate(now) <= season.EndDate;
+
+    public static RegistrationSubmission Normalize(IntakeRequest request, RegistrationSeason season, DateTimeOffset now,
+        string? originalAgeGroup = null, bool enforceCurrentEligibility = true)
     {
         var errors = new Dictionary<string, string[]>();
         void Error(string field, string message) => errors[field] = [message];
@@ -40,6 +71,15 @@ public static class IntakeRules
             if ((required && string.IsNullOrEmpty(value)) || value?.Length > max || value?.Any(char.IsControl) == true)
                 Error(field, $"Enter a value of up to {max} characters.");
             return string.IsNullOrEmpty(value) ? null : value;
+        }
+
+        string? Phone(string? value, string field, bool required = false)
+        {
+            var phone = Value(value, field, 32, required);
+            if ((phone is null && required) || (phone is not null &&
+                (!phone.All(c => char.IsAsciiDigit(c) || " +().-".Contains(c)) || phone.Count(char.IsAsciiDigit) is < 7 or > 15)))
+                Error(field, required ? "Enter a valid phone number." : "Enter a valid phone number or leave it blank.");
+            return phone;
         }
 
         if (request.RequestKey == Guid.Empty || !Enum.IsDefined(request.Kind) || !string.IsNullOrEmpty(request.Website))
@@ -55,14 +95,52 @@ public static class IntakeRules
         };
         if (request.Kind == IntakeKind.Application)
         {
+            var fullApplication = request.ApplicationVersion == CurrentApplicationVersion;
             submission.GuardianName = Value(request.GuardianName, "guardianName", 100, true);
-            submission.GuardianPhone = Value(request.GuardianPhone, "guardianPhone", 32);
-            if (submission.GuardianPhone is { } phone && (!phone.All(c => char.IsAsciiDigit(c) || " +().-".Contains(c)) ||
-                phone.Count(char.IsAsciiDigit) is < 7 or > 15))
-                Error("guardianPhone", "Enter a valid phone number or leave it blank.");
-            submission.AgeGroup = Value(request.AgeGroup, "ageGroup", 40, true);
-            if (submission.AgeGroup != originalAgeGroup && !Ages(season).Contains(submission.AgeGroup, StringComparer.Ordinal))
-                Error("ageGroup", "Choose an eligible age group.");
+            submission.GuardianPhone = Phone(request.GuardianPhone, "guardianPhone", fullApplication);
+            if (fullApplication)
+            {
+                submission.ApplicationVersion = CurrentApplicationVersion;
+                submission.AthleteLastName = Value(request.AthleteLastName, "athleteLastName", 80, true);
+                if (!DateOnly.TryParseExact(request.DateOfBirth?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                        DateTimeStyles.None, out var birthDate) || (enforceCurrentEligibility && birthDate > LocalDate(now)))
+                {
+                    Error("dateOfBirth", "Enter a valid date of birth that is not in the future.");
+                }
+                else
+                {
+                    submission.DateOfBirth = birthDate;
+                    if (enforceCurrentEligibility && HasValidFirstPracticeDate(season) &&
+                        birthDate.AddYears(MinimumAge) > season.FirstPracticeDate)
+                        Error("dateOfBirth", "Athletes must be at least six on the first practice date.");
+                }
+                submission.SchoolGrade = Value(request.SchoolGrade, "schoolGrade", 20, true);
+                if (submission.SchoolGrade is null || !SchoolGrades.Contains(submission.SchoolGrade))
+                    Error("schoolGrade", "Choose a school grade or Not applicable.");
+                submission.SchoolDistrict = Value(request.SchoolDistrict, "schoolDistrict", 120, true);
+                submission.Gender = Value(request.Gender, "gender", 25);
+                if (submission.Gender is not (null or "Male" or "Female" or "Prefer not to answer"))
+                    Error("gender", "Choose one of the available options or leave this blank.");
+                submission.StreetAddress = Value(request.StreetAddress, "streetAddress", 160, true);
+                submission.AddressLine2 = Value(request.AddressLine2, "addressLine2", 120);
+                submission.City = Value(request.City, "city", 80, true);
+                submission.State = Value(request.State, "state", 60, true);
+                submission.PostalCode = Value(request.PostalCode, "postalCode", 20, true);
+                submission.SecondaryGuardianName = Value(request.SecondaryGuardianName, "secondaryGuardianName", 100);
+                submission.SecondaryGuardianEmail = Value(request.SecondaryGuardianEmail, "secondaryGuardianEmail", 254)?.ToLowerInvariant();
+                if (submission.SecondaryGuardianEmail is { } secondaryEmail && !new EmailAddressAttribute().IsValid(secondaryEmail))
+                    Error("secondaryGuardianEmail", "Enter a valid email address or leave it blank.");
+                submission.SecondaryGuardianPhone = Phone(request.SecondaryGuardianPhone, "secondaryGuardianPhone");
+                submission.EmergencyContactName = Value(request.EmergencyContactName, "emergencyContactName", 100, true);
+                submission.EmergencyContactPhone = Phone(request.EmergencyContactPhone, "emergencyContactPhone", true);
+                submission.EmergencyContactRelationship = Value(request.EmergencyContactRelationship, "emergencyContactRelationship", 80, true);
+            }
+            else
+            {
+                submission.AgeGroup = Value(request.AgeGroup, "ageGroup", 40, true);
+                if (submission.AgeGroup != originalAgeGroup && !Ages(season).Contains(submission.AgeGroup, StringComparer.Ordinal))
+                    Error("ageGroup", "Choose an eligible age group.");
+            }
             if (request.Availability is null || !Enum.IsDefined(request.Availability.Value))
                 Error("availability", "Choose a practice availability answer.");
             submission.Availability = request.Availability;
@@ -91,6 +169,31 @@ public static class IntakeRules
         return submission;
     }
 
+    public static string RequestDigest(RegistrationSubmission submission)
+    {
+        // Keep the legacy JSON names and order: old application and returning receipts must remain replayable.
+        var legacy = new
+        {
+            submission.RequestKey, submission.Kind, submission.GuardianEmail, submission.GuardianName,
+            submission.GuardianPhone, submission.AthleteFirstName, submission.AgeGroup, submission.Availability,
+            submission.Experience, submission.PriorClub, submission.ClubName, submission.Affiliations, submission.LastMeetMonth
+        };
+        var payload = submission.ApplicationVersion == CurrentApplicationVersion
+            ? JsonSerializer.SerializeToUtf8Bytes(new
+            {
+                legacy, submission.ApplicationVersion, submission.AthleteLastName, submission.DateOfBirth, submission.SchoolGrade,
+                submission.SchoolDistrict, submission.Gender, submission.StreetAddress, submission.AddressLine2, submission.City,
+                submission.State, submission.PostalCode, submission.SecondaryGuardianName, submission.SecondaryGuardianEmail,
+                submission.SecondaryGuardianPhone, submission.EmergencyContactName, submission.EmergencyContactPhone,
+                submission.EmergencyContactRelationship
+            })
+            : JsonSerializer.SerializeToUtf8Bytes(legacy);
+        return Convert.ToHexString(SHA256.HashData(payload));
+    }
+
+    public static bool IsCurrentApplication(IntakeRequest request) =>
+        request.Kind != IntakeKind.Application || request.ApplicationVersion == CurrentApplicationVersion;
+
     public static void UpdateSeason(RegistrationSeason season, SeasonRequest request)
     {
         var errors = new Dictionary<string, string[]>();
@@ -104,10 +207,16 @@ public static class IntakeRules
         if (request.Year is < 2026 or > 2100) errors["year"] = ["Choose a valid season year."];
         if (request.OpeningDate == default || request.EndDate <= request.OpeningDate || request.EndDate.Year != request.Year)
             errors["endDate"] = ["The season end must follow opening and fall within the season year."];
-        var ages = (request.AgeGroups ?? []).Select(x => x?.Trim() ?? "").ToArray();
-        if (ages.Length is < 1 or > 10 || ages.Any(x => x.Length is < 1 or > 40 || x.Any(char.IsControl)) ||
-            ages.Distinct(StringComparer.OrdinalIgnoreCase).Count() != ages.Length || string.Join('\n', ages).Length > 400)
-            errors["ageGroups"] = ["Enter 1–10 distinct eligible age groups, one per line."];
+        // A draft may be saved without a date, but public intake cannot open until a valid date is set.
+        DateOnly? firstPracticeDate = null;
+        if (!string.IsNullOrWhiteSpace(request.FirstPracticeDate))
+        {
+            if (!DateOnly.TryParseExact(request.FirstPracticeDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
+                    DateTimeStyles.None, out var practiceDate) || practiceDate < request.OpeningDate || practiceDate > request.EndDate)
+                errors["firstPracticeDate"] = ["Choose a first practice date between registration opening and season end."];
+            else
+                firstPracticeDate = practiceDate;
+        }
         season.Title = Check(request.Title, 120, "title");
         season.PracticeLocation = Check(request.PracticeLocation, 250, "practiceLocation");
         season.PracticeSchedule = Check(request.PracticeSchedule, 500, "practiceSchedule");
@@ -120,9 +229,10 @@ public static class IntakeRules
         season.ReviewOwner = Check(request.ReviewOwner, 120, "reviewOwner");
         season.RetentionOwner = Check(request.RetentionOwner, 120, "retentionOwner");
         ThrowErrors(errors);
-        season.AgeGroups = string.Join('\n', ages);
+        // Legacy clients can send age groups; do not erase earlier seasons' historical values.
         season.OpeningDate = request.OpeningDate;
         season.EndDate = request.EndDate;
+        season.FirstPracticeDate = firstPracticeDate;
         season.Revision = Guid.NewGuid();
     }
 

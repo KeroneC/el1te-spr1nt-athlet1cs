@@ -9,7 +9,7 @@ import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
 import { registrationChannel, upcomingRegistrationDate, type PublicRegistrationSeason } from "@/lib/registration";
 
 const season: PublicRegistrationSeason = {
-  year: 2027, title: "Test season", openingDate: "2026-11-27", ageGroups: ["12U"], isOpen: true,
+  year: 2027, title: "Test season", openingDate: "2026-11-27", firstPracticeDate: "2026-12-05", isOpen: true,
   practiceLocation: "Track", practiceSchedule: "Saturdays", fees: "None for test", replyWindow: "Within one week."
 };
 const response = (status: number, body: object) => new Response(JSON.stringify(body), { status });
@@ -29,18 +29,29 @@ describe("registration intake", () => {
     expect(returning).not.toContain('name="guardianPhone"');
     expect(returning).not.toContain('name="ageGroup"');
     expect(returning).not.toContain('type="checkbox"');
+    expect(returning).not.toContain('name="dateOfBirth"');
+    expect(returning).not.toContain('name="emergencyContactPhone"');
+    expect(returning).not.toContain('name="schoolDistrict"');
     expect(application).toContain("another track and field club");
-    expect(application).toContain("12U");
+    expect(application).toContain("Athlete details");
+    expect(application).toContain("Guardian and household");
+    expect(application).toContain("Emergency contact");
+    expect(application).toContain("Track background");
+    for (const field of ["athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict",
+      "streetAddress", "city", "state", "postalCode", "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship"])
+      expect(application).toContain(`name="${field}"`);
+    expect(application).not.toContain('name="ageGroup"');
+    expect(application).not.toContain('name="athleteEmail"');
     expect(application).not.toContain('type="file"');
   });
 
   it("starts with two direct links and no active form until a path is selected", () => {
     const markup = renderToStaticMarkup(
-      <RegistrationPaths season={season} channel="direct" aside={null}><p>Season information</p></RegistrationPaths>
+      <RegistrationPaths season={season} channel="direct" intro={<h1>Find your starting lane</h1>} />
     );
     for (const path of ["apply", "returning"]) {
       expect(markup).toContain(`href="#${path}"`);
-      expect(markup).toContain(`id="${path}" class="registration-path" hidden=""`);
+      expect(markup).toMatch(new RegExp(`<section[^>]*id="${path}"[^>]*hidden=""`));
     }
   });
 
@@ -68,7 +79,8 @@ describe("registration intake", () => {
   });
 
   it("bounds request size, rejects cross-site forms and exposes no lookup action", async () => {
-    expect((await call("applications", { big: "x".repeat(4096) })).status).toBe(413);
+    expect((await call("applications", { big: "x".repeat(8192) })).status).toBe(413);
+    expect((await call("visit", { big: "x".repeat(512) })).status).toBe(413);
     expect((await call("applications", {}, "cross-site")).status).toBe(400);
     expect((await call("lookup", {})).status).toBe(404);
     expect(upstream).not.toHaveBeenCalled();
@@ -77,12 +89,33 @@ describe("registration intake", () => {
   it("keeps closed-intake and rate-limit errors actionable", async () => {
     upstream.mockResolvedValueOnce(response(409, { code: "intake_closed" }));
     upstream.mockResolvedValueOnce(response(409, { code: "retry_conflict" }));
+    upstream.mockResolvedValueOnce(response(409, { code: "form_outdated", detail: "private upstream detail" }));
     upstream.mockResolvedValueOnce(response(429, {}));
     const result = await call("applications", {});
     expect(result.status).toBe(409);
     expect(await result.json()).toMatchObject({ code: "intake_closed", message: expect.stringContaining("not open") });
     expect(await (await call("applications", {})).json()).toMatchObject({ code: "retry_conflict" });
+    const stale = await (await call("applications", {})).json();
+    expect(stale).toMatchObject({ code: "form_outdated", message: expect.stringMatching(/refresh|reload/i) });
+    expect(JSON.stringify(stale)).not.toContain("private upstream detail");
     expect((await call("applications", {})).status).toBe(429);
+  });
+
+  it("permits named application field errors but never echoes unexpected properties", async () => {
+    upstream.mockResolvedValue(response(400, {
+      errors: {
+        dateOfBirth: ["Enter a valid date of birth."],
+        emergencyContactPhone: ["Enter a valid phone number."],
+        "private.test": ["Do not expose"]
+      },
+      title: "Private title"
+    }));
+    const result = await call("applications", { applicationVersion: 2, requestKey: "retry-key", channel: "instagram" });
+    expect(result.status).toBe(400);
+    expect(await result.json()).toEqual({ message: "Check your answers and try again.", errors: {
+      dateOfBirth: ["Enter a valid date of birth."],
+      emergencyContactPhone: ["Enter a valid phone number."]
+    } });
   });
 
   it("restricts campaign labels and keeps search and detail off URL-based proxy routes", () => {

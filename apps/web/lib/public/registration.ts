@@ -9,15 +9,17 @@ function isSeason(value: unknown): value is PublicRegistrationSeason {
   if (!value || typeof value !== "object") return false;
   const data = value as Record<string, unknown>;
   const nullableText = (field: string) => typeof data[field] === "string" || data[field] === null;
+  const isDate = (field: unknown): field is string => typeof field === "string"
+    && /^\d{4}-\d{2}-\d{2}$/.test(field)
+    && Number.isFinite(Date.parse(field))
+    && new Date(field).toISOString().slice(0, 10) === field;
   const copy = ["title", "practiceLocation", "practiceSchedule", "fees", "replyWindow"];
   return Number.isSafeInteger(data.year) &&
     typeof data.isOpen === "boolean" &&
-    typeof data.openingDate === "string" &&
-    /^\d{4}-\d{2}-\d{2}$/.test(data.openingDate) &&
-    Number.isFinite(Date.parse(data.openingDate)) &&
-    new Date(data.openingDate).toISOString().slice(0, 10) === data.openingDate &&
-    Array.isArray(data.ageGroups) && data.ageGroups.every(group => typeof group === "string") &&
-    copy.every(nullableText) && (!data.isOpen || (data.ageGroups.length > 0 && copy.every(field => typeof data[field] === "string")));
+    isDate(data.openingDate) &&
+    (data.firstPracticeDate === null || isDate(data.firstPracticeDate)) &&
+    copy.every(nullableText) &&
+    (!data.isOpen || (isDate(data.firstPracticeDate) && copy.every(field => typeof data[field] === "string")));
 }
 
 export async function getRegistrationSeason(): Promise<RegistrationSeasonResult> {

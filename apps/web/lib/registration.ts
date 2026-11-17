@@ -4,7 +4,7 @@ export const registrationChannel = (value: unknown): RegistrationChannel =>
 
 export type PublicRegistrationSeason = {
   year: number; title: string | null; openingDate: string; practiceLocation: string | null; practiceSchedule: string | null;
-  fees: string | null; replyWindow: string | null; ageGroups: string[]; isOpen: boolean;
+  fees: string | null; replyWindow: string | null; firstPracticeDate: string | null; isOpen: boolean;
 };
 
 export const registrationOpeningDate = "2026-11-27";

@@ -93,6 +93,8 @@ test("families and staff can complete both registration paths through the browse
   const year = seasonYear(testInfo.retry);
   const openingDate = String(currentYear - 1) + "-01-01";
   const futureOpening = String(year) + "-01-01";
+  const firstPracticeDate = String(currentYear) + "-12-15";
+  const eligibleBirthDate = String(currentYear - 6) + "-12-15";
   const endDate = String(year) + "-12-31";
   const title = seasonTitle(year);
   const publicPage = await family.newPage();
@@ -120,7 +122,6 @@ test("families and staff can complete both registration paths through the browse
         ["Season title", title],
         ["Opening date (Eastern)", futureOpening],
         ["Season end date (Eastern)", futureOpening],
-        ["Eligible age groups (one per line)", "12U\n14U"],
         ["Practice location", "Test track"],
         ["Practice schedule", "Saturday mornings"],
         ["Fees", "No fees for this test"],
@@ -160,11 +161,22 @@ test("families and staff can complete both registration paths through the browse
 
       const open = page.getByRole("button", { name: "Open intake", exact: true });
       await expect(open).toBeDisabled();
+      await expect(page.getByText(/first practice date/i).filter({ hasText: /before opening|to open/ }).first()).toBeVisible();
+      await page.getByLabel("First practice date (Eastern)", { exact: true }).fill(firstPracticeDate);
+      const practiceSaved = page.waitForResponse(response => response.url().endsWith(adminPath + "/season") && response.request().method() === "PUT");
+      await save.click();
+      expect((await practiceSaved).ok()).toBe(true);
+      await expect(save).toBeEnabled();
       await page.getByRole("checkbox", { name: /club approved season details/i }).check();
       await open.click();
       await expect(page.getByRole("button", { name: "Close intake", exact: true })).toBeVisible();
       await expect(save).toBeDisabled();
       expect((await loadSeason(page.request, year))?.isOpen).toBe(true);
+      const obsolete = await publicPage.request.post(submitPath, { data: {
+        seasonYear: year, requestKey: crypto.randomUUID(), kind: "Application", channel: "direct"
+      } });
+      expect(obsolete.status()).toBe(409);
+      expect(await obsolete.json()).toMatchObject({ code: "form_outdated" });
     });
 
     let payload: Record<string, unknown> | undefined;
@@ -172,9 +184,13 @@ test("families and staff can complete both registration paths through the browse
     await test.step("families can switch paths, recover from validation and retry the exact save", async () => {
       await publicPage.goto("/registration?src=instagram");
       await expect(publicPage.locator('[data-registration-hub="true"]')).toBeVisible();
+      await expect(publicPage.getByRole("heading", { name: "Find your starting lane" })).toBeVisible();
       await expect(publicPage.getByRole("heading", { name: "Applications are open" })).toBeVisible();
+      await expect(publicPage.getByText("Ages 6 and up", { exact: true }).first()).toBeVisible();
       await expect(publicPage.locator("#apply")).toBeHidden();
       await expect(publicPage.locator("#returning")).toBeHidden();
+      await checkLayout(publicPage, publicPage.getByRole("link", { name: "Apply for a spot", exact: true }));
+      await checkA11y(publicPage, "main");
       const application = await choosePath(publicPage, "apply");
       const form = application.locator("form");
       await form.getByLabel("Parent or guardian name").fill("Synthetic Guardian");
@@ -187,10 +203,21 @@ test("families and staff can complete both registration paths through the browse
       await expect(returning).toBeHidden();
 
       await form.getByLabel("Parent or guardian email").fill(guardianEmail);
-      const phone = form.getByLabel("Parent or guardian phone (optional)");
+      const phone = form.getByLabel("Parent or guardian phone", { exact: true });
       await phone.fill("123");
-      await form.getByLabel("Athlete’s first name").fill("Jordan");
-      await form.getByLabel("Age group").selectOption("12U");
+      await form.getByLabel("Athlete’s legal first name").fill("Jordan");
+      await form.getByLabel("Athlete’s legal last name").fill("SyntheticSurname");
+      await form.getByLabel("Date of birth", { exact: true }).fill(eligibleBirthDate);
+      await form.getByLabel("Current school grade").selectOption("Not applicable");
+      await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
+      await form.getByLabel("Street address", { exact: true }).fill("123 Synthetic Test Lane");
+      await form.getByLabel("City", { exact: true }).fill("Synthetic City");
+      await form.getByLabel("State", { exact: true }).selectOption("PA");
+      await form.getByLabel("ZIP code", { exact: true }).fill("15201");
+      await form.getByLabel("Emergency contact name", { exact: true }).fill("Synthetic Emergency Contact");
+      await form.getByLabel("Emergency contact phone", { exact: true }).fill("412-555-0102");
+      await form.getByLabel("Relationship to athlete", { exact: true }).fill("Family friend");
+      await expect(form.getByLabel("Age group", { exact: true })).toHaveCount(0);
       await form.getByLabel("Can your athlete attend the listed practices?").selectOption("Yes");
       await form.getByLabel("Has your athlete trained or competed with another track and field club?").selectOption("Yes");
       await form.getByLabel("Current or most recent club").fill("Synthetic Track");
@@ -214,7 +241,14 @@ test("families and staff can complete both registration paths through the browse
       await expect(phone).toHaveAttribute("aria-invalid", "true");
       await expect(phone).toHaveAccessibleDescription(/enter a valid phone number/i);
       await checkLayout(publicPage, form.getByRole("alert"));
-      await phone.fill("");
+      await phone.fill("412-555-0101");
+      // The day after the cutoff birthday is too young; the exact sixth birthday qualifies.
+      const dob = form.getByLabel("Date of birth", { exact: true });
+      await dob.fill(String(currentYear - 6) + "-12-16");
+      await submit.click();
+      await expect(dob).toHaveAttribute("aria-invalid", "true");
+      await expect(dob).toBeFocused();
+      await dob.fill(eligibleBirthDate);
 
       // Commit the first attempt normally, but drop its response to simulate a
       // network failure after the SQL save. Only the identical retry may succeed.
@@ -244,21 +278,26 @@ test("families and staff can complete both registration paths through the browse
       expect(submissionRequests).toHaveLength(2);
       expect(submissionRequests[0]).toEqual(submissionRequests[1]);
       payload = submissionRequests[0] as Record<string, unknown>;
+      expect(payload).toMatchObject({ applicationVersion: 2, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate });
+      expect(payload).not.toHaveProperty("ageGroup");
       appReference = await application.locator("strong").innerText();
       expect(appReference).toMatch(referencePattern);
       expect(publicPage.url()).not.toContain(appReference);
       expect(publicPage.url()).not.toContain(guardianEmail);
       await expect(application.getByText(/no automatic confirmation email is sent/i)).toBeVisible();
+      await expect(application.getByText("SyntheticSurname", { exact: true })).toHaveCount(0);
+      await expect(application.getByText("Synthetic Emergency Contact", { exact: true })).toHaveCount(0);
       await expect(application.getByText(/wait for an offer before sending completed paperwork/i)).toBeVisible();
       await application.getByRole("button", { name: "Copy reference" }).click();
       await expect(application.getByText("Reference copied.", { exact: true })).toBeVisible();
       await checkLayout(publicPage, application.getByRole("heading", { name: "Application received" }));
       await application.getByRole("button", { name: "Apply for another athlete" }).click();
-      await expect(form.getByLabel("Parent or guardian name")).toBeFocused();
+      await expect(form.getByLabel("Athlete’s legal first name")).toBeFocused();
 
       await choosePath(publicPage, "returning");
       await expect(returning.getByLabel("Parent or guardian email")).toHaveValue(guardianEmail);
       await expect(returning.getByLabel("Parent or guardian name")).toHaveCount(0);
+      await expect(returning.getByLabel("Date of birth", { exact: true })).toHaveCount(0);
       await fillReturning(returning, "Morgan");
       await checkLayout(publicPage, returning.locator("form"));
       await checkA11y(publicPage, "#returning");
@@ -326,7 +365,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(search).toHaveValue("");
       await expect(clearFilters).toBeDisabled();
       await search.fill("PageTest");
-      await page.getByLabel("Age group", { exact: true }).selectOption("12U");
+      await expect(page.getByLabel("Age group", { exact: true })).toHaveCount(0);
       await page.getByLabel("Status", { exact: true }).selectOption("New");
       await page.getByLabel("Transfer review", { exact: true }).selectOption("NotNeeded");
       await applyFilters.click();
@@ -339,7 +378,6 @@ test("families and staff can complete both registration paths through the browse
       await secondPageRow.click();
       await page.getByRole("button", { name: "Back to queue" }).click();
       await expect(search).toHaveValue("PageTest");
-      await expect(page.getByLabel("Age group", { exact: true })).toHaveValue("12U");
       await expect(page.getByLabel("Status", { exact: true })).toHaveValue("New");
       await expect(page.getByLabel("Transfer review", { exact: true })).toHaveValue("NotNeeded");
       await expect(pagination.getByText("Page 2 of 2", { exact: true })).toBeVisible();
@@ -357,6 +395,8 @@ test("families and staff can complete both registration paths through the browse
       const photoConsent = page.getByLabel("Optional photo consent", { exact: true });
       const ready = page.getByRole("checkbox", { name: "Competition-ready" });
       await expect(page.getByRole("heading", { name: new RegExp("Jordan.*" + appReference) })).toBeFocused();
+      await expect(page.getByText("Synthetic School District", { exact: true })).toBeVisible();
+      await expect(page.getByText("Synthetic Emergency Contact", { exact: true })).toBeVisible();
       await expect(ready).toBeDisabled();
       await checkLayout(page, page.getByRole("button", { name: "Save review" }));
       await checkA11y(page, "main");
@@ -368,9 +408,17 @@ test("families and staff can complete both registration paths through the browse
       expect(queueResponse.ok()).toBe(true);
       const queue = await queueResponse.json();
       expect(queue.count).toBe(1);
+      for (const key of ["athleteLastName", "dateOfBirth", "schoolDistrict", "streetAddress", "emergencyContactName"])
+        expect(queue.items[0]).not.toHaveProperty(key);
       const id = queue.items[0].id as string;
+      expect((await publicPage.request.post(adminPath + "/detail", { data: { id } })).status()).toBe(401);
       const detail = async () => (await page.request.post(adminPath + "/detail", { data: { id } })).json();
       const otherReviewer = await detail();
+      expect(otherReviewer).toMatchObject({
+        athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate,
+        schoolDistrict: "Synthetic School District", streetAddress: "123 Synthetic Test Lane",
+        emergencyContactName: "Synthetic Emergency Contact"
+      });
       expect((await page.request.put(adminPath + "/review", { data: {
         id, revision: otherReviewer.revision, status: "Offered", transfer: "NeedsReview", photoConsent: "Granted", competitionReady: false
       } })).ok()).toBe(true);
@@ -467,4 +515,8 @@ test("blank registration downloads stay available and individually named", async
   await page.goto("/faqs");
   await page.getByText("How do I register my child?", { exact: true }).click();
   await expect(page.getByText(/returning athletes.*no paperwork is required/i)).toBeVisible();
+  await page.getByText("What ages can join?", { exact: true }).click();
+  await expect(page.getByText(/athletes must turn six by the first practice/i)).toBeVisible();
+  await page.goto("/privacy#registration-privacy");
+  await expect(page.getByRole("heading", { name: "Athlete applications and check-ins" })).toBeVisible();
 });
