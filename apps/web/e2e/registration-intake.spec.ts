@@ -96,7 +96,7 @@ test("families and staff can complete both registration paths through the browse
   const openingDate = String(currentYear - 1) + "-01-01";
   const futureOpening = String(year) + "-01-01";
   const firstPracticeDate = String(currentYear) + "-12-15";
-  const eligibleBirthDate = String(currentYear - 6) + "-12-15";
+  const eligibleBirthDate = String(currentYear - 7) + "-12-15";
   const endDate = String(year) + "-12-31";
   const title = seasonTitle(year);
   const publicPage = await family.newPage();
@@ -188,7 +188,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(publicPage.locator('[data-registration-hub="true"]')).toBeVisible();
       await expect(publicPage.getByRole("heading", { name: "Find your starting lane" })).toBeVisible();
       await expect(publicPage.getByRole("heading", { name: "Applications are open" })).toBeVisible();
-      await expect(publicPage.getByText("Ages 6 and up", { exact: true }).first()).toBeVisible();
+      await expect(publicPage.getByText("Ages 7–18", { exact: true }).first()).toBeVisible();
       await expect(publicPage.locator("#apply")).toBeHidden();
       await expect(publicPage.locator("#returning")).toBeHidden();
       await checkLayout(publicPage, publicPage.getByRole("link", { name: "Apply for a spot", exact: true }));
@@ -211,7 +211,7 @@ test("families and staff can complete both registration paths through the browse
       await form.getByLabel("Current school grade").selectOption("Not applicable");
       await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
       const dob = form.getByLabel("Date of birth", { exact: true });
-      await dob.fill(String(currentYear - 6) + "-12-16");
+      await dob.fill(String(currentYear - 7) + "-12-16");
       await next.click();
       await expect(dob).toHaveAttribute("aria-invalid", "true");
       await expect(dob).toBeFocused();
@@ -237,8 +237,8 @@ test("families and staff can complete both registration paths through the browse
       await form.getByLabel("Relationship to athlete", { exact: true }).fill("Family friend");
       await next.click();
       await expect(form.getByLabel("Age group", { exact: true })).toHaveCount(0);
-      await form.getByLabel("Can your athlete attend the listed practices?").selectOption("Yes");
-      await form.getByLabel("Has your athlete trained or competed with another track and field club?").selectOption("Yes");
+      await form.getByLabel("Can your athlete attend practices?").selectOption("Yes");
+      await form.getByLabel("Previously trained or competed with another track club?").selectOption("Yes");
       await form.getByLabel("Current or most recent club").fill("Synthetic Track");
       const aau = form.getByRole("checkbox", { name: "AAU", exact: true });
       const usatf = form.getByRole("checkbox", { name: "USATF", exact: true });
@@ -523,7 +523,7 @@ test("blank registration downloads stay available and individually named", async
   await page.getByText("How do I register my child?", { exact: true }).click();
   await expect(page.getByText(/returning athletes.*no paperwork is required/i)).toBeVisible();
   await page.getByText("What ages can join?", { exact: true }).click();
-  await expect(page.getByText(/athletes must turn six by the first practice/i)).toBeVisible();
+  await expect(page.getByText(/athletes must be ages 7–18 on the first practice date/i)).toBeVisible();
   await page.goto("/privacy#registration-privacy");
   await expect(page.getByRole("heading", { name: "Athlete applications and check-ins" })).toBeVisible();
 });

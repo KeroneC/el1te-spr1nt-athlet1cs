@@ -41,7 +41,8 @@ public sealed record ReviewRequest(Guid Id, Guid Revision, IntakeStatus Status, 
 public static class IntakeRules
 {
     public const int CurrentApplicationVersion = 2;
-    private const int MinimumAge = 6;
+    private const int MinimumAge = 7;
+    private const int MaximumAge = 18;
     private static readonly TimeZoneInfo Eastern = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
     private static readonly HashSet<string> SchoolGrades = new(
         new[] { "Pre-K", "K", "Not applicable" }.Concat(Enumerable.Range(1, 12).Select(i => i.ToString(CultureInfo.InvariantCulture))),
@@ -111,8 +112,9 @@ public static class IntakeRules
                 {
                     submission.DateOfBirth = birthDate;
                     if (enforceCurrentEligibility && HasValidFirstPracticeDate(season) &&
-                        birthDate.AddYears(MinimumAge) > season.FirstPracticeDate)
-                        Error("dateOfBirth", "Athletes must be at least six on the first practice date.");
+                        (birthDate.AddYears(MinimumAge) > season.FirstPracticeDate ||
+                         birthDate.AddYears(MaximumAge + 1) <= season.FirstPracticeDate))
+                        Error("dateOfBirth", $"Athletes must be ages {MinimumAge}–{MaximumAge} on the first practice date.");
                 }
                 submission.SchoolGrade = Value(request.SchoolGrade, "schoolGrade", 20, true);
                 if (submission.SchoolGrade is null || !SchoolGrades.Contains(submission.SchoolGrade))

@@ -15,7 +15,7 @@ function informationalOnly(html: string) {
   for (const route of ["/faqs", "/contact", "/forms"])
     expect(html).toContain(`href="${route}"`);
   expect(html).not.toContain("Season at a glance");
-  expect(html).toContain("Ages 6 and up");
+  expect(html).toContain("Ages 7–18");
 }
 
 describe("starting line when applications cannot be submitted", () => {

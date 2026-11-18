@@ -1,10 +1,12 @@
+import { registrationAgeLabel, registrationMaximumAge, registrationMinimumAge } from "@/lib/registration";
+
 // Pure presentation/validation helpers. Drafts belong to the mounted form only.
 export const applicationSteps = [
-  { slug: "", label: "Athlete", title: "Who’s your athlete?", note: "Start with their legal name and school details." },
+  { slug: "", label: "Athlete", title: "Who’s your athlete?", note: "Have their school information, home address, and an emergency contact handy." },
   { slug: "guardian", label: "Guardian", title: "How can we reach you?", note: "Tell us which parent or guardian we should contact about this application." },
   { slug: "household", label: "Household", title: "Where does your athlete live?", note: "Use the athlete’s current household address." },
   { slug: "emergency", label: "Emergency contact", title: "Who should we call in an emergency?", note: "Ask this person’s permission before sharing their details." },
-  { slug: "track", label: "Track background", title: "Tell us about their time on the track.", note: "Let us know about practice availability and any previous club experience." },
+  { slug: "track", label: "Track background", title: "Track background", note: "Tell us about practice availability and any previous club." },
   { slug: "review", label: "Review", title: "Ready to send?", note: "Check the details below. Nothing has been submitted yet." }
 ] as const;
 
@@ -42,11 +44,15 @@ function validDob(value: string, practice: string | null, today: string) {
       date.toISOString().slice(0, 10) !== value || value > today)
     return "Enter a valid date of birth that is not in the future.";
   // Match DateOnly.AddYears: a leap-day birthday falls on Feb 28 in a non-leap year.
-  const month = date.getUTCMonth();
-  date.setUTCFullYear(date.getUTCFullYear() + 6);
-  if (date.getUTCMonth() !== month) date.setUTCDate(0);
-  if (practice && date.toISOString().slice(0, 10) > practice)
-    return "Athletes must be at least six on the first practice date.";
+  const birthday = (years: number) => {
+    const anniversary = new Date(date);
+    const month = anniversary.getUTCMonth();
+    anniversary.setUTCFullYear(anniversary.getUTCFullYear() + years);
+    if (anniversary.getUTCMonth() !== month) anniversary.setUTCDate(0);
+    return anniversary.toISOString().slice(0, 10);
+  };
+  if (practice && (birthday(registrationMinimumAge) > practice || birthday(registrationMaximumAge + 1) <= practice))
+    return `Athletes must be ${registrationAgeLabel.toLowerCase()} on the first practice date.`;
 }
 
 export function validateStep(step: number | "returning", draft: Draft, practice: string | null, today: string): Errors {

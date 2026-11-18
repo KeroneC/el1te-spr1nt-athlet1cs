@@ -22,7 +22,7 @@
   width: 1.7rem; height: .64rem; transform: skewX(-25deg);
   background: repeating-linear-gradient(to right, currentColor 0 3px, transparent 3px 7px);
 }
-.mast h1, .closedCopy h2, .returnIntro h1 {
+.mast h1, .closedCopy h2 {
   margin: 0; color: #201d1b; font-weight: 760; line-height: 1.06;
   letter-spacing: -.035em; text-transform: none; text-wrap: balance;
 }
@@ -109,10 +109,6 @@
 .pathTools { width: min(100%,66rem); align-items: center; padding-block: .45rem; border-bottom: 1px solid var(--line, #dedede); }
 .pathTools a { color: #782024; gap: .5rem; font-size: .88rem; }
 .pathTools > span { color: #762328; font: 750 .7rem/1.25 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
-.returnIntro { width: min(100%,43rem); margin: clamp(1.5rem,4vw,3rem) auto 1.3rem; }
-.returnIntro h1 { font-size: clamp(2.1rem,4.2vw,4rem); margin-block: .55rem; scroll-margin-block-start: 7rem; }
-.returnIntro p { margin: 0; color: #4b4442; }
-.wipe { display: none; }
 
 @media (hover: hover) and (pointer: fine) {
   .scene:has(.newLane:hover) { --nudge: 2.6%; }
@@ -126,17 +122,7 @@
   .track, .seam, .trackDrawing, .photo img, .archiveTrack img { transition: transform 370ms var(--motion); }
   .seam path { transform-origin: 57% 0%; animation: chalk 560ms cubic-bezier(.2,.7,.2,1) both; }
   .seam .mobileCut { transform-origin: 0% 55%; }
-  .wipe {
-    display: block; pointer-events: none; position: absolute; z-index: 4;
-    inset: 0; transform-origin: left top;
-    background: linear-gradient(105deg, transparent 33%,#fff9ec 33.15% 34%,#b42129 34.15% 53%, transparent 53.15%);
-    animation: select-lane 400ms cubic-bezier(.3,.1,.2,1) both;
-  }
-  .wipe[data-path="returning"] { animation-direction: reverse; }
-  .returnIntro::before { display: block; width: 3rem; height: 3px; margin-bottom: 1rem; background: #b42129; content: ""; transform-origin: left; animation: settle-line 400ms ease-out both; }
   @keyframes chalk { from { transform: scale(0); } to { transform: scale(1); } }
-  @keyframes select-lane { from { transform: translateX(-93%); } to { transform: translateX(135%); } }
-  @keyframes settle-line { from { transform: scaleX(.15); } to { transform: scaleX(1); } }
 }
 @media (max-width: 680px) {
   .mastInner { align-items: start; flex-direction: column; gap: .5rem; padding-block: .95rem .7rem; }
@@ -182,7 +168,6 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .scene .seam, .scene .track, .scene .trackDrawing, .scene .photo img, .scene .archiveTrack img { transform: none !important; }
-  .returnIntro::before { display: block; content: ""; width: 3rem; height: 3px; background: #b42129; margin-bottom: 1rem; }
 }
 @media (forced-colors: active) {
   .label, .closedCopy { background: Canvas; color: CanvasText; }

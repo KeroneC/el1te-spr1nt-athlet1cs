@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { registrationAgeLabel } from "@/lib/registration";
 import styles from "./starting-line.module.css";
 
 /** Original lane illustration. Vector marks stay crisp without another hero image request. */
@@ -70,7 +71,7 @@ export function EntranceHeader({ open, children }: { open?: boolean; children?: 
       </div>
       <div className={styles.meta}>
         {open && <h2 className={styles.open}><i aria-hidden="true" />Applications are open</h2>}
-        <p className={styles.age}>Ages 6 and up</p>
+        <p className={styles.age}>{registrationAgeLabel}</p>
         {children}
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
+import { registrationAgeLabel } from "@/lib/registration";
 import type { Draft, Field, Errors } from "./starting-line-steps";
 import styles from "./starting-line-form.module.css";
 
@@ -44,13 +45,16 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
   </> : step === 0 ? <>
     {text("athleteFirstName", "Athlete’s legal first name", { maxLength: 80, required: true, autoComplete: "section-athlete given-name" })}
     {text("athleteLastName", "Athlete’s legal last name", { maxLength: 80, required: true, autoComplete: "section-athlete family-name" })}
-    {text("dateOfBirth", "Date of birth", { type: "date", required: true, autoComplete: "section-athlete bday" },
-      practiceDate ? "Athletes must turn six by first practice on " + practiceDate + "." : "Athletes must turn six by first practice.")}
+    {field("dateOfBirth", "Date of birth", <div className={styles.dateControl} data-empty={!draft.dateOfBirth}>
+      <input {...props("dateOfBirth", true)} type="date" required autoComplete="section-athlete bday"
+        onChange={e => update("dateOfBirth", e.target.value)} />
+      <span aria-hidden="true">Choose a date</span>
+    </div>, `${registrationAgeLabel} on the first practice date${practiceDate ? ` (${practiceDate})` : ""}.`)}
     {select("schoolGrade", "Current school grade", grades)}
     {field("schoolDistrict", "School district", <>
-      <input {...props("schoolDistrict", true)} maxLength={120} required onChange={e => update("schoolDistrict", e.target.value)} />
+      <input {...props("schoolDistrict")} maxLength={120} required onChange={e => update("schoolDistrict", e.target.value)} />
       <button type="button" className={styles.inline} onClick={() => update("schoolDistrict", "Not sure / not applicable")}>Not sure / not applicable</button>
-    </>, "Use this option if you don’t know the district.")}
+    </>)}
     {select("gender", "Gender (optional)", genders, false)}
   </> : step === 1 ? <>
     {text("guardianName", "Parent or guardian name", { autoComplete: "section-guardian name", maxLength: 100, required: true }, undefined, true)}
@@ -73,13 +77,13 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
     {text("emergencyContactRelationship", "Relationship to athlete", { maxLength: 80, required: true })}
   </> : <>
     {schedule && <p className={styles.schedule}><strong>Practice schedule</strong> {schedule}</p>}
-    {select("availability", "Can your athlete attend the listed practices?", choices, true, undefined, true)}
+    {select("availability", "Can your athlete attend practices?", choices, true, undefined, true)}
     {text("experience", "Track experience (optional)", { maxLength: 250 }, "A short answer is enough. Please do not enter medical or other sensitive information.", true)}
-    {select("priorClub", "Has your athlete trained or competed with another track and field club?", choices, true, undefined, true)}
+    {select("priorClub", "Previously trained or competed with another track club?", choices, true, undefined, true)}
     {draft.priorClub === "Yes" && <>
       {text("clubName", "Current or most recent club", { maxLength: 120, required: true }, undefined, true)}
       <fieldset className={styles.bodies} aria-describedby={prefix + "-affiliations-hint"}>
-        <legend>Governing bodies</legend><p className={styles.hint} id={prefix + "-affiliations-hint"}>Select all that apply, or choose Not sure on its own.</p>
+        <legend>Club affiliations</legend><p className={styles.hint} id={prefix + "-affiliations-hint"}>Choose all that apply, or choose Not sure.</p>
         <div>{affiliationOptions.map(value => <label key={value}><input type="checkbox" name="affiliations" value={value}
           checked={draft.affiliations?.includes(value) ?? false} aria-invalid={!!errors.affiliations}
           aria-describedby={errors.affiliations ? prefix + "-affiliations-error" : undefined}
@@ -112,8 +116,8 @@ export function RegistrationReview({ index, draft: d }: { index: number; draft: 
     ["Second guardian", d.secondaryGuardianName], ["Second email", d.secondaryGuardianEmail], ["Second phone", d.secondaryGuardianPhone]
   ] : index === 2 ? [["Address", [d.streetAddress, d.addressLine2, d.city, [d.state, d.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", ")]]
   : index === 3 ? [["Name", d.emergencyContactName], ["Relationship", d.emergencyContactRelationship], ["Phone", d.emergencyContactPhone]]
-  : [["Practice availability", yn(d.availability)], ["Track experience", d.experience], ["Previous club", yn(d.priorClub)],
-    ["Club", d.priorClub === "Yes" ? d.clubName : ""], ["Governing bodies", d.priorClub === "Yes" ? d.affiliations?.map(yn).join(", ") : ""],
+  : [["Practice", yn(d.availability)], ["Experience", d.experience], ["Prior club", yn(d.priorClub)],
+    ["Club", d.priorClub === "Yes" ? d.clubName : ""], ["Affiliations", d.priorClub === "Yes" ? d.affiliations?.map(yn).join(", ") : ""],
     ["Last meet", d.priorClub === "Yes" ? d.lastMeetMonth : ""]];
   return <dl>{rows.filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
 }

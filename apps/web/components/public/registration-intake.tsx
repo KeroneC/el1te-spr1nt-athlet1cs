@@ -197,17 +197,25 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
   if (reference) return <div className={styles.receipt}>
     <div ref={noticeRef} tabIndex={-1} role="status">
       <p className={styles.kicker}><Check size={16} aria-hidden="true" /> Saved</p>
-      {application ? <h1>Application received</h1> : <h2>Check-in received</h2>}
-      <p>Save this reference: <strong ref={referenceRef}>{reference}</strong></p>
-      <p>No automatic confirmation email is sent. This does not reserve a spot. The club will follow up by email. {season.replyWindow}</p>
-      <p>{application ? "Please wait for an offer before sending completed paperwork." : "Returning athletes do not need to submit paperwork."}</p>
+      <h1>{application ? "Application received" : "Check-in received"}</h1>
     </div>
-    <div className={styles.actions}>
+    <div className={styles.referenceCard}>
+      <div>
+        <p>Save your reference</p>
+        <strong ref={referenceRef}>{reference}</strong>
+      </div>
       <button type="button" className={styles.next} onClick={() => void copyReference()}>Copy reference</button>
-      {!intakeClosed && <button type="button" className={styles.back} onClick={startAnother}>
-        {application ? "Apply for another athlete" : "Check in another athlete"}</button>}
     </div>
-    <p aria-live="polite">{copied === "copied" ? "Reference copied." : copied === "manual" ? "Copy the reference above manually." : ""}</p>
+    <p aria-live="polite" className={styles.copyFeedback}>{copied === "copied" ? "Reference copied." : copied === "manual" ? "Copy the reference above manually." : ""}</p>
+    <section className={styles.receiptNext}>
+      <h2>What happens next</h2>
+      <p>The club will follow up by email.</p>
+      {season.replyWindow && <p>{season.replyWindow}</p>}
+      <p>{application ? "Wait for an offer before sending paperwork." : "Returning athletes don’t need to send paperwork."}</p>
+    </section>
+    <p className={styles.receiptNotice}>No automatic confirmation email is sent. This does not reserve a spot.</p>
+    {!intakeClosed && <button type="button" className={styles.back} onClick={startAnother}>
+      {application ? "Apply for another athlete" : "Check in another athlete"}</button>}
   </div>;
   return <div className={application ? styles.layout : styles.shortForm}>
     {application && <aside className={styles.rail} aria-label="Application progress">
@@ -216,11 +224,14 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
         data-complete={i < step}><span aria-hidden="true">{i < step ? <Check size={13} /> : String(i + 1).padStart(2, "0")}</span>{label}</li>)}</ol>
     </aside>}
     <form method="post" noValidate ref={formRef} onSubmit={submit} aria-busy={busy} className={styles.form}>
-      {application && <header className={styles.stepHead}>
+      {application ? <header className={styles.stepHead}>
         <p className={styles.kicker}>Step {step + 1} of 6 <span aria-hidden="true">/</span> {info.label}</p>
         <div className={styles.rule} aria-hidden="true">{applicationSteps.map((s, i) => <i key={s.slug} data-on={i <= step} />)}</div>
         <h1 data-step-heading="" ref={headingRef} tabIndex={-1}>{info.title}</h1>
         <p>{info.note} {step === 0 && "Fields are required unless marked optional."}</p>
+      </header> : <header className={styles.stepHead}>
+        <h1 data-step-heading="" ref={headingRef} tabIndex={-1}>Returning athlete? Check in</h1>
+        <p>Tell us your athlete plans to return. No paperwork needed.</p>
       </header>}
       {application && step === reviewStep ? <div className={styles.review}>
         {applicationSteps.slice(0, reviewStep).map(({ slug, label }, i) => <section key={slug}>
@@ -236,8 +247,10 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
           onChange={e => update("website", e.target.value)} /></div>
       {(message || blocked) && <div ref={noticeRef} tabIndex={-1} role="alert" className="form-status error">
         {message || "Applications are not open. No new submission was saved."}<SupportReference referenceId={support} /></div>}
+      {(!application || step === reviewStep) &&
+        <p className={styles.submitNote}>This {application ? "application" : "check-in"} doesn’t reserve a spot.</p>}
       <div className={styles.actions}>
-        {application && (step > 0 || isEditing) && !lockedFields && <button type="button" className={styles.back} onClick={() => {
+        {application && (step > 0 || isEditing) && (!lockedFields || busy) && <button type="button" className={styles.back} disabled={busy} onClick={() => {
           setMessage(""); setErrors({});
           if (isEditing && edit) { setDraft(edit.original); setEdit(null); go(reviewStep); } else go(step - 1);
         }}><ArrowLeft aria-hidden="true" size={16} />{isEditing ? "Cancel edit" : "Back"}</button>}
@@ -250,7 +263,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
               ? "Submit application" : isEditing ? "Return to review" : "Continue"}<ArrowRight aria-hidden="true" size={17} />
           </button>}
       </div>
-      <p className={styles.privacy}>{!application || step === reviewStep ? `This ${application ? "application" : "check-in"} doesn’t reserve a spot. ` : ""}
+      <p className={styles.privacy}>
         <a href="/privacy#registration-privacy" target="_blank" rel="noreferrer">Registration privacy notice<span className="sr-only"> (opens in a new tab)</span></a></p>
     </form>
   </div>;

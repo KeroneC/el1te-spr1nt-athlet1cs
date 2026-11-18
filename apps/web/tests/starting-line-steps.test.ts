@@ -3,7 +3,7 @@ import { applicationFields, applicationSteps, firstIncompleteStep, reviewStep, s
 
 const practice = "2027-02-28", today = "2026-11-17";
 const complete: Draft = {
-  athleteFirstName: "Sample", athleteLastName: "Runner", dateOfBirth: "2021-02-28",
+  athleteFirstName: "Sample", athleteLastName: "Runner", dateOfBirth: "2020-02-28",
   schoolGrade: "K", schoolDistrict: "Not sure / not applicable", guardianName: "Sample Guardian",
   guardianEmail: "family@example.test", guardianPhone: "(202) 555-0110",
   streetAddress: "100 Sample St", city: "Sample City", state: "PA", postalCode: "00000",
@@ -29,10 +29,13 @@ describe("starting-line steps", () => {
 
   it("uses the actual first practice cutoff, including leap-day birthdays", () => {
     const birthday = (dob: string, cutoff: string) => validateStep(0, { ...complete, dateOfBirth: dob }, cutoff, today).dateOfBirth;
-    expect(birthday("2021-02-28", practice)).toBeUndefined();
-    expect(birthday("2021-03-01", practice)).toBeDefined();
-    expect(birthday("2020-02-29", "2026-02-28")).toBeUndefined();
-    expect(birthday("2020-02-29", "2026-02-27")).toBeDefined();
+    expect(birthday("2020-02-28", practice)).toBeUndefined(); // turns 7 on first practice
+    expect(birthday("2020-03-01", practice)).toBeDefined();
+    expect(birthday("2009-02-28", practice)).toBeUndefined(); // turns 18 on first practice
+    expect(birthday("2008-02-29", "2027-02-27")).toBeUndefined(); // still 18
+    expect(birthday("2008-02-29", practice)).toBeDefined(); // 19th birthday by leap-day convention
+    expect(birthday("2020-02-29", practice)).toBeUndefined();
+    expect(birthday("2020-02-29", "2027-02-27")).toBeDefined();
     expect(birthday("2021-02-29", practice)).toBeDefined();
     expect(birthday("2026-11-18", "2035-02-28")).toBeDefined();
   });

@@ -5,6 +5,7 @@ import type { FormEvent } from "react";
 import { AdminApiError } from "@/lib/admin/api-error";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
 import { validSupportReference } from "@/lib/observability/support-reference";
+import { registrationAgeLabel } from "@/lib/registration";
 import { Field, FormNotice, FormSection, SelectField, TextArea, fieldError } from "./form-controls";
 import { applicationReviewName, RegistrationReviewDetails, type RegistrationReviewDetailsRecord } from "./registration-review-details";
 
@@ -306,7 +307,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
             <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
             <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date" defaultValue={current?.firstPracticeDate ?? ""}
-              error={seasonError("firstPracticeDate")} hint="Required before opening. A new athlete must be at least six on this date." />
+              error={seasonError("firstPracticeDate")} hint={`Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required error={seasonError("practiceLocation")} />
             <TextArea label="Practice schedule" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />

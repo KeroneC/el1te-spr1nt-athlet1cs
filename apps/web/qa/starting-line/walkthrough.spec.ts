@@ -58,6 +58,9 @@ async function submitAndCapture(page: Page, panel: Locator, device: string, kind
     await capture(page, device, start + "-submitting", panel);
   } finally { unblock(); }
   await expect(panel.getByRole("heading", { name: application ? "Application received" : "Check-in received" })).toBeVisible();
+  await expect(panel.getByRole("heading", { level: 1 })).toHaveCount(1);
+  await expect(panel.getByRole("heading", { name: "What happens next", exact: true })).toBeVisible();
+  await expect(panel.locator("form")).toHaveCount(0);
   await expect(panel.getByText(/^EL-[0-9A-F]{16}$/)).toBeVisible();
   await expect(panel.getByText(/No automatic confirmation email is sent/)).toBeVisible();
   const status = panel.getByRole("status");
@@ -80,11 +83,19 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
   const next = () => panel.getByRole("button", { name: "Continue", exact: true }).click();
 
   await expect(panel.getByRole("heading", { name: "Who’s your athlete?" })).toBeVisible();
+  await expect(panel.getByText("Choose a date", { exact: true })).toBeVisible();
   await input("athleteFirstName").fill("Avery");
   await input("athleteLastName").fill("Example");
   await input("dateOfBirth").fill("2015-07-03");
   await input("schoolGrade").selectOption("6");
   await input("schoolDistrict").fill("Example School District");
+  for (const outOfRange of ["2020-01-16", "2008-01-15"]) {
+    await input("dateOfBirth").fill(outOfRange);
+    await next();
+    await expect(input("dateOfBirth")).toHaveAttribute("aria-invalid", "true");
+    await expect(input("dateOfBirth")).toBeFocused();
+  }
+  await input("dateOfBirth").fill("2015-07-03");
   await capture(page, device, "01-athlete", panel);
   await next();
 
@@ -129,6 +140,7 @@ test("capture the returning check-in journey", async ({ page, isMobile }) => {
   const device = isMobile ? "phone" : "desktop";
   await page.getByRole("link", { name: "Returning athlete? Check in", exact: true }).click();
   const panel = page.locator("#returning");
+  await expect(panel.locator("[name=dateOfBirth]")).toHaveCount(0);
   await panel.getByLabel("Parent or guardian email").fill(fakeEmail);
   await panel.getByLabel("Athlete’s first name").fill("Avery");
   await capture(page, device, "09-returning-check-in", panel);

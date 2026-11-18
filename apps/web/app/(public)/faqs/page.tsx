@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { PageHero, PublicErrorState } from "@/components/public/ui";
 import { getFaqs } from "@/lib/public/client";
+import { registrationAgeLabel } from "@/lib/registration";
 
 export const metadata: Metadata = { title: "FAQs", description: "Answers to common questions about programs, practices, registration, and support." };
 const registrationFaqs = [
   { question: "How do I register my child?", answer: "New athletes apply on the Registration page. If the club offers a spot, staff will explain how to send completed paperwork. Returning athletes only need to check in online; no paperwork is required." },
   { question: "Will I get a confirmation email?", answer: "No automatic confirmation email is sent. Save the reference shown on screen. The club will follow up separately by email. An application or check-in does not reserve a spot." },
-  { question: "What ages can join?", answer: "Athletes must turn six by the first practice. Check the Registration page for that date and the current season’s practice details." }
+  { question: "What ages can join?", answer: `Athletes must be ${registrationAgeLabel.toLowerCase()} on the first practice date. Registration lists the date and practice details.` }
 ];
 
 export default async function FaqPage() {

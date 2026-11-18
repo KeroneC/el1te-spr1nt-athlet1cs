@@ -1,5 +1,19 @@
 import { expect, test } from "@playwright/test";
 
+test("both paths open without a click-through animation", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  for (const { name, panel, heading } of [
+    { name: "Apply for a spot", panel: "#apply", heading: "Who’s your athlete?" },
+    { name: "Returning athlete? Check in", panel: "#returning", heading: "Returning athlete? Check in" }
+  ]) {
+    await page.goto("/registration");
+    await page.getByRole("link", { name, exact: true }).click();
+    const form = page.locator(panel);
+    await expect(form.getByRole("heading", { name: heading })).toBeFocused();
+    expect(await form.evaluate(el => el.getAnimations({ subtree: true }).length)).toBe(0);
+  }
+});
+
 test("the diagonal animates while labels, hit targets and form content stay still", async ({ page, browserName }, testInfo) => {
   test.skip(browserName !== "chromium", "Uses desktop hover and Chromium’s layout instability observer.");
   await page.emulateMedia({ reducedMotion: "no-preference" });

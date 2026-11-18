@@ -8,6 +8,9 @@ export type PublicRegistrationSeason = {
 };
 
 export const registrationOpeningDate = "2026-11-27";
+export const registrationMinimumAge = 7;
+export const registrationMaximumAge = 18;
+export const registrationAgeLabel = `Ages ${registrationMinimumAge}–${registrationMaximumAge}`;
 
 export function upcomingRegistrationDate(value: string, now = new Date()) {
   const dateParts = new Intl.DateTimeFormat("en-US", {
