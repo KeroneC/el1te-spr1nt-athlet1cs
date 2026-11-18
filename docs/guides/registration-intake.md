@@ -2,6 +2,14 @@
 
 The Registration page has two parent/guardian paths and shows only the selected form. New applications collect athlete eligibility and school details, guardian and household information, an emergency contact, and track background. Returning check-ins still ask only for guardian email and athlete first name, with no paperwork. Intake is separate from Contact, athlete accounts, the roster and Square. After SQL saves either submission, the page shows a reference the family can copy. No confirmation or decision email is sent by the application. Staff send follow-up, waitlists and offers separately from the club inbox.
 
+## Family walkthrough
+
+On `/registration`, the starting line offers **Apply for a spot** (`#apply`) and **Check in** (`#returning`) only when intake is open. A new guardian completes Athlete, Guardian, Household, Emergency contact and Track background, then reviews the answers before submitting. **Back** and **Edit** do not submit. Returning families have one screen and no paperwork. Drafts live only in page memory: navigating between steps retains answers, but reloading or leaving the page discards them. Do not enter real family information in a design rehearsal.
+
+To review without opening demo or connecting to a database, run `node scripts/preview-registration.mjs` from `apps/web` after installing its dependencies. Open `http://127.0.0.1:3013/registration`; use fictional details and an address such as `family@example.test`. Practice dates and all logistics in this preview are samples. Its loopback-only fixture simulates receipts without saving submissions or sending mail. Stop with Ctrl+C. Start with the `closed` or `unavailable` argument to inspect either alternative entrance. The helper is not a launch or deployment command.
+
+With the open preview running, `npx playwright test -c playwright.starting-line.config.ts` runs the synthetic Starting Line checks in desktop Chromium and a mobile WebKit profile. This suite intercepts submission requests. The separate SQL-backed registration rehearsal remains the deployment gate; a simulated receipt does not verify a database save.
+
 ## Before opening
 
 1. Deploy the reviewed immutable artifact and additive migration through the standard release workflow. Keep intake closed. Verify the canonical `/registration` route, noindex in demo, and the active Admin review workspace.

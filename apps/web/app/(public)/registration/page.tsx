@@ -7,6 +7,8 @@ import { getRegistrationSeason } from "@/lib/public/registration";
 import { registrationChannel, registrationDate, registrationOpeningDate, upcomingRegistrationDate } from "@/lib/registration";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
+import { EntranceArt, EntranceHeader } from "@/components/public/registration-entrance";
+import line from "@/components/public/starting-line.module.css";
 import styles from "@/components/public/registration.module.css";
 
 export const metadata: Metadata = {
@@ -30,24 +32,19 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
     { label: "Fees", value: season?.fees, Icon: CircleDollarSign },
     { label: "When you’ll hear back", value: season?.replyWindow, Icon: Clock3 }
   ];
-  const intro = <div className={styles.intro}>
-    <p className={styles.heroOverline}><span aria-hidden="true" />El1te track &amp; field <span aria-hidden="true" /> Registration</p>
-    <h1>Find your <em>starting lane</em></h1>
-    <p>New to El1te or back for another season? Start here.</p>
-  </div>;
-
   return <div data-registration-hub="true" className={styles.page}>
     {season && <RegistrationVisit year={season.year} channel={channel} />}
-    {season?.isOpen ? <RegistrationPaths season={season} channel={channel} intro={intro} /> :
-      <section className={styles.hero} aria-label="Registration">
-        <div className={`site-container ${styles.heroContent}`}>
-          {intro}
-          <div className={styles.statusPanel}>
-            <h2 className={styles.statusPill}>{state === "unavailable" ? "Registration is temporarily unavailable"
+    {season?.isOpen ? <RegistrationPaths season={season} channel={channel} /> :
+      <section className={line.entrance} aria-label="Registration">
+        <EntranceHeader />
+        <div className={line.closedScene}>
+          <EntranceArt closed />
+          <div className={line.closedCopy}>
+            <h2>{state === "unavailable" ? "Registration is temporarily unavailable"
               : planned ? "Applications open soon" : "Applications are currently closed"}</h2>
             {state === "unavailable" ? <>
               <p>We can’t check registration status right now. Try again or ask the club a question.</p>
-              <a className={styles.primaryAction} href={retryHref}>Check registration status</a>
+              <a className={line.closedAction} href={retryHref}>Check registration status</a>
             </> : planned ? <p>Planned opening: <strong>{registrationDate(planned)}</strong>. Check back here for availability.</p>
               : <p>Check back here for the next opening, or <Link href="/contact">contact the club</Link> with questions.</p>}
           </div>

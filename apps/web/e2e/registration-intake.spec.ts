@@ -4,7 +4,7 @@ import { signInAsE2eSuperAdmin } from "./helpers/admin-auth";
 
 const adminPath = "/api/admin/registration";
 const submitPath = "/api/public/registration/applications";
-const responsiveWidths = [340, 390, 768, 1280];
+const responsiveWidths = [340, 390, 768, 1440];
 const referencePattern = /^EL-[A-F0-9]{16}$/;
 const guardianEmail = "synthetic-registration@example.test";
 const sqlTag = "@registration-sql";
@@ -69,13 +69,15 @@ async function saveReview(page: Page) {
 }
 
 async function choosePath(page: Page, path: "apply" | "returning") {
+  const choices = page.locator('a[href="#registration-paths"]:visible');
+  if (await choices.count()) await choices.first().click();
   const title = path === "apply" ? "Apply for a spot" : "Returning athlete? Check in";
   const link = page.getByRole("link", { name: title, exact: true });
   await link.focus();
   await link.press("Enter");
   await expect(page).toHaveURL(new RegExp("#" + path + "$"));
   const active = page.locator("#" + path);
-  await expect(active.getByRole("heading", { name: title, exact: true })).toBeFocused();
+  await expect(active.getByRole("heading", { name: path === "apply" ? "Who’s your athlete?" : title, exact: true })).toBeFocused();
   await expect(page.locator(path === "apply" ? "#returning" : "#apply")).toBeHidden();
   return active;
 }
@@ -193,30 +195,47 @@ test("families and staff can complete both registration paths through the browse
       await checkA11y(publicPage, "main");
       const application = await choosePath(publicPage, "apply");
       const form = application.locator("form");
-      await form.getByLabel("Parent or guardian name").fill("Synthetic Guardian");
+      const next = form.getByRole("button", { name: "Continue", exact: true });
+      await form.getByLabel("Athlete’s legal first name").fill("Jordan");
 
       const returning = await choosePath(publicPage, "returning");
       await returning.getByLabel("Parent or guardian email").fill(guardianEmail);
       await publicPage.goBack();
+      await expect(publicPage.getByRole("link", { name: "Apply for a spot", exact: true })).toBeVisible();
+      await publicPage.goBack();
       await expect(publicPage).toHaveURL(/#apply$/);
-      await expect(form.getByLabel("Parent or guardian name")).toHaveValue("Synthetic Guardian");
+      await expect(form.getByLabel("Athlete’s legal first name")).toHaveValue("Jordan");
       await expect(returning).toBeHidden();
 
+      await form.getByLabel("Athlete’s legal last name").fill("SyntheticSurname");
+      await form.getByLabel("Current school grade").selectOption("Not applicable");
+      await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
+      const dob = form.getByLabel("Date of birth", { exact: true });
+      await dob.fill(String(currentYear - 6) + "-12-16");
+      await next.click();
+      await expect(dob).toHaveAttribute("aria-invalid", "true");
+      await expect(dob).toBeFocused();
+      await dob.fill(eligibleBirthDate);
+      await next.click();
+      await form.getByLabel("Parent or guardian name").fill("Synthetic Guardian");
       await form.getByLabel("Parent or guardian email").fill(guardianEmail);
       const phone = form.getByLabel("Parent or guardian phone", { exact: true });
       await phone.fill("123");
-      await form.getByLabel("Athlete’s legal first name").fill("Jordan");
-      await form.getByLabel("Athlete’s legal last name").fill("SyntheticSurname");
-      await form.getByLabel("Date of birth", { exact: true }).fill(eligibleBirthDate);
-      await form.getByLabel("Current school grade").selectOption("Not applicable");
-      await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
+      await next.click();
+      await expect(phone).toBeFocused();
+      await expect(phone).toHaveAttribute("aria-invalid", "true");
+      await expect(phone).toHaveAccessibleDescription(/phone|digits/i);
+      await phone.fill("412-555-0101");
+      await next.click();
       await form.getByLabel("Street address", { exact: true }).fill("123 Synthetic Test Lane");
       await form.getByLabel("City", { exact: true }).fill("Synthetic City");
       await form.getByLabel("State", { exact: true }).selectOption("PA");
       await form.getByLabel("ZIP code", { exact: true }).fill("15201");
+      await next.click();
       await form.getByLabel("Emergency contact name", { exact: true }).fill("Synthetic Emergency Contact");
       await form.getByLabel("Emergency contact phone", { exact: true }).fill("412-555-0102");
       await form.getByLabel("Relationship to athlete", { exact: true }).fill("Family friend");
+      await next.click();
       await expect(form.getByLabel("Age group", { exact: true })).toHaveCount(0);
       await form.getByLabel("Can your athlete attend the listed practices?").selectOption("Yes");
       await form.getByLabel("Has your athlete trained or competed with another track and field club?").selectOption("Yes");
@@ -234,21 +253,9 @@ test("families and staff can complete both registration paths through the browse
       await usatf.check();
       await checkLayout(publicPage, form);
       await checkA11y(publicPage, "#apply");
-
+      await next.click();
+      await expect(publicPage).toHaveURL(/#apply\/review$/);
       const submit = form.getByRole("button", { name: "Submit application", exact: true });
-      await submit.click();
-      await expect(phone).toBeFocused();
-      await expect(phone).toHaveAttribute("aria-invalid", "true");
-      await expect(phone).toHaveAccessibleDescription(/enter a valid phone number/i);
-      await checkLayout(publicPage, form.getByRole("alert"));
-      await phone.fill("412-555-0101");
-      // The day after the cutoff birthday is too young; the exact sixth birthday qualifies.
-      const dob = form.getByLabel("Date of birth", { exact: true });
-      await dob.fill(String(currentYear - 6) + "-12-16");
-      await submit.click();
-      await expect(dob).toHaveAttribute("aria-invalid", "true");
-      await expect(dob).toBeFocused();
-      await dob.fill(eligibleBirthDate);
 
       // Commit the first attempt normally, but drop its response to simulate a
       // network failure after the SQL save. Only the identical retry may succeed.
@@ -272,7 +279,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(retry).toBeVisible();
       expect(forwardedStatus).toBe(201);
       expect(submissionRequests).toHaveLength(1);
-      await expect(form.getByLabel("Parent or guardian email")).toBeDisabled();
+      await expect(form.getByRole("button", { name: "Edit guardian", exact: true })).toBeDisabled();
       await retry.click();
       await expect(application.getByRole("heading", { name: "Application received" })).toBeVisible();
       expect(submissionRequests).toHaveLength(2);
@@ -280,7 +287,7 @@ test("families and staff can complete both registration paths through the browse
       payload = submissionRequests[0] as Record<string, unknown>;
       expect(payload).toMatchObject({ applicationVersion: 2, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate });
       expect(payload).not.toHaveProperty("ageGroup");
-      appReference = await application.locator("strong").innerText();
+      appReference = await application.getByText(referencePattern).innerText();
       expect(appReference).toMatch(referencePattern);
       expect(publicPage.url()).not.toContain(appReference);
       expect(publicPage.url()).not.toContain(guardianEmail);
@@ -305,7 +312,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(returning.getByRole("heading", { name: "Check-in received" })).toBeVisible();
       await expect(returning.getByText("Returning athletes do not need to submit paperwork.", { exact: true })).toBeVisible();
       await expect(returning.getByText(/no automatic confirmation email is sent/i)).toBeVisible();
-      expect(await returning.locator("strong").innerText()).toMatch(referencePattern);
+      expect(await returning.getByText(referencePattern).innerText()).toMatch(referencePattern);
       await returning.getByRole("button", { name: "Copy reference" }).click();
       await expect(returning.getByText("Copy the reference above manually.", { exact: true })).toBeVisible();
       await publicPage.unroute("**" + submitPath);
