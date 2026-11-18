@@ -42,9 +42,10 @@ export function RegistrationPaths({ season, channel, archivePreview = false }: {
       // Native fragment navigation finishes after React's effects and can otherwise
       // take focus back from the newly revealed heading, especially when pressing Enter.
       frame = window.requestAnimationFrame(() => {
-        const heading = selected === "apply" ? application.current?.querySelector<HTMLElement>("[data-step-heading], [role='status'][tabindex]") : returnHeading.current;
-        heading?.focus({ preventScroll: true });
         const panel = (selected === "apply" ? application.current : returnHeading.current?.closest("section"));
+        const destination = panel?.querySelector<HTMLElement>("[role='status'][tabindex]")
+          ?? (selected === "apply" ? panel?.querySelector<HTMLElement>("[data-step-heading]") : returnHeading.current);
+        destination?.focus({ preventScroll: true });
         if (panel && panel.getBoundingClientRect().top < 0) panel.scrollIntoView({ block: "start", behavior: "instant" });
       });
     } else if (previous.current && ["", "#registration-paths"].includes(window.location.hash)) {
@@ -78,7 +79,7 @@ export function RegistrationPaths({ season, channel, archivePreview = false }: {
         <a ref={applicationChoice} href="#apply" aria-label="Apply for a spot" className={styles.newLane}
           onClick={event => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) setSweep("apply"); }}>
           <div className={styles.label}>
-            <span className={styles.folio}><b aria-hidden="true" />Lane 01 <span>/</span> New athlete</span>
+            <span className={styles.folio}><b aria-hidden="true" />New athlete</span>
             <strong>New to <em>El1te.</em></strong>
             <span className={styles.copy}>Your first season with the club starts here.</span>
             <span className={styles.action}>Apply for a spot <ArrowUpRight aria-hidden="true" /></span>
@@ -87,7 +88,7 @@ export function RegistrationPaths({ season, channel, archivePreview = false }: {
         <a ref={returnChoice} href="#returning" aria-label="Returning athlete? Check in" className={styles.teamLane}
           onClick={event => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) setSweep("returning"); }}>
           <div className={styles.label}>
-            <span className={styles.folio}><b aria-hidden="true" />Lane 02 <span>/</span> Returning athlete</span>
+            <span className={styles.folio}><b aria-hidden="true" />Returning athlete</span>
             <strong>Welcome <em>back.</em></strong>
             <span className={styles.copy}>Two fields. No paperwork.</span>
             <span className={styles.action}>Check in <ArrowUpRight aria-hidden="true" /></span>
@@ -103,7 +104,6 @@ export function RegistrationPaths({ season, channel, archivePreview = false }: {
     <section id="returning" className={styles.formPage} hidden={selected !== "returning"}>
       {formTop("returning")}
       <div className={styles.returnIntro}>
-        <span className={styles.returnMark} aria-hidden="true">02 / Check-in</span>
         <h1 ref={returnHeading} tabIndex={-1}>Returning athlete? Check in</h1>
         <p>Tell us your athlete plans to return. No registration paperwork is required.</p>
       </div>

@@ -59,7 +59,16 @@ test("all four widths: both choices, one-tap navigation, contrast, no overflow a
     const returning = page.getByRole("link", { name: "Returning athlete? Check in", exact: true });
     await expect(apply).toBeVisible();
     await expect(returning).toBeVisible();
-    await expect(page.getByRole("link", { name: /view season details/i })).toBeVisible();
+    const resources = page.getByRole("complementary", { name: "Registration resources" });
+    const disclosure = resources.locator("summary");
+    await expect(disclosure).toHaveText("Season details");
+    await expect(resources.getByText("Practice location", { exact: true })).toBeHidden();
+    if (width === 390) {
+      await disclosure.click();
+      await expect(resources.getByText("Practice location", { exact: true })).toBeVisible();
+      await disclosure.click();
+      await page.evaluate(() => window.scrollTo(0, 0));
+    }
     await expect(page.locator("#registration-paths")).toHaveCSS("background-color", "rgb(255, 255, 255)");
     const images = page.locator('#registration-paths picture img:visible');
     const archive = process.env.STARTING_LINE_ARCHIVE_PREVIEW === "true";

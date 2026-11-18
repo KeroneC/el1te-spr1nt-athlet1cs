@@ -1,4 +1,3 @@
-import { ArrowDownRight } from "lucide-react";
 import type { ReactNode } from "react";
 import styles from "./starting-line.module.css";
 
@@ -58,7 +57,6 @@ export function EntranceArt({ closed = false, archivePreview = false }: { closed
         <path className={styles.desktopCut} d="M57 -1 43 101" pathLength="1" />
         <path className={styles.mobileCut} d="M-1 55 101 45" pathLength="1" />
       </svg>
-      <span className={styles.paintNumber}>01</span>
     </>}
   </div>;
 }
@@ -72,9 +70,7 @@ export function EntranceHeader({ open, children }: { open?: boolean; children?: 
       </div>
       <div className={styles.meta}>
         {open && <h2 className={styles.open}><i aria-hidden="true" />Applications are open</h2>}
-        <div className={styles.detailsRow}><span>Ages 6 and up</span>
-          <a href="#registration-season-heading">View season details <ArrowDownRight size={14} aria-hidden="true" /></a>
-        </div>
+        <p className={styles.age}>Ages 6 and up</p>
         {children}
       </div>
     </div>

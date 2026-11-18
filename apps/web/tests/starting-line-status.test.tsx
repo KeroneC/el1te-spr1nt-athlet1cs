@@ -12,8 +12,9 @@ async function render() {
 function informationalOnly(html: string) {
   expect(html).not.toMatch(/href="#(?:apply|returning)"/);
   expect(html).not.toMatch(/<form[\s>]/);
-  for (const route of ["/faqs", "/contact", "/forms/athlete-registration-form.pdf", "#registration-season-heading"])
+  for (const route of ["/faqs", "/contact", "/forms"])
     expect(html).toContain(`href="${route}"`);
+  expect(html).not.toContain("Season at a glance");
   expect(html).toContain("Ages 6 and up");
 }
 

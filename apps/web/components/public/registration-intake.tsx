@@ -81,6 +81,10 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
   const previousStep = useRef<number | null>(null);
 
   useEffect(() => {
+    if (reference && !noticeRef.current?.closest("[hidden]")) noticeRef.current?.focus();
+  }, [reference]);
+
+  useEffect(() => {
     function leaveEdit() {
       setEdit(old => old && stepFromHash(window.location.hash) !== old.step ? null : old);
     }
@@ -177,7 +181,6 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
       const result = await response.json();
       if (response.ok && result.reference) {
         setUncertain(false); setReference(result.reference); setDraft({}); setEdit(null); last.current = null;
-        window.requestAnimationFrame(() => noticeRef.current?.focus());
       } else {
         if (response.status === 409 && result.code === "intake_closed") { setClosed(true); onIntakeClosed?.(); }
         if (response.status === 409 && result.code === "retry_conflict") setConflict(true);
