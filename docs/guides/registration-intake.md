@@ -10,6 +10,8 @@ To review without opening demo or connecting to a database, run `node scripts/pr
 
 With the open preview running, `npx playwright test -c playwright.starting-line.config.ts` runs the synthetic Starting Line checks in desktop Chromium and a mobile WebKit profile. This suite intercepts submission requests. The separate SQL-backed registration rehearsal remains the deployment gate; a simulated receipt does not verify a database save.
 
+For local photo review only, add `--archive-art` to the preview command. The helper serves only six named WebP derivatives (480, 960, and 1440 pixels wide for each of `starting-blocks` and `team-huddle`) from the checkout's ignored `artifacts/registration-archive-preview/` directory. Use metadata-stripped derivatives and never put originals or derivatives awaiting clearance in `public/`, source control, or release artifacts. The helper is loopback-only; normal development and deployments use the existing artwork. When testing this option, run the browser suite with `STARTING_LINE_ARCHIVE_PREVIEW=true`.
+
 ## Before opening
 
 1. Deploy the reviewed immutable artifact and additive migration through the standard release workflow. Keep intake closed. Verify the canonical `/registration` route, noindex in demo, and the active Admin review workspace.

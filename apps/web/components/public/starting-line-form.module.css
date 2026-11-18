@@ -1,5 +1,5 @@
 .layout, .shortForm, .receipt {
-  --red: #b91c25; --rule: #dedad3; --ink: #191916; --muted: #575653;
+  --red: #b91c25; --rule: #e1e1e1; --ink: #191916; --muted: #575653;
   color: var(--ink);
 }
 .layout { display:grid; grid-template-columns:minmax(10rem, .36fr) minmax(0, 1fr); gap:clamp(2rem,6vw,6rem); width:min(100%,66rem); margin:clamp(1.5rem,3.5vw,3rem) auto 0; }
@@ -11,7 +11,7 @@
 .rail ol { display:grid; list-style:none; padding:0; margin:1.45rem 0 0; }
 .rail li { display:flex; align-items:center; position:relative; gap:.8rem; padding-block:.65rem; font-size:.89rem; font-weight:600; color:var(--muted); }
 .rail li:not(:last-child)::after { content:""; position:absolute; top:calc(50% + .8rem); left:.8rem; bottom:calc(-50% + .8rem); width:1px; background:var(--rule); }
-.rail li > span { width:1.65rem; height:1.65rem; display:grid; place-items:center; background:var(--surface,#fffefa);
+.rail li > span { width:1.65rem; height:1.65rem; display:grid; place-items:center; background:var(--surface,#fff);
   border:1px solid #c8c4bc; border-radius:50%; font:700 .64rem/1 ui-monospace,monospace; }
 .rail li[aria-current] { color:var(--ink); font-weight:800; }
 .rail li[aria-current] > span { color:white; background:var(--red); border-color:var(--red); }
@@ -22,7 +22,7 @@
 .stepHead h1:focus-visible { outline:2px solid var(--red); outline-offset:4px; }
 .stepHead p:last-child,.privacy,.receipt p:not(.kicker),.hint { color:var(--muted); font-size:.92rem; line-height:1.5; }
 .rule { display:flex; gap:3px; width:100%; margin-top:.75rem; }
-.rule i { display:block; flex:1; height:3px; transform:skewX(-20deg); background:#dedad3; }
+.rule i { display:block; flex:1; height:3px; transform:skewX(-20deg); background:var(--rule); }
 .rule i[data-on=true] { background:var(--red); }
 .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1.1rem 1.25rem; align-items:start; min-width:0; margin:0; padding:0; border:0; }
 .field { display:grid; min-width:0; gap:.35rem; }
@@ -40,7 +40,7 @@
 .optional { padding-block:.3rem; border-block:1px solid var(--rule); }
 .optional summary { width:fit-content; cursor:pointer; line-height:1.4; padding:.7rem 0; font-weight:700; }
 .optional .grid { margin:.25rem 0 .9rem; }
-.schedule { display:grid; gap:.1rem; margin:0; padding:.7rem 1rem; background:#f3f0eb; border-left:3px solid var(--red); font-size:.9rem; white-space:pre-line; }
+.schedule { display:grid; gap:.1rem; margin:0; padding:.7rem 1rem; background:#f5f5f5; border-left:3px solid var(--red); font-size:.9rem; white-space:pre-line; }
 .bodies { min-width:0; border:0; margin:0; padding:0; }
 .bodies > div { display:flex; gap:.4rem; flex-wrap:wrap; }
 .bodies label { display:flex; align-items:center; gap:.4rem; min-height:2.75rem; min-width:5rem; }

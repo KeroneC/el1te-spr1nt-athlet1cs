@@ -2,12 +2,21 @@
 import { createServer } from "node:http";
 import { createHmac, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
+import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
+import { localArchiveArtwork } from "../lib/local-registration-preview.mjs";
 
 const webDir = fileURLToPath(new URL("../", import.meta.url));
 const webPort = 3013, fixturePort = 5130;
-const state = process.argv[2] ?? "open";
+const args = process.argv.slice(2);
+const archive = args.includes("--archive-art");
+const state = args.find(arg => arg !== "--archive-art") ?? "open";
 if (!["open", "closed", "unavailable"].includes(state)) throw new Error("Choose open, closed, or unavailable.");
+// Never look into the archive or expose originals from a server. Only the six explicitly
+// prepared, metadata-stripped copies under the ignored artifacts directory may be loaded.
+const artwork = new Map(archive ? await Promise.all(localArchiveArtwork.map(async file => [
+  `/__registration-preview/${file}`, await readFile(new URL(`../../../artifacts/registration-archive-preview/${file}`, import.meta.url))
+])) : []);
 const signingKey = randomBytes(32);
 const season = {
   year: 2027, title: "Local design preview · sample season", openingDate: "2026-11-27",
@@ -20,6 +29,12 @@ const fixture = createServer(async (req, res) => {
     res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "private, no-store" });
     res.end(data === undefined ? undefined : JSON.stringify(data));
   };
+  if (req.method === "GET" && artwork.has(req.url)) {
+    const image = artwork.get(req.url);
+    res.writeHead(200, { "Content-Type": "image/webp", "Content-Length": image.length,
+      "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" });
+    return res.end(image);
+  }
   if (req.method === "GET" && req.url === "/api/public/registration")
     return state === "unavailable" ? send(503, {}) : send(200, season);
   if (req.method === "POST" && req.url === "/api/public/registration/visit") return send(204);
@@ -51,7 +66,7 @@ fixture.listen(fixturePort, "127.0.0.1", () => {
       DEPLOYMENT_ENVIRONMENT: "demo", PUBLIC_INDEXING_ENABLED: "false", EL1TE_PLAYWRIGHT_TEST: "true",
       NEXT_TELEMETRY_DISABLED: "1", PUBLIC_REVALIDATE_SECONDS: "0", BROWSER_ANALYTICS_ENABLED: "false",
       APPLICATIONINSIGHTS_CONNECTION_STRING: "",
-      STORE_NAVIGATION_MODE: "external" }
+      STORE_NAVIGATION_MODE: "external", STARTING_LINE_ARCHIVE_PREVIEW: String(archive) }
   });
   console.log(`Local registration preview: ${origin}/registration (fictional @example.test email only; nothing saved).`);
   for (const signal of ["SIGINT", "SIGTERM"]) process.once(signal, () => web.kill(signal));

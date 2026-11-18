@@ -26,20 +26,33 @@ function TrackArtwork() {
   </svg>;
 }
 
+function ArchivePicture({ photo, className }: { photo: "starting-blocks" | "team-huddle"; className?: string }) {
+  const prefix = `/__registration-preview/${photo}`;
+  const mobileSet = `${prefix}-480.webp 480w, ${prefix}-960.webp 960w`;
+  return <picture className={className}>
+    <source media="(max-width: 680px)" srcSet={mobileSet} sizes="100vw" />
+    <img src={`${prefix}-960.webp`} srcSet={`${mobileSet}, ${prefix}-1440.webp 1440w`}
+      sizes="63vw" alt="" width="960" height={photo === "team-huddle" ? 649 : 640} decoding="async" />
+  </picture>;
+}
+
 /** Mounted once per entrance. Photo and line work are decorative; all labels live in real text. */
-export function EntranceArt({ closed = false }: { closed?: boolean }) {
+export function EntranceArt({ closed = false, archivePreview = false }: { closed?: boolean; archivePreview?: boolean }) {
+  const useArchive = !closed && archivePreview;
   return <div aria-hidden="true" className={styles.art}>
-    {!closed && <div className={styles.photo}>
+    {!closed && <div className={useArchive ? `${styles.photo} ${styles.archiveTeam}` : styles.photo}>
       {/* The existing public derivatives are served directly; no runtime image transformer. */}
-      <picture>
+      {useArchive ? <ArchivePicture photo="team-huddle" /> : <picture>
         <source media="(max-width: 680px)"
           srcSet="/images/team/meet-community-480.webp 480w, /images/team/meet-community-960.webp 960w" sizes="100vw" />
         <img src="/images/team/meet-community-960.webp"
         srcSet="/images/team/meet-community-480.webp 480w, /images/team/meet-community-960.webp 960w, /images/team/meet-community-1600.webp 1600w"
         sizes="63vw" alt="" width="960" height="640" decoding="async" />
-      </picture>
+      </picture>}
     </div>}
-    <div className={styles.track}><div className={styles.trackSurface}><TrackArtwork /></div></div>
+    <div className={styles.track}><div className={styles.trackSurface}>
+      {useArchive ? <ArchivePicture photo="starting-blocks" className={styles.archiveTrack} /> : <TrackArtwork />}
+    </div></div>
     {!closed && <>
       <svg className={styles.seam} viewBox="0 0 100 100" preserveAspectRatio="none" focusable="false">
         <path className={styles.desktopCut} d="M57 -1 43 101" pathLength="1" />

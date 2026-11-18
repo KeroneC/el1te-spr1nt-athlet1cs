@@ -1,8 +1,8 @@
 .entrance, .formPage { scroll-margin-block-start: 7.5rem; }
 :global(html):has(.entrance) { scroll-behavior: auto; }
 .entrance[hidden], .formPage[hidden] { display: none; }
-.entrance { background: #f9f6ef; }
-.mast { border-bottom: 1px solid #c9c2b7; }
+.entrance { background: var(--surface, #fff); }
+.mast { border-bottom: 1px solid var(--line, #dedede); }
 .mastInner, .pathTools {
   width: min(100% - clamp(2rem, 9vw, 9rem), 96rem);
   margin-inline: auto;
@@ -43,6 +43,7 @@
 .photo { position: absolute; inset: 0 -3% 0 40%; background: #302e28; }
 .photo picture { display: block; width: 100%; height: 100%; }
 .photo img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 43%; }
+.archiveTeam img { object-position: 27% 43%; }
 .photo::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(0deg,#100e0df5 0%,#15120fd9 20%,#12100fac 37%,#15131139 60%,transparent 80%);
@@ -54,6 +55,12 @@
 }
 .trackSurface { position: absolute; inset: 0 27% 0 0; }
 .trackDrawing { width: 100%; height: 100%; display: block; }
+.archiveTrack { position: absolute; inset: 0; display: block; }
+.archiveTrack img { width: 100%; height: 100%; object-fit: cover; object-position: 53% 33%; }
+.track:has(.archiveTrack) .trackSurface { inset-inline-end: 33%; }
+.track:has(.archiveTrack)::after {
+  background: linear-gradient(0deg,#41080ced 0%,#5f0d17c7 27%,#7b152457 64%,#a6222914 100%);
+}
 .track::after {
   content: ""; position: absolute; inset: 0;
   background: linear-gradient(0deg,#5b0d18eb 0%,#6f121dcc 21%,#7b151f72 45%,transparent 76%);
@@ -92,7 +99,7 @@
 .action, .closedAction {
   display: inline-flex; align-items: center; justify-content: space-between; gap: 1.1rem;
   min-height: 2.75rem; margin-top: .38rem; padding: .7rem 1.05rem;
-  color: #28221d; background: #fff8ea; font-size: .94rem; line-height: 1.25; font-weight: 800;
+  color: #28221d; background: #fff; font-size: .94rem; line-height: 1.25; font-weight: 800;
   clip-path: polygon(0 0,100% 0,calc(100% - .42rem) 100%,0 100%);
 }
 .action svg { width: 1.05rem; height: 1.05rem; margin-inline-end: .22rem; }
@@ -106,8 +113,8 @@
 .closedCopy h2 { color: inherit; font-size: clamp(1.8rem,3vw,3.25rem); }
 .closedCopy p { margin: 0; }
 .closedCopy p a { text-decoration: underline; text-underline-offset: .15em; }
-.formPage { position: relative; isolation: isolate; overflow: clip; padding: 0 clamp(1rem, 3vw, 2rem) clamp(2rem,5vw,4.5rem); background: #faf8f3; }
-.pathTools { width: min(100%,66rem); align-items: center; padding-block: .45rem; border-bottom: 1px solid #cfc8bf; }
+.formPage { position: relative; isolation: isolate; overflow: clip; padding: 0 clamp(1rem, 3vw, 2rem) clamp(2rem,5vw,4.5rem); background: var(--surface, #fff); }
+.pathTools { width: min(100%,66rem); align-items: center; padding-block: .45rem; border-bottom: 1px solid var(--line, #dedede); }
 .pathTools a { color: #782024; gap: .5rem; font-size: .88rem; }
 .pathTools > span, .returnMark { color: #762328; font: 750 .7rem/1.25 ui-monospace, SFMono-Regular, Consolas, monospace; letter-spacing: .08em; text-transform: uppercase; }
 .returnIntro { width: min(100%,43rem); margin: clamp(1.5rem,4vw,3rem) auto 1.3rem; }
@@ -118,13 +125,13 @@
 @media (hover: hover) and (pointer: fine) {
   .scene:has(.newLane:hover) { --nudge: 2.6%; }
   .scene:has(.teamLane:hover) { --nudge: -2.6%; }
-  .scene:has(.newLane:hover) .trackDrawing, .scene:has(.teamLane:hover) .photo img { transform: scale(1.035); }
+  .scene:has(.newLane:hover) :is(.trackDrawing, .archiveTrack img), .scene:has(.teamLane:hover) .photo img { transform: scale(1.035); }
 }
 .scene:has(.newLane:focus-visible) { --nudge: 2.6%; }
 .scene:has(.teamLane:focus-visible) { --nudge: -2.6%; }
-.scene:has(.newLane:focus-visible) .trackDrawing, .scene:has(.teamLane:focus-visible) .photo img { transform: scale(1.035); }
+.scene:has(.newLane:focus-visible) :is(.trackDrawing, .archiveTrack img), .scene:has(.teamLane:focus-visible) .photo img { transform: scale(1.035); }
 @media (prefers-reduced-motion: no-preference) {
-  .track, .seam, .trackDrawing, .photo img { transition: transform 370ms var(--motion); }
+  .track, .seam, .trackDrawing, .photo img, .archiveTrack img { transition: transform 370ms var(--motion); }
   .seam path { transform-origin: 57% 0%; animation: chalk 560ms cubic-bezier(.2,.7,.2,1) both; }
   .seam .mobileCut { transform-origin: 0% 55%; }
   .wipe {
@@ -160,10 +167,17 @@
   .action { min-height: 2.65rem; margin-top: .18rem; padding: .52rem .85rem; font-size: .85rem; }
   .photo { inset: 44% 0 0; }
   .photo img { object-position: 50% 28%; }
+  .archiveTeam img { object-position: 37% 22%; }
   .photo::after { background: linear-gradient(0deg,#151210ef 0%,#13100ecf 28%,#13100e54 70%,transparent); }
   .track { inset: -10% 0 auto; width: 100%; height: 110%; clip-path: polygon(-1% 0,101% 0,101% 50%,-1% 59.09%); transform: translateY(calc(var(--nudge) / 1.1)); }
   .trackSurface { inset: 0 0 38%; }
+  .track:has(.archiveTrack) .trackSurface { inset-inline-end: 0; }
+  .archiveTrack img { object-position: 56% 29%; }
   .track::after { background: linear-gradient(100deg,#67121be8 0%,#921b2382 56%,transparent); }
+  .track:has(.archiveTrack)::after {
+    background: linear-gradient(90deg,#3d080b8a,#3d080b2b 72%,transparent),
+      linear-gradient(0deg,#41080ced 0%,#5a0c198c 48%,#56121f15 100%);
+  }
   .paintNumber { top: 2%; left: auto; right: 6%; font-size: clamp(4rem,17vw,8rem); opacity: .85; }
   .seam { transform: translateY(var(--nudge)); }
   .seam path { stroke-width: 4; }
@@ -177,7 +191,7 @@
   .detailsRow { column-gap: .5rem; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .scene .seam, .scene .track, .scene .trackDrawing, .scene .photo img { transform: none !important; }
+  .scene .seam, .scene .track, .scene .trackDrawing, .scene .photo img, .scene .archiveTrack img { transform: none !important; }
   .returnIntro::before { display: block; content: ""; width: 3rem; height: 3px; background: #b42129; margin-bottom: 1rem; }
 }
 @media (forced-colors: active) {

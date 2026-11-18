@@ -1,5 +1,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { isLocalRegistrationArchivePreview, localArchiveArtwork } from "./lib/local-registration-preview.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -13,6 +14,13 @@ const nextConfig = {
   outputFileTracingRoot: path.join(__dirname, "../.."),
   // Keep narrow-screen browser tests free of the dev-only bottom-left badge.
   ...(process.env.EL1TE_PLAYWRIGHT_TEST === "true" ? { devIndicators: false } : {}),
+  ...(isLocalRegistrationArchivePreview() ? {
+    async rewrites() {
+      return localArchiveArtwork.map(file => ({
+        source: `/__registration-preview/${file}`, destination: `http://127.0.0.1:5130/__registration-preview/${file}`
+      }));
+    }
+  } : {}),
   async headers() {
     const securityHeaders = [
       { key: "X-Content-Type-Options", value: "nosniff" },

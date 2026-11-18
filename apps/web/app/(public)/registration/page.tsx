@@ -7,6 +7,7 @@ import { getRegistrationSeason } from "@/lib/public/registration";
 import { registrationChannel, registrationDate, registrationOpeningDate, upcomingRegistrationDate } from "@/lib/registration";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
+import { isLocalRegistrationArchivePreview } from "@/lib/local-registration-preview.mjs";
 import { EntranceArt, EntranceHeader } from "@/components/public/registration-entrance";
 import line from "@/components/public/starting-line.module.css";
 import styles from "@/components/public/registration.module.css";
@@ -34,7 +35,7 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   ];
   return <div data-registration-hub="true" className={styles.page}>
     {season && <RegistrationVisit year={season.year} channel={channel} />}
-    {season?.isOpen ? <RegistrationPaths season={season} channel={channel} /> :
+    {season?.isOpen ? <RegistrationPaths season={season} channel={channel} archivePreview={isLocalRegistrationArchivePreview()} /> :
       <section className={line.entrance} aria-label="Registration">
         <EntranceHeader />
         <div className={line.closedScene}>

@@ -60,21 +60,36 @@ test("all four widths: both choices, one-tap navigation, contrast, no overflow a
     await expect(apply).toBeVisible();
     await expect(returning).toBeVisible();
     await expect(page.getByRole("link", { name: /view season details/i })).toBeVisible();
-    const image = page.locator('[data-registration-hub] img[src*="meet-community"]:visible').first();
-    await expect.poll(() => image.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+    await expect(page.locator("#registration-paths")).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    const images = page.locator('#registration-paths picture img:visible');
+    const archive = process.env.STARTING_LINE_ARCHIVE_PREVIEW === "true";
+    await expect(images).toHaveCount(archive ? 2 : 1);
+    await expect.poll(() => images.evaluateAll(els => els.every(el =>
+      el instanceof HTMLImageElement && el.complete && el.naturalWidth > 0))).toBe(true);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
     if (width <= 390) {
       const resources = await page.evaluate(() => performance.getEntriesByType("resource")
         .filter((r): r is PerformanceResourceTiming => r instanceof PerformanceResourceTiming && (r.initiatorType === "img" || /\.(webp|svg|png)(\?|$)/i.test(r.name)))
         .map(r => ({ name: r.name, bytes: r.encodedBodySize })));
-      expect(resources.some(r => r.name.includes("meet-community"))).toBe(true);
+      for (const photo of archive ? ["starting-blocks", "team-huddle"] : ["meet-community"])
+        expect(resources.some(r => r.name.includes(photo))).toBe(true);
       // Browser cache can legitimately produce zero for a reused entry.
       expect(resources.reduce((sum, image) => sum + image.bytes, 0)).toBeLessThan(300_000);
     }
     // axe waits until entrance drawing has settled to measure actual colors.
     if (width === 390 || width === 1440) await checkAxe(page);
+    if (archive && process.env.STARTING_LINE_CAPTURE === "1" && !isMobile && [390, 1440].includes(width)) {
+      const dir = path.resolve("../../artifacts/visual-review");
+      await mkdir(dir, { recursive: true });
+      await page.locator("#registration-paths").evaluate(async el => {
+        await document.fonts.ready;
+        await Promise.allSettled(el.getAnimations({ subtree: true }).map(animation => animation.finished));
+      });
+      await page.screenshot({ path: path.join(dir, `archive-entrance-${width}.jpg`), type: "jpeg", quality: 88 });
+    }
     if (width === 390 && isMobile) await returning.tap(); else await returning.press("Enter");
     const form = page.locator("#returning");
+    await expect(form).toHaveCSS("background-color", "rgb(255, 255, 255)");
     await expect(form.getByLabel("Parent or guardian email")).toBeVisible();
     await expect(form.getByLabel("Athlete’s first name")).toBeVisible();
     await expect(form.getByRole("button", { name: "Continue" })).toHaveCount(0);

@@ -23,8 +23,8 @@ function pathFromHash(): Path | null {
   return window.location.hash === "#returning" ? "returning" : null;
 }
 
-export function RegistrationPaths({ season, channel }: {
-  season: PublicRegistrationSeason; channel: RegistrationChannel;
+export function RegistrationPaths({ season, channel, archivePreview = false }: {
+  season: PublicRegistrationSeason; channel: RegistrationChannel; archivePreview?: boolean;
 }) {
   const selected = useSyncExternalStore(subscribe, pathFromHash, () => null);
   const previous = useRef<Path | null>(null);
@@ -74,7 +74,7 @@ export function RegistrationPaths({ season, channel }: {
         <div className={styles.closedCopy}><h2 ref={closedHeading} tabIndex={-1}>Applications are currently closed</h2>
           <p>Intake closed during your visit. Check back for the next opening or <a href="/contact">ask the club a question.</a></p></div>
       </div> : <nav className={styles.scene} aria-label="Registration paths">
-        <EntranceArt />
+        <EntranceArt archivePreview={archivePreview} />
         <a ref={applicationChoice} href="#apply" aria-label="Apply for a spot" className={styles.newLane}
           onClick={event => { if (!event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) setSweep("apply"); }}>
           <div className={styles.label}>
