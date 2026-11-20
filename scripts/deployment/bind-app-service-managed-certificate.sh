@@ -38,10 +38,22 @@ if [[ "$bound" != "$hostname" ]]; then
     --output none
 fi
 
+# On renewal Azure may omit hostNames from the resource-group certificate list.
+# The exact hostname binding, if already active, is the authoritative no-op.
+bound_thumbprint="$("$azure_cli" webapp config hostname list \
+  --resource-group "$resource_group" --webapp-name "$app_name" \
+  --query "[?name=='$hostname' && sslState=='SniEnabled'].thumbprint | [0]" --output tsv)"
+if [[ -n "$bound_thumbprint" ]]; then
+  echo "$hostname already has SNI TLS on $app_name."
+  exit 0
+fi
+
 thumbprint="$("$azure_cli" webapp config ssl list \
   --resource-group "$resource_group" \
-  --query "[?contains(hostNames, '$hostname')].thumbprint | [0]" \
-  --output tsv)"
+  --query '[].{hosts:hostNames,canonical:canonicalName,thumbprint:thumbprint}' --output json |
+  jq -r --arg host "$hostname" '
+    first(.[] | select(.canonical == $host or any(.hosts | arrays | .[]; . == $host))
+      | .thumbprint | strings | select(length > 0)) // empty')"
 
 if [[ -z "$thumbprint" ]]; then
   echo "Requesting an App Service managed certificate for $hostname."
@@ -80,19 +92,11 @@ if [[ -z "$thumbprint" ]]; then
   exit 1
 fi
 
-ssl_state="$("$azure_cli" webapp config hostname list \
+"$azure_cli" webapp config ssl bind \
   --resource-group "$resource_group" \
-  --webapp-name "$app_name" \
-  --query "[?name=='$hostname'].sslState | [0]" \
-  --output tsv)"
-
-if [[ "$ssl_state" != "SniEnabled" ]]; then
-  "$azure_cli" webapp config ssl bind \
-    --resource-group "$resource_group" \
-    --name "$app_name" \
-    --certificate-thumbprint "$thumbprint" \
-    --ssl-type SNI \
-    --output none
-fi
+  --name "$app_name" \
+  --certificate-thumbprint "$thumbprint" \
+  --ssl-type SNI \
+  --output none
 
 echo "$hostname is bound to $app_name with SNI TLS."
