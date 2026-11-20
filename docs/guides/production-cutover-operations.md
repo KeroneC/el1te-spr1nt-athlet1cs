@@ -20,7 +20,9 @@ Deploy in stages:
    Managed-certificate issuance is asynchronous. The deployment polls the named certificate until Azure exposes its thumbprint, then binds SNI TLS; rerunning the same request is safe.
 6. Promote reviewed public data, enter physical inventory, and complete private smoke testing. Leave indexing disabled.
 7. For the single supervised Square Production test, select `prelaunch_checkout_test`, `configure_api_domain`, verified email, enforced CSP, browser analytics, internal store preview, and checkout. The workflow requires the Azure web return URL, rejects indexing and public web-domain changes, and does not accept the final launch acknowledgement in this mode. Disable checkout again after the refund test.
-8. At cutover, move `www` and the apex to Azure and select `configure_public_web_domains`. Public checkout and indexing require both API and web domains, monitoring, verified email, enforced CSP, and the final launch acknowledgement.
+8. Website launch and commerce have separate approvals. Stage the same verified demo artifact and pending migrations privately first, keeping indexing, checkout and intake off. Record the release SHA, cutover and rollback owners and previous DNS targets. Verify the Squarespace archive independently serves the old site (not a redirect to `www`) before moving `www` and the apex. Retain the archive for 30 days.
+9. Bind canonical domains with indexing still off. Check HTTPS, the apex 308, registration on a phone, homepage, Forms, FAQs, Contact, monitoring and staff sign-in. Only then run with `enable_indexing` and `website_launch_acknowledged`. On failure, hold announcements, keep indexing off, and restore the recorded DNS if necessary. Do not remove intake records.
+10. Leave `enable_checkout=false` and `final_launch_acknowledged=false` for the November 23 site launch and November 27 intake opening. A later public checkout release requires its own stocktake, Square verification and commerce acknowledgement in addition to the existing security controls.
 
 ## DNS and archive sequence
 

@@ -6,7 +6,7 @@ import { hasUsableSponsorLogo, SponsorLogoTile } from "../components/public/spon
 import { SponsorTierSection } from "../components/public/sponsor-tier-section";
 import { getHallOfFameInductees, PUBLIC_REVALIDATE_SECONDS, fallbackSettings, publicApiFetch } from "../lib/public/client";
 import { CONTENT_KEYS, contentByKey } from "../lib/public/content";
-import { canonicalHostRedirect, robotsForEnvironment } from "../lib/public/deployment";
+import { canonicalHostRedirect, preventIndexing, robotsForEnvironment } from "../lib/public/deployment";
 import { FORM_DOWNLOADS, HEADER_NAV_ITEMS, PRIMARY_NAV_LINKS, prioritizeSponsorPreviews, sponsorTierClass } from "../lib/public/site";
 import { SCHOLARSHIP_COPY } from "../lib/public/scholarship";
 import type { Sponsor } from "../lib/public/types";
@@ -29,6 +29,16 @@ describe("Phase 8 public CMS helpers", () => {
     expect(canonicalHostRedirect("http://el1tespr1ntathlet1cs.org/shop?featured=true", "el1tespr1ntathlet1cs.org")?.toString())
       .toBe("https://www.el1tespr1ntathlet1cs.org/shop?featured=true");
     expect(canonicalHostRedirect("https://www.el1tespr1ntathlet1cs.org/shop", "www.el1tespr1ntathlet1cs.org")).toBeNull();
+  });
+
+  it("only permits indexing canonical public pages after launch", () => {
+    const host = "www.el1tespr1ntathlet1cs.org";
+    expect(preventIndexing(host, "/registration", "production", "true")).toBe(false);
+    for (const path of ["/admin", "/admin/login", "/api/public/registration", "/shop/order-status", "/shop/order-confirmation"])
+      expect(preventIndexing(host, path, "production", "true")).toBe(true);
+    expect(preventIndexing("private.azurewebsites.net", "/registration", "production", "true")).toBe(true);
+    expect(preventIndexing(host, "/registration", "production", "false")).toBe(true);
+    expect(preventIndexing(host, "/registration", "demo", "true")).toBe(true);
   });
 
   it("keeps secondary public pages discoverable without crowding the header", () => {

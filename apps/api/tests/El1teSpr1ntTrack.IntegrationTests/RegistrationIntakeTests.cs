@@ -24,19 +24,21 @@ public sealed class RegistrationIntakeTests
     private static IntakeRequest FullRequest() => Request() with
     {
         ApplicationVersion = IntakeRules.CurrentApplicationVersion, AthleteLastName = "Test",
-        DateOfBirth = "2020-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable",
+        DateOfBirth = "2019-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable",
         GuardianPhone = "412-555-0100", StreetAddress = "1 Synthetic Lane", City = "Sample City", State = "PA",
         PostalCode = "15201", EmergencyContactName = "Example Contact", EmergencyContactPhone = "412-555-0101",
         EmergencyContactRelationship = "Family friend", AgeGroup = null
     };
 
     [Theory]
-    [InlineData("2020-12-06")]
+    [InlineData("2019-12-06")]
+    [InlineData("2020-12-05")]
+    [InlineData("2007-12-05")]
     [InlineData("2027-01-01")]
     [InlineData("2020-02-30")]
     [InlineData("12/05/2020")]
     [InlineData("")]
-    public void FullApplicationRejectsBirthDatesThatAreInvalidFutureOrBelowSix(string birthDate)
+    public void FullApplicationRejectsBirthDatesThatAreInvalidFutureOrOutsideTheAgeRange(string birthDate)
     {
         var error = Assert.Throws<CmsRequestValidationException>(() => IntakeRules.Normalize(
             FullRequest() with { DateOfBirth = birthDate }, Season(), Now));
@@ -44,18 +46,42 @@ public sealed class RegistrationIntakeTests
     }
 
     [Fact]
-    public void FullApplicationAcceptsExactSixthBirthdayByFirstPracticeAndLeavesOptionalFieldsBlank()
+    public void FullApplicationAcceptsExactSeventhBirthdayByFirstPracticeAndLeavesOptionalFieldsBlank()
     {
         var request = FullRequest();
         var item = IntakeRules.Normalize(request, Season(), Now);
-        Assert.Equal(new DateOnly(2020, 12, 5), item.DateOfBirth);
+        Assert.Equal(new DateOnly(2019, 12, 5), item.DateOfBirth);
         Assert.Equal("Not applicable", item.SchoolGrade);
         Assert.Equal("Not sure / not applicable", item.SchoolDistrict);
         Assert.Null(item.AgeGroup);
         Assert.Null(item.Gender);
         Assert.Null(item.SecondaryGuardianName);
         Assert.Equal("Family friend", item.EmergencyContactRelationship);
-        Assert.NotNull(IntakeRules.Normalize(request with { DateOfBirth = "1999-01-01" }, Season(), Now).DateOfBirth);
+        Assert.NotNull(IntakeRules.Normalize(request with { DateOfBirth = "2008-12-05" }, Season(), Now).DateOfBirth);
+        Assert.NotNull(IntakeRules.Normalize(request with { DateOfBirth = "2007-12-06" }, Season(), Now).DateOfBirth);
+    }
+
+    [Fact]
+    public void AgeRuleDoesNotInvalidatePreviouslySavedApplications()
+    {
+        var request = FullRequest() with { DateOfBirth = "2020-12-05" };
+        var item = IntakeRules.Normalize(request, Season(), Now, enforceCurrentEligibility: false);
+        Assert.Equal(new DateOnly(2020, 12, 5), item.DateOfBirth);
+    }
+
+    [Theory]
+    [InlineData("2020-02-29", true)]
+    [InlineData("2008-02-29", false)]
+    public void LeapDayUsesFebruary28InANonLeapYear(string birthDate, bool eligible)
+    {
+        var season = Season();
+        season.FirstPracticeDate = new DateOnly(2027, 2, 28);
+        var request = FullRequest() with { DateOfBirth = birthDate };
+        if (eligible)
+            Assert.NotNull(IntakeRules.Normalize(request, season, Now).DateOfBirth);
+        else
+            Assert.Contains("dateOfBirth", Assert.Throws<CmsRequestValidationException>(() =>
+                IntakeRules.Normalize(request, season, Now)).Errors.Keys);
     }
 
     [Fact]

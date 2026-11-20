@@ -15,7 +15,7 @@ run_validator() {
     CONFIGURE_API_DOMAIN=false CONFIGURE_PUBLIC_WEB_DOMAINS=false USE_VERIFIED_EMAIL_DOMAIN=false \
     ENFORCE_CSP=false ENABLE_BROWSER_ANALYTICS=false ENABLE_HOME_ALL_AMERICAN_SHOWCASE=false ENABLE_STORE_PREVIEW=false ENABLE_CHECKOUT=false \
     PRELAUNCH_CHECKOUT_TEST=false ENABLE_INDEXING=false RUN_SQL_RESTORE_TEST=false \
-    FINAL_LAUNCH_ACKNOWLEDGED=false \
+    WEBSITE_LAUNCH_ACKNOWLEDGED=false FINAL_LAUNCH_ACKNOWLEDGED=false \
     "$@" bash "$validator"
 }
 
@@ -38,6 +38,13 @@ expect_fail() {
 
 expect_pass "infrastructure only"
 
+site=(INFRASTRUCTURE_ONLY=false MANAGED_IDENTITY_SQL_READY=true DATABASE_MIGRATION_CONNECTION_STRING=connection
+  CONFIGURE_API_DOMAIN=true CONFIGURE_PUBLIC_WEB_DOMAINS=true ENABLE_INDEXING=true WEBSITE_LAUNCH_ACKNOWLEDGED=true)
+expect_pass "canonical site launch without commerce" "${site[@]}"
+expect_fail "commerce acknowledgement cannot approve indexing" "${site[@]}" WEBSITE_LAUNCH_ACKNOWLEDGED=false FINAL_LAUNCH_ACKNOWLEDGED=true
+expect_fail "no indexing on private web host" "${site[@]}" CONFIGURE_PUBLIC_WEB_DOMAINS=false
+expect_fail "no indexing from infrastructure only" "${site[@]}" INFRASTRUCTURE_ONLY=true
+
 expect_pass "private application deployment" \
   INFRASTRUCTURE_ONLY=false MANAGED_IDENTITY_SQL_READY=true \
   DATABASE_MIGRATION_CONNECTION_STRING=connection ENABLE_HOME_ALL_AMERICAN_SHOWCASE=true
@@ -57,13 +64,18 @@ expect_pass "final public checkout" \
   INFRASTRUCTURE_ONLY=false MANAGED_IDENTITY_SQL_READY=true DATABASE_MIGRATION_CONNECTION_STRING=connection \
   CONFIGURE_API_DOMAIN=true CONFIGURE_PUBLIC_WEB_DOMAINS=true USE_VERIFIED_EMAIL_DOMAIN=true \
   ENFORCE_CSP=true ENABLE_BROWSER_ANALYTICS=true ENABLE_STORE_PREVIEW=true ENABLE_CHECKOUT=true \
-  ENABLE_INDEXING=true FINAL_LAUNCH_ACKNOWLEDGED=true SQUARE_LOCATION_ID=location \
+  ENABLE_INDEXING=true WEBSITE_LAUNCH_ACKNOWLEDGED=true FINAL_LAUNCH_ACKNOWLEDGED=true SQUARE_LOCATION_ID=location \
   SQUARE_WEBHOOK_NOTIFICATION_URL=https://api.el1tespr1ntathlet1cs.org/api/webhooks/square \
   EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL=https://www.el1tespr1ntathlet1cs.org/shop/order-confirmation \
   SQUARE_ACCESS_TOKEN_SECRET_URI=https://vault/secrets/token \
   SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI=https://vault/secrets/signature
 
 expect_fail "bootstrap during infrastructure only" BOOTSTRAP_ADMIN=true
+expect_fail "website acknowledgement cannot enable public commerce" "${site[@]}" \
+  USE_VERIFIED_EMAIL_DOMAIN=true ENFORCE_CSP=true ENABLE_BROWSER_ANALYTICS=true ENABLE_STORE_PREVIEW=true ENABLE_CHECKOUT=true \
+  SQUARE_LOCATION_ID=location SQUARE_WEBHOOK_NOTIFICATION_URL=https://api.el1tespr1ntathlet1cs.org/api/webhooks/square \
+  EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL=https://www.el1tespr1ntathlet1cs.org/shop/order-confirmation \
+  SQUARE_ACCESS_TOKEN_SECRET_URI=https://vault/secrets/token SQUARE_WEBHOOK_SIGNATURE_KEY_SECRET_URI=https://vault/secrets/signature
 expect_fail "full deploy without SQL readiness" INFRASTRUCTURE_ONLY=false DATABASE_MIGRATION_CONNECTION_STRING=connection
 expect_fail "prelaunch without API domain" \
   INFRASTRUCTURE_ONLY=false MANAGED_IDENTITY_SQL_READY=true DATABASE_MIGRATION_CONNECTION_STRING=connection \

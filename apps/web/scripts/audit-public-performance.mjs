@@ -2,7 +2,8 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "@playwright/test";
 
-const routes = ["/", "/registration", "/forms", "/gallery", "/hall-of-fame", "/shop"];
+const routes = process.env.PERFORMANCE_SUITE === "registration" ? ["/registration"] :
+  ["/", "/registration", "/forms", "/gallery", "/hall-of-fame", "/shop"];
 const baseUrl = process.env.PERFORMANCE_BASE_URL;
 const reportPath = process.env.PERFORMANCE_REPORT_PATH;
 const enforceBudgets = process.env.PERFORMANCE_ENFORCE_BUDGETS !== "false";
@@ -112,7 +113,8 @@ for (const result of results) {
     failures.push(result.route + ": CLS exceeded 0.1");
   }
 
-  const budget = result.route === "/" ? 1_500_000 : result.route === "/gallery" ? 2_000_000 : null;
+  const budget = result.route === "/" ? 1_500_000 : result.route === "/gallery" ? 2_000_000 :
+    result.route === "/registration" ? 300_000 : null;
   if (budget && result.cold.imageBytes > budget) {
     failures.push(result.route + ": initial image bytes exceeded " + budget);
   }
@@ -142,6 +144,7 @@ const report = {
     warmLcpMs: 2_500,
     maxCls: 0.1,
     homepageImageBytes: 1_500_000,
+    registrationImageBytes: 300_000,
     galleryImageBytes: 2_000_000
   },
   results,

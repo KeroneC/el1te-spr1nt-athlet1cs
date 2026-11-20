@@ -6,7 +6,7 @@ import { RegistrationPaths } from "@/components/public/registration-paths";
 import { FormDownloadList } from "@/components/public/form-download-list";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "@/lib/admin/mutation-policy";
 import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
-import { registrationChannel, upcomingRegistrationDate, type PublicRegistrationSeason } from "@/lib/registration";
+import { registrationChannel, openingPhase, type PublicRegistrationSeason } from "@/lib/registration";
 
 const season: PublicRegistrationSeason = {
   year: 2027, title: "Test season", openingDate: "2026-11-27", firstPracticeDate: "2026-12-05", isOpen: true,
@@ -32,13 +32,13 @@ describe("registration intake", () => {
     expect(returning).not.toContain('name="dateOfBirth"');
     expect(returning).not.toContain('name="emergencyContactPhone"');
     expect(returning).not.toContain('name="schoolDistrict"');
-    expect(application).toContain("another track and field club");
-    expect(application).toContain("Athlete details");
-    expect(application).toContain("Guardian and household");
-    expect(application).toContain("Emergency contact");
-    expect(application).toContain("Track background");
-    for (const field of ["athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict",
-      "streetAddress", "city", "state", "postalCode", "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship"])
+    expect(application).toContain("Who’s your athlete?");
+    expect(application).toContain("Continue");
+    expect(application).not.toContain('name="guardianEmail"');
+    expect(application).not.toContain('name="streetAddress"');
+    expect(application).not.toContain('name="emergencyContactName"');
+    expect(application).not.toContain("Submit application");
+    for (const field of ["athleteFirstName", "athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict"])
       expect(application).toContain(`name="${field}"`);
     expect(application).not.toContain('name="ageGroup"');
     expect(application).not.toContain('name="athleteEmail"');
@@ -47,7 +47,7 @@ describe("registration intake", () => {
 
   it("starts with two direct links and no active form until a path is selected", () => {
     const markup = renderToStaticMarkup(
-      <RegistrationPaths season={season} channel="direct" intro={<h1>Find your starting lane</h1>} />
+      <RegistrationPaths season={season} channel="direct" />
     );
     for (const path of ["apply", "returning"]) {
       expect(markup).toContain(`href="#${path}"`);
@@ -56,9 +56,9 @@ describe("registration intake", () => {
   });
 
   it("only advertises an upcoming date until that Eastern calendar day arrives", () => {
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T04:59:00Z"))).toBe("2026-11-27");
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T05:00:00Z"))).toBeNull();
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-28T05:00:00Z"))).toBeNull();
+    expect(openingPhase("2026-11-27", new Date("2026-11-27T04:59:00Z"))).toBe("upcoming");
+    expect(openingPhase("2026-11-27", new Date("2026-11-27T05:00:00Z"))).toBe("today");
+    expect(openingPhase("2026-11-27", new Date("2026-11-28T05:00:00Z"))).toBe("closed");
   });
 
   it("identifies every paperwork download by name", () => {

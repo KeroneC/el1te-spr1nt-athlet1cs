@@ -6,6 +6,13 @@ export function publicIndexingEnabled(environment: string | undefined, configure
   return environment === "production" && configured?.trim().toLowerCase() === "true";
 }
 
+/** A public launch applies to the canonical host, never the private Azure origin. */
+export function preventIndexing(host: string | null, pathname: string, environment?: string, configured?: string) {
+  return !publicIndexingEnabled(environment, configured) ||
+    host?.split(":", 1)[0].toLowerCase() !== "www.el1tespr1ntathlet1cs.org" ||
+    /^\/(?:admin|api|shop\/order-(?:status|confirmation))(?:\/|$)/i.test(pathname);
+}
+
 export function robotsForEnvironment(environment: string | undefined, configured?: string): Metadata["robots"] {
   return publicIndexingEnabled(environment, configured)
     ? undefined
