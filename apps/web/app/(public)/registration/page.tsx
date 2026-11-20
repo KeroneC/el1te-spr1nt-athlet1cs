@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { getRegistrationSeason } from "@/lib/public/registration";
-import { registrationChannel, registrationDate, registrationOpeningDate, upcomingRegistrationDate } from "@/lib/registration";
+import { openingPhase, registrationChannel, registrationDate, registrationOpeningDate } from "@/lib/registration";
+import { RegistrationPoster } from "@/components/public/registration-poster";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
 import { isLocalRegistrationArchivePreview } from "@/lib/local-registration-preview.mjs";
@@ -20,9 +21,10 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const [{ state, season }, query] = await Promise.all([getRegistrationSeason(), searchParams]);
   const channel = registrationChannel(query.src);
   const retryHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
-  const planned = state !== "unavailable" && !season?.isOpen
-    ? upcomingRegistrationDate(season?.openingDate ?? registrationOpeningDate)
-    : null;
+  const openingDate = season?.openingDate ?? registrationOpeningDate;
+  // The API only releases the title once a season has opened. A reclosure on
+  // opening day must not promise a second opening.
+  const phase = state === "unavailable" || season?.title != null ? "closed" : openingPhase(openingDate);
   const seasonDetails = [
     { label: "First practice", value: season?.firstPracticeDate ? registrationDate(season.firstPracticeDate) : null },
     { label: "Practice location", value: season?.practiceLocation },
@@ -33,18 +35,18 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   return <div data-registration-hub="true" className={styles.page}>
     {season && <RegistrationVisit year={season.year} channel={channel} />}
     {season?.isOpen ? <RegistrationPaths season={season} channel={channel} archivePreview={isLocalRegistrationArchivePreview()} /> :
+      phase !== "closed" ? <RegistrationPoster openingDate={openingDate} today={phase === "today"} retryHref={retryHref} /> :
       <section className={line.entrance} aria-label="Registration">
         <EntranceHeader />
         <div className={line.closedScene}>
           <EntranceArt closed />
           <div className={line.closedCopy}>
             <h2>{state === "unavailable" ? "Registration is temporarily unavailable"
-              : planned ? "Applications open soon" : "Applications are currently closed"}</h2>
+              : "Applications are currently closed"}</h2>
             {state === "unavailable" ? <>
               <p>We can’t check registration status right now. Try again or ask the club a question.</p>
               <a className={line.closedAction} href={retryHref}>Check registration status</a>
-            </> : planned ? <p>Planned opening: <strong>{registrationDate(planned)}</strong>. Check back here for availability.</p>
-              : <p>Check back here for the next opening, or <Link href="/contact">contact the club</Link> with questions.</p>}
+            </> : <p>Check back here for the next opening, or <Link href="/contact">contact the club</Link> with questions.</p>}
           </div>
         </div>
       </section>}

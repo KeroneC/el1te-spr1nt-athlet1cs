@@ -4,6 +4,10 @@ The Registration page has two parent/guardian paths and shows only the selected 
 
 ## Family walkthrough
 
+**November 23 website launch:** The canonical registration URL shows the “On your marks.” opening poster with the date, eligibility and preparation instructions; no application, check-in or signup is available. The date uses America/New_York. On opening day it offers a status refresh until staff open intake. A reclosed season and an API outage show distinct messages; neither accepts new submissions.
+
+**Release rehearsal:** Build the optimized web app, then stage it from the repo root with `bash scripts/artifacts/build-web-artifact.sh apps/web artifacts/web`. In `apps/web`, use `node scripts/preview-registration.mjs open --built` for the six steps and two-field check-in, or `upcoming --built` for the poster. The latter listens on port 3014; run `STARTING_LINE_PREVIEW_URL=http://127.0.0.1:3014 npx playwright test -c playwright.starting-line.config.ts poster.spec.ts`. Audit either page with `PERFORMANCE_SUITE=registration PERFORMANCE_BASE_URL=http://127.0.0.1:3014 npm run audit:performance` (3013 for open). Only synthetic addresses ending in `@example.test` are accepted by the fixture. Local results do not replace demo SQL/queue rehearsal. Review mobile/desktop captures before promoting the same immutable main CI artifact.
+
 On `/registration`, the starting line offers **Apply for a spot** (`#apply`) and **Check in** (`#returning`) only when intake is open. A new guardian completes Athlete, Guardian, Household, Emergency contact and Track background, then reviews the answers before submitting. **Back** and **Edit** do not submit. Returning families have one screen and no paperwork. Drafts live only in page memory: navigating between steps retains answers, but reloading or leaving the page discards them. Do not enter real family information in a design rehearsal.
 
 The **Season details** disclosure beneath the choices shows available practice information, fees, and reply timing on demand. Forms, FAQs, and club contact are linked from the same strip, including when intake is closed.

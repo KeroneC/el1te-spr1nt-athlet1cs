@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canonicalHostRedirect } from "@/lib/public/deployment";
+import { canonicalHostRedirect, preventIndexing } from "@/lib/public/deployment";
 import { isRetiredAdminRoute } from "@/lib/admin/retired-routes";
 import { runtimeCspHeader } from "@/lib/public/security-headers";
 
@@ -22,7 +22,12 @@ export function proxy(request: NextRequest) {
     }));
   }
 
-  return withRuntimeCsp(NextResponse.next());
+  const response = withRuntimeCsp(NextResponse.next());
+  if (preventIndexing(request.headers.get("host"), request.nextUrl.pathname,
+    process.env.DEPLOYMENT_ENVIRONMENT, process.env.PUBLIC_INDEXING_ENABLED)) {
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
+  return response;
 }
 
 export const config = { matcher: "/:path*" };

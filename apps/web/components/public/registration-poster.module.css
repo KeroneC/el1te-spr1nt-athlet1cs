@@ -1,0 +1,37 @@
+.poster { position: relative; isolation: isolate; background: #fbf8f2; color: #201c19; border-bottom: 1px solid #ded8d0; }
+.lanes {
+  position: absolute; inset: 0 0 0 auto; width: 46%; height: 100%; z-index: -1;
+  background: linear-gradient(145deg,#ed4938,#bd2029 64%,#8a1d28);
+  clip-path: polygon(24% 0,100% 0,100% 100%,0 100%);
+}
+.copy { width: min(55%,56rem); padding: clamp(2rem,5vw,6rem) clamp(1.1rem,5vw,6rem); }
+.kicker { color: #843027; font: 750 .74rem/1.6 ui-monospace, monospace; letter-spacing: .1em; text-transform: uppercase; }
+.kicker span { padding-inline: .25em; }
+.poster h1 {
+  margin: .28em 0; font: 750 clamp(3.2rem,6.9vw,7.3rem)/.98 var(--font-oswald, "Arial Narrow"), sans-serif;
+  letter-spacing: -.044em; text-transform: none;
+}
+.poster h1 em { color: #a41f26; }
+.date { font-size: clamp(1.15rem,1.8vw,1.7rem); font-weight: 750; line-height: 1.35; text-wrap: balance; }
+.date time { display: inline-block; max-width: 100%; }
+.age { margin: .4rem 0 1.35rem; color: #504c47; }
+.prep { width: fit-content; max-width: 36rem; }
+.prep summary, .retry {
+  color: #801c22; cursor: pointer; font-weight: 750; min-height: 2.75rem;
+  padding: .6rem .15rem; text-decoration: underline; text-underline-offset: .22em;
+}
+.prep summary { width: fit-content; }
+.retry { display: inline-block; margin-bottom: .5rem; background: #9f2026; padding-inline: 1rem; color: white; }
+.prep p { margin: .5rem 0; max-width: 48ch; }
+.poster :is(summary,a):focus-visible { outline: 3px solid #31231e; outline-offset: 3px; }
+@media (prefers-reduced-motion: no-preference) {
+  .chalk { stroke-dasharray: 1; animation: mark .68s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes mark { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+}
+@media (max-width: 680px) {
+  .poster { display: flex; flex-direction: column; }
+  .lanes { position: relative; inset: auto; width: 100%; height: clamp(4.5rem,19vw,8rem);
+    clip-path: polygon(0 0,100% 0,100% 64%,0 100%); }
+  .copy { width: 100%; padding: 1rem clamp(1rem,5vw,2rem) 1.5rem; }
+}
+@media (forced-colors: active) { .lanes { visibility: hidden; } .retry { border: 1px solid ButtonText; } }

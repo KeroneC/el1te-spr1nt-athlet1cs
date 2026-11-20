@@ -147,7 +147,9 @@ test("families and staff can complete both registration paths through the browse
 
       await publicPage.goto("/registration");
       await expect(publicPage.locator('[data-registration-hub="true"]')).toBeVisible();
-      await expect(publicPage.getByRole("heading", { name: "Applications open soon" })).toBeVisible();
+      await expect(publicPage.getByRole("heading", { name: "On your marks." })).toBeVisible();
+      await publicPage.getByText("How to prepare", { exact: true }).click();
+      await expect(publicPage.getByText(/Send paperwork only after an offer/)).toBeVisible();
       await expect(publicPage.getByRole("link", { name: "Apply for a spot", exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Open intake", exact: true })).toBeDisabled();
       await page.getByLabel("Opening date (Eastern)", { exact: true }).fill(openingDate);

@@ -68,7 +68,12 @@ on:
         type: boolean
         default: false
       enable_indexing:
-        description: Remove production noindex after every launch gate passes
+        description: Allow indexing on canonical public pages after the website launch checks
+        required: true
+        type: boolean
+        default: false
+      website_launch_acknowledged:
+        description: Canonical HTTPS, registration smoke, policies, monitoring and DNS rollback are verified
         required: true
         type: boolean
         default: false
@@ -78,7 +83,7 @@ on:
         type: boolean
         default: false
       final_launch_acknowledged:
-        description: Club approvals, stocktake, Square, policies, monitoring, and rollback gates are complete
+        description: Commerce approval — stocktake, Square, policies, monitoring and checkout rollback are complete
         required: true
         type: boolean
         default: false
@@ -135,6 +140,7 @@ jobs:
       ENABLE_CHECKOUT: ${{ inputs.enable_checkout }}
       PRELAUNCH_CHECKOUT_TEST: ${{ inputs.prelaunch_checkout_test }}
       ENABLE_INDEXING: ${{ inputs.enable_indexing }}
+      WEBSITE_LAUNCH_ACKNOWLEDGED: ${{ inputs.website_launch_acknowledged }}
       RUN_SQL_RESTORE_TEST: ${{ inputs.run_sql_restore_test }}
       FINAL_LAUNCH_ACKNOWLEDGED: ${{ inputs.final_launch_acknowledged }}
 
@@ -148,6 +154,17 @@ jobs:
       - name: Validate gated production request
         shell: bash
         run: bash .deployment-control/scripts/deployment/validate-production-request.sh
+
+      - name: Verify live canonical website before enabling indexing
+        if: ${{ inputs.enable_indexing }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          target=https://www.el1tespr1ntathlet1cs.org/registration
+          [[ "$(curl -sS --max-time 15 -o /dev/null -w '%{http_code} %{redirect_url}' https://el1tespr1ntathlet1cs.org/registration)" == "308 $target" ]]
+          html="$(curl -fsS --max-time 15 "$target")"
+          [[ "$html" == *'data-registration-hub="true"'* && "$html" != *'Registration is temporarily unavailable'* ]]
+          curl -fsS --max-time 15 https://api.el1tespr1ntathlet1cs.org/health/ready >/dev/null
 
       - name: Verify selected immutable main release
         id: release
@@ -362,6 +379,7 @@ jobs:
           echo "Commit: ${{ steps.release.outputs.sha }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Checkout enabled: ${{ inputs.enable_checkout }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Indexing enabled: ${{ inputs.enable_indexing }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Website launch acknowledged: ${{ inputs.website_launch_acknowledged }}" >> "$GITHUB_STEP_SUMMARY"
           echo "CSP enforced: ${{ inputs.enforce_csp }}" >> "$GITHUB_STEP_SUMMARY"
           echo "Browser analytics enabled: ${{ inputs.enable_browser_analytics }}" >> "$GITHUB_STEP_SUMMARY"
           echo "API custom domain configured: ${{ inputs.configure_api_domain }}" >> "$GITHUB_STEP_SUMMARY"

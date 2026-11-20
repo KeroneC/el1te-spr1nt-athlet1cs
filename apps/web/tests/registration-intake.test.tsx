@@ -6,7 +6,7 @@ import { RegistrationPaths } from "@/components/public/registration-paths";
 import { FormDownloadList } from "@/components/public/form-download-list";
 import { isAllowedAdminMutation, isAllowedAdminRead } from "@/lib/admin/mutation-policy";
 import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
-import { registrationChannel, upcomingRegistrationDate, type PublicRegistrationSeason } from "@/lib/registration";
+import { registrationChannel, openingPhase, type PublicRegistrationSeason } from "@/lib/registration";
 
 const season: PublicRegistrationSeason = {
   year: 2027, title: "Test season", openingDate: "2026-11-27", firstPracticeDate: "2026-12-05", isOpen: true,
@@ -56,9 +56,9 @@ describe("registration intake", () => {
   });
 
   it("only advertises an upcoming date until that Eastern calendar day arrives", () => {
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T04:59:00Z"))).toBe("2026-11-27");
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-27T05:00:00Z"))).toBeNull();
-    expect(upcomingRegistrationDate("2026-11-27", new Date("2026-11-28T05:00:00Z"))).toBeNull();
+    expect(openingPhase("2026-11-27", new Date("2026-11-27T04:59:00Z"))).toBe("upcoming");
+    expect(openingPhase("2026-11-27", new Date("2026-11-27T05:00:00Z"))).toBe("today");
+    expect(openingPhase("2026-11-27", new Date("2026-11-28T05:00:00Z"))).toBe("closed");
   });
 
   it("identifies every paperwork download by name", () => {
