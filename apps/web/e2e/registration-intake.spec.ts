@@ -296,7 +296,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(application.getByText(/no automatic confirmation email is sent/i)).toBeVisible();
       await expect(application.getByText("SyntheticSurname", { exact: true })).toHaveCount(0);
       await expect(application.getByText("Synthetic Emergency Contact", { exact: true })).toHaveCount(0);
-      await expect(application.getByText(/wait for an offer before sending completed paperwork/i)).toBeVisible();
+      await expect(application.getByText("Wait for an offer before sending paperwork.", { exact: true })).toBeVisible();
       await application.getByRole("button", { name: "Copy reference" }).click();
       await expect(application.getByText("Reference copied.", { exact: true })).toBeVisible();
       await checkLayout(publicPage, application.getByRole("heading", { name: "Application received" }));
@@ -312,7 +312,7 @@ test("families and staff can complete both registration paths through the browse
       await checkA11y(publicPage, "#returning");
       await returning.getByRole("button", { name: "Submit check-in" }).click();
       await expect(returning.getByRole("heading", { name: "Check-in received" })).toBeVisible();
-      await expect(returning.getByText("Returning athletes do not need to submit paperwork.", { exact: true })).toBeVisible();
+      await expect(returning.getByText("Returning athletes don’t need to send paperwork.", { exact: true })).toBeVisible();
       await expect(returning.getByText(/no automatic confirmation email is sent/i)).toBeVisible();
       expect(await returning.getByText(referencePattern).innerText()).toMatch(referencePattern);
       await returning.getByRole("button", { name: "Copy reference" }).click();
@@ -518,9 +518,10 @@ test("blank registration downloads stay available and individually named", async
   expect(download.suggestedFilename()).toMatch(/\.pdf$/i);
   expect(await download.failure()).toBeNull();
   await page.goto("/registration");
-  await expect(page.getByRole("link", { name: /download .*athlete registration/i })).toBeVisible();
-  await page.getByRole("link", { name: "All forms", exact: true }).click();
+  await page.getByRole("navigation", { name: "Registration help" })
+    .getByRole("link", { name: "Forms", exact: true }).click();
   await expect(page).toHaveURL(/\/forms$/);
+  await expect(directLinks).toHaveCount(3);
   await page.goto("/faqs");
   await page.getByText("How do I register my child?", { exact: true }).click();
   await expect(page.getByText(/returning athletes.*no paperwork is required/i)).toBeVisible();
