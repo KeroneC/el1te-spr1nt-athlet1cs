@@ -19,8 +19,11 @@ case "$*" in
     ;;
   *"webapp config hostname add"*)
     ;;
+  *"webapp config hostname list"*"sslState=='SniEnabled'"*".thumbprint | [0]"*)
+    printf '%s\n' "${FAKE_BOUND_THUMBPRINT:-}"
+    ;;
   *"webapp config ssl list"*)
-    printf '%s\n' "${FAKE_EXISTING_THUMBPRINT:-}"
+    printf '%s\n' "${FAKE_CERTS:-[]}"
     ;;
   *"webapp config ssl create"*)
     printf '%s\n' "${FAKE_CREATE_THUMBPRINT:-}"
@@ -34,9 +37,6 @@ case "$*" in
     if (( count >= ${FAKE_READY_AFTER:-1} )); then
       printf '%s\n' "${FAKE_READY_THUMBPRINT:-READY123}"
     fi
-    ;;
-  *"webapp config hostname list"*".sslState | [0]"*)
-    printf '%s\n' "${FAKE_SSL_STATE:-}"
     ;;
   *"webapp config ssl bind"*)
     ;;
@@ -65,16 +65,26 @@ run_case() {
 
 run_case existing env \
   FAKE_BOUND_HOST=api.example.org \
-  FAKE_EXISTING_THUMBPRINT=EXISTING123 \
-  FAKE_SSL_STATE=SniEnabled
+  FAKE_BOUND_THUMBPRINT=EXISTING123
 
-if grep -q "ssl create\|ssl bind" "$test_root/existing/az.log"; then
-  echo "Existing binding should not create or bind a certificate." >&2
+if grep -Eq 'hostname add|ssl (list|create|bind)' "$test_root/existing/az.log"; then
+  echo "Existing SNI binding should not enumerate, create, or bind certificates." >&2
   exit 1
 fi
 
+run_case nullhosts env FAKE_BOUND_HOST=api.example.org \
+  'FAKE_CERTS=[{"hosts":null,"canonical":"unrelated.example.org","thumbprint":"OTHER"},{"hosts":null,"canonical":"api.example.org","thumbprint":"NAMED"}]'
+grep -q -- "--certificate-thumbprint NAMED" "$test_root/nullhosts/az.log"
+! grep -q 'ssl create' "$test_root/nullhosts/az.log" || exit 1
+
+run_case san env FAKE_BOUND_HOST=api.example.org \
+  'FAKE_CERTS=[{"hosts":null},{"hosts":"api.example.org.example.net","thumbprint":"WRONG_TYPE"},{"hosts":["api.example.org.example.net"],"thumbprint":"OTHER"},{"hosts":["api.example.org"],"thumbprint":"SAN"}]'
+grep -q -- "--certificate-thumbprint SAN" "$test_root/san/az.log"
+! grep -q 'ssl create' "$test_root/san/az.log" || exit 1
+
 run_case asynchronous env \
   FAKE_BOUND_HOST=api.example.org \
+  'FAKE_CERTS=[{"hosts":null,"canonical":null,"thumbprint":"UNRELATED"}]' \
   FAKE_READY_AFTER=2 \
   FAKE_READY_THUMBPRINT=ASYNC123
 
@@ -89,5 +99,12 @@ set -e
 
 [[ "$timeout_exit" -ne 0 ]]
 grep -q "did not become ready after 3 checks" <<< "$timeout_output"
+
+# A reviewed control-plane hotfix must apply to the previously tested app SHA.
+workflow="$script_dir/../../.github/workflows/deploy-production.yml"
+stage_line=$(grep -nF 'install -m 0700 .deployment-control/scripts/deployment/bind-app-service-managed-certificate.sh "$RUNNER_TEMP/el1te-bind-managed-tls.sh"' "$workflow" | cut -d: -f1)
+checkout_line=$(grep -nF 'name: Checkout exact release commit' "$workflow" | cut -d: -f1)
+bind_line=$(grep -nF 'bash "$RUNNER_TEMP/el1te-bind-managed-tls.sh"' "$workflow" | cut -d: -f1)
+(( stage_line < checkout_line && checkout_line < bind_line ))
 
 echo "App Service managed-certificate binding tests passed."

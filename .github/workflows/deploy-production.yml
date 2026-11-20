@@ -153,7 +153,11 @@ jobs:
 
       - name: Validate gated production request
         shell: bash
-        run: bash .deployment-control/scripts/deployment/validate-production-request.sh
+        run: |
+          bash .deployment-control/scripts/deployment/validate-production-request.sh
+          # The exact-release checkout below replaces the workspace. Retain the
+          # reviewed hosting control independently of the immutable application.
+          install -m 0700 .deployment-control/scripts/deployment/bind-app-service-managed-certificate.sh "$RUNNER_TEMP/el1te-bind-managed-tls.sh"
 
       - name: Verify live canonical website before enabling indexing
         if: ${{ inputs.enable_indexing }}
@@ -291,7 +295,7 @@ jobs:
         run: |
           bind() {
             local app="$1" host="$2"
-            bash scripts/deployment/bind-app-service-managed-certificate.sh "$AZURE_RESOURCE_GROUP" "$app" "$host"
+            bash "$RUNNER_TEMP/el1te-bind-managed-tls.sh" "$AZURE_RESOURCE_GROUP" "$app" "$host"
           }
           if [[ "${{ inputs.configure_api_domain }}" == "true" ]]; then
             bind "${{ steps.infrastructure.outputs.apiappname }}" api.el1tespr1ntathlet1cs.org
