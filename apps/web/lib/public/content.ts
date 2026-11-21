@@ -6,6 +6,7 @@ export const CONTENT_KEYS = {
   homePrograms: "home.programs",
   aboutStory: "about.story",
   aboutValues: "about.values",
+  coachesSupportStaff: "coaches.support-staff",
   registrationIntro: "registration.intro",
   sponsorsIntro: "sponsors.intro",
   privacyPolicy: "policy.privacy",

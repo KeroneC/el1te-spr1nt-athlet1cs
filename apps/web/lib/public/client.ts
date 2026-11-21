@@ -70,6 +70,7 @@ export async function publicApiFetch<T>(path: string, revalidateSeconds = PUBLIC
 
 export const getSiteSettings = () => publicApiFetch<SiteSettings>("/site-settings");
 export const getContentBlocks = () => publicApiFetch<ContentBlock[]>("/content-blocks");
+export const getContentBlock = (key: string) => publicApiFetch<ContentBlock>(`/content-blocks/${encodeURIComponent(key)}`);
 export const getAnnouncements = (query = "") =>
   publicApiFetch<PagedResult<AnnouncementListItem>>(`/announcements${query ? `?${query}` : ""}`);
 export const getAnnouncement = (slug: string) =>
