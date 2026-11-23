@@ -1,0 +1,68 @@
+.section {
+  padding-block: clamp(2.5rem, 6vw, 4.5rem);
+  border-top: 4px solid var(--figma-red);
+  background: #fff;
+  color: var(--figma-black);
+  text-align: center;
+}
+
+.heading h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 2.65rem);
+  line-height: 1.06;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.heading::after {
+  content: "";
+  display: block;
+  width: 2.375rem;
+  height: 3px;
+  margin: 0.8rem auto 0;
+  background: var(--figma-red);
+  transform: skewX(-14deg);
+}
+
+.roster {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(0.8rem, 4vw, 2.125rem);
+  max-width: 44rem;
+  margin: clamp(1.4rem, 5vw, 2.65rem) auto 0;
+  padding: 0;
+  list-style: none;
+}
+
+.profile {
+  margin: 0;
+}
+
+.portrait {
+  display: block;
+  width: min(100%, 12rem);
+  height: auto;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--figma-red-dark);
+}
+
+.profile figcaption {
+  margin-top: 0.85rem;
+  font-weight: 700;
+  font-size: clamp(0.92rem, 2.3vw, 1.14rem);
+  line-height: 1.2;
+}
+
+@media (max-width: 479px) {
+  .roster {
+    grid-template-columns: 1fr;
+    gap: 1.625rem;
+  }
+
+  .portrait {
+    width: min(100%, 10.375rem);
+  }
+}
