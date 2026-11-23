@@ -22,6 +22,7 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const channel = registrationChannel(query.src);
   const retryHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
   const openingDate = season?.openingDate ?? registrationOpeningDate;
+  const showPracticeWindow = state !== "unavailable" && openingDate === registrationOpeningDate && !season?.firstPracticeDate;
   // The API only releases the title once a season has opened. A reclosure on
   // opening day must not promise a second opening.
   const phase = state === "unavailable" || season?.title != null ? "closed" : openingPhase(openingDate);
@@ -51,6 +52,9 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
         </div>
       </section>}
     <aside aria-label="Registration resources" className={styles.resources}>
+      {showPracticeWindow && <div className="site-container">
+        <p className={styles.practiceNotice}><strong>First indoor practice:</strong> We expect to start in late January or early February. We’ll share the exact date once it’s confirmed.</p>
+      </div>}
       <div className={`site-container ${styles.resourceLayout}`}>
         {seasonDetails.length > 0 && <details className={styles.season}>
           <summary>Season details <ChevronDown size={16} aria-hidden="true" /></summary>
