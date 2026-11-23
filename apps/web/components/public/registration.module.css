@@ -7,6 +7,14 @@
 }
 
 .resources { border-top: 1px solid var(--line); padding-block: .45rem; }
+.practiceNotice {
+  border-inline-start: 3px solid var(--accent);
+  max-width: 62ch;
+  margin-block: .55rem .35rem;
+  padding-inline-start: .75rem;
+  font-size: .95rem;
+  line-height: 1.5;
+}
 .resourceLayout {
   display: flex;
   align-items: flex-start;
