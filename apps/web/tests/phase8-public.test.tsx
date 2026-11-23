@@ -31,6 +31,13 @@ describe("Phase 8 public CMS helpers", () => {
     expect(canonicalHostRedirect("https://www.el1tespr1ntathlet1cs.org/shop", "www.el1tespr1ntathlet1cs.org")).toBeNull();
   });
 
+  it("drops Azure's internal listener port from public canonical redirects", () => {
+    expect(canonicalHostRedirect(
+      "http://el1tespr1ntathlet1cs.org:8080/registration?smoke=1",
+      "el1tespr1ntathlet1cs.org",
+    )?.toString()).toBe("https://www.el1tespr1ntathlet1cs.org/registration?smoke=1");
+  });
+
   it("only permits indexing canonical public pages after launch", () => {
     const host = "www.el1tespr1ntathlet1cs.org";
     expect(preventIndexing(host, "/registration", "production", "true")).toBe(false);

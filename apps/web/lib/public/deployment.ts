@@ -27,6 +27,8 @@ export function canonicalHostRedirect(requestUrl: string, host: string | null): 
   if (host?.split(":", 1)[0].toLowerCase() !== "el1tespr1ntathlet1cs.org") return null;
   const target = new URL(requestUrl);
   target.protocol = "https:";
-  target.host = "www.el1tespr1ntathlet1cs.org";
+  target.hostname = "www.el1tespr1ntathlet1cs.org";
+  // App Service can include its internal listener port in the request URL.
+  target.port = "";
   return target;
 }
