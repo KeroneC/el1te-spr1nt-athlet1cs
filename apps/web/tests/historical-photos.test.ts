@@ -22,6 +22,17 @@ describe("historical photo proxy", () => {
   });
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
+  it("accepts Azure's boolean casing but remains disabled for False or unknown values", async () => {
+    cookie.value = undefined;
+    vi.stubEnv("LEGACY_MEDIA_ARCHIVE_ENABLED", "True");
+    expect((await GET(new Request(url("preview")), context("preview"))).status).toBe(401);
+    for (const value of ["False", "enabled", ""]) {
+      vi.stubEnv("LEGACY_MEDIA_ARCHIVE_ENABLED", value);
+      expect((await GET(new Request(url("preview")), context("preview"))).status).toBe(404);
+    }
+    expect(upstream).not.toHaveBeenCalled();
+  });
+
   it("rejects disabled, unauthenticated, and original-file requests without fetching", async () => {
     vi.stubEnv("LEGACY_MEDIA_ARCHIVE_ENABLED", "");
     expect((await GET(new Request(url("preview")), context("preview"))).status).toBe(404);

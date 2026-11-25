@@ -23,5 +23,5 @@ export type HistoricalPhotoList = {
 };
 
 export function historicalPhotosEnabled() {
-  return process.env.LEGACY_MEDIA_ARCHIVE_ENABLED === "true";
+  return process.env.LEGACY_MEDIA_ARCHIVE_ENABLED?.trim().toLowerCase() === "true";
 }
