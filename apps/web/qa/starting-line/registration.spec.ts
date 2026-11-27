@@ -158,6 +158,20 @@ test("application draft, review edit, server error routing, exact retry and rece
   await expect(page.getByText("Edited fixture guardian", { exact: true })).toHaveCount(0);
 });
 
+test("server-side age eligibility returns the family to date of birth without showing the cutoff date", async ({ page }) => {
+  const message = "Athletes must be ages 7–18 on the first practice date.";
+  await page.route(applicationPost, route => route.fulfill({ status: 400, json: {
+    message: "Check your answers.", errors: { dateOfBirth: [message] }
+  } }));
+  await page.goto(publicPath + "#apply");
+  await toReview(page);
+  await page.getByRole("button", { name: "Submit application", exact: true }).click();
+  await expect(field(page, "dateOfBirth")).toBeFocused();
+  await expect(field(page, "dateOfBirth")).toHaveAccessibleDescription(/Athletes must be ages 7–18 on the first practice date/);
+  await expect(page.getByText(/late January or early February/)).toHaveCount(1);
+  expect(await page.content()).not.toContain("firstPracticeDate");
+});
+
 test("fresh direct link cannot skip to Review; returning check-in has one save and closure is actionable", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto(publicPath + "#apply/review");
