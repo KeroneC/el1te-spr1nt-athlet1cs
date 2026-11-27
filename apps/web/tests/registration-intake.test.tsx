@@ -9,7 +9,7 @@ import { REGISTRATION_DOWNLOADS } from "@/lib/public/site";
 import { registrationChannel, openingPhase, type PublicRegistrationSeason } from "@/lib/registration";
 
 const season: PublicRegistrationSeason = {
-  year: 2027, title: "Test season", openingDate: "2026-11-27", firstPracticeDate: "2026-12-05", isOpen: true,
+  year: 2027, title: "Test season", openingDate: "2026-11-27", isOpen: true,
   practiceLocation: "Track", practiceSchedule: "Saturdays", fees: "None for test", replyWindow: "Within one week."
 };
 const response = (status: number, body: object) => new Response(JSON.stringify(body), { status });
@@ -32,7 +32,9 @@ describe("registration intake", () => {
     expect(returning).not.toContain('name="dateOfBirth"');
     expect(returning).not.toContain('name="emergencyContactPhone"');
     expect(returning).not.toContain('name="schoolDistrict"');
+    expect(returning).not.toContain('name="gender"');
     expect(application).toContain("Who’s your athlete?");
+    expect(application).toContain("Eligibility is checked when you submit.");
     expect(application).toContain("Continue");
     expect(application).not.toContain('name="guardianEmail"');
     expect(application).not.toContain('name="streetAddress"');
@@ -40,6 +42,9 @@ describe("registration intake", () => {
     expect(application).not.toContain("Submit application");
     for (const field of ["athleteFirstName", "athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict"])
       expect(application).toContain(`name="${field}"`);
+    expect(application).toMatch(/<select[^>]+name="schoolDistrict"/);
+    expect(application).toMatch(/<select[^>]+name="gender"[^>]+required=""[^>]*>/);
+    expect(application).not.toContain("Prefer not to answer");
     expect(application).not.toContain('name="ageGroup"');
     expect(application).not.toContain('name="athleteEmail"');
     expect(application).not.toContain('type="file"');

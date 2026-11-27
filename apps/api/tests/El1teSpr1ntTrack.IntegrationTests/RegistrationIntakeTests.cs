@@ -1,17 +1,20 @@
 using El1teSpr1ntTrack.Api.Authorization;
 using El1teSpr1ntTrack.Api.Controllers.Registration;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
+using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.Entities;
 using El1teSpr1ntTrack.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace El1teSpr1ntTrack.IntegrationTests;
 
 public sealed class RegistrationIntakeTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 27, 12, 0, 0, TimeSpan.Zero);
+    private sealed class FixedClock : IClock { public DateTimeOffset UtcNow => Now; }
     private static RegistrationSeason Season() => new()
     {
         Year = 2027, AgeGroups = "10U\n12U", OpeningDate = new(2026, 11, 27),
@@ -24,11 +27,34 @@ public sealed class RegistrationIntakeTests
     private static IntakeRequest FullRequest() => Request() with
     {
         ApplicationVersion = IntakeRules.CurrentApplicationVersion, AthleteLastName = "Test",
-        DateOfBirth = "2019-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable",
+        DateOfBirth = "2019-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable", Gender = "Female",
         GuardianPhone = "412-555-0100", StreetAddress = "1 Synthetic Lane", City = "Sample City", State = "PA",
         PostalCode = "15201", EmergencyContactName = "Example Contact", EmergencyContactPhone = "412-555-0101",
         EmergencyContactRelationship = "Family friend", AgeGroup = null
     };
+
+    [Fact]
+    public async Task PublicSeasonDoesNotRevealExactFirstPracticeDateWhenOpen()
+    {
+        await using var db = new El1teDbContext(new DbContextOptionsBuilder<El1teDbContext>()
+            .UseInMemoryDatabase($"registration-practice-privacy-{Guid.NewGuid():N}").Options);
+        var season = Season();
+        season.Title = "Indoor season";
+        season.PracticeSchedule = "Details to follow";
+        season.IsOpen = true;
+        season.OpenedAtUtc = Now;
+        db.RegistrationSeasons.Add(season);
+        await db.SaveChangesAsync();
+
+        var response = Assert.IsType<OkObjectResult>(await new RegistrationPublicController(db, new FixedClock())
+            .Season(CancellationToken.None));
+        var fields = JsonSerializer.SerializeToElement(response.Value, JsonSerializerOptions.Web);
+        Assert.True(fields.GetProperty("isOpen").GetBoolean());
+        Assert.Equal("Details to follow", fields.GetProperty("practiceSchedule").GetString());
+        Assert.False(fields.TryGetProperty("firstPracticeDate", out _));
+        Assert.DoesNotContain("2026-12-05", fields.GetRawText());
+        Assert.Equal(new DateOnly(2026, 12, 5), season.FirstPracticeDate);
+    }
 
     [Theory]
     [InlineData("2019-12-06")]
@@ -54,7 +80,7 @@ public sealed class RegistrationIntakeTests
         Assert.Equal("Not applicable", item.SchoolGrade);
         Assert.Equal("Not sure / not applicable", item.SchoolDistrict);
         Assert.Null(item.AgeGroup);
-        Assert.Null(item.Gender);
+        Assert.Equal("Female", item.Gender);
         Assert.Null(item.SecondaryGuardianName);
         Assert.Equal("Family friend", item.EmergencyContactRelationship);
         Assert.NotNull(IntakeRules.Normalize(request with { DateOfBirth = "2008-12-05" }, Season(), Now).DateOfBirth);
@@ -65,8 +91,37 @@ public sealed class RegistrationIntakeTests
     public void AgeRuleDoesNotInvalidatePreviouslySavedApplications()
     {
         var request = FullRequest() with { DateOfBirth = "2020-12-05" };
-        var item = IntakeRules.Normalize(request, Season(), Now, enforceCurrentEligibility: false);
+        var item = IntakeRules.Normalize(request, Season(), Now, isReplay: true);
         Assert.Equal(new DateOnly(2020, 12, 5), item.DateOfBirth);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("Prefer not to answer")]
+    [InlineData("Other")]
+    public void NewApplicationsRequireOneOfTwoGenderChoices(string? gender)
+    {
+        var error = Assert.Throws<CmsRequestValidationException>(() =>
+            IntakeRules.Normalize(FullRequest() with { Gender = gender }, Season(), Now));
+        Assert.Equal("Choose Female or Male.", Assert.Single(error.Errors["gender"]));
+        Assert.Equal("Male", IntakeRules.Normalize(FullRequest() with { Gender = "Male" }, Season(), Now).Gender);
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("Prefer not to answer")]
+    public void PreviouslySavedApplicationsKeepTheirOriginalGenderAnswerAndRetryDigest(string? historicalGender)
+    {
+        var season = Season();
+        var request = FullRequest() with { Gender = historicalGender };
+        var saved = IntakeRules.Normalize(request with { Gender = "Female" }, season, Now);
+        saved.Gender = historicalGender; // Represent the exact record written before Gender was required.
+        var replay = IntakeRules.Normalize(request, season, Now, isReplay: true);
+        var changed = IntakeRules.Normalize(request with { Gender = "Female" }, season, Now, isReplay: true);
+        Assert.Equal(historicalGender, replay.Gender);
+        Assert.Equal(IntakeRules.RequestDigest(saved), IntakeRules.RequestDigest(replay));
+        Assert.NotEqual(IntakeRules.RequestDigest(saved), IntakeRules.RequestDigest(changed));
     }
 
     [Theory]
@@ -97,6 +152,7 @@ public sealed class RegistrationIntakeTests
         Assert.Null(returning.StreetAddress);
         Assert.Null(returning.EmergencyContactName);
         Assert.Null(returning.SchoolDistrict);
+        Assert.Null(returning.Gender);
     }
 
     [Fact]
@@ -121,7 +177,7 @@ public sealed class RegistrationIntakeTests
         var changed = IntakeRules.RequestDigest(IntakeRules.Normalize(request with { EmergencyContactPhone = "412-555-0199" }, season, Now));
         Assert.NotEqual(original, changed);
         season.FirstPracticeDate = season.OpeningDate;
-        Assert.Equal(original, IntakeRules.RequestDigest(IntakeRules.Normalize(request, season, Now, enforceCurrentEligibility: false)));
+        Assert.Equal(original, IntakeRules.RequestDigest(IntakeRules.Normalize(request, season, Now, isReplay: true)));
     }
 
     [Fact]

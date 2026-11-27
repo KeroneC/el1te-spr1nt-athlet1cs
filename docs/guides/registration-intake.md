@@ -12,7 +12,7 @@ On `/registration`, the starting line offers **Apply for a spot** (`#apply`) and
 
 The **Season details** disclosure beneath the choices shows available practice information, fees, and reply timing on demand. Forms, FAQs, and club contact are linked from the same strip, including when intake is closed.
 
-To review without opening demo or connecting to a database, run `node scripts/preview-registration.mjs` from `apps/web` after installing its dependencies. Open `http://127.0.0.1:3013/registration`; use fictional details and an address such as `family@example.test`. Practice dates and all logistics in this preview are samples. Its loopback-only fixture simulates receipts without saving submissions or sending mail. Stop with Ctrl+C. Start with the `closed` or `unavailable` argument to inspect either alternative entrance. The helper is not a launch or deployment command.
+To review without opening demo or connecting to a database, run `node scripts/preview-registration.mjs` from `apps/web` after installing its dependencies. Open `http://127.0.0.1:3013/registration`; use fictional details and an address such as `family@example.test`. The preview shows the planned public wording below, not a confirmed calendar or a live season record. Its loopback-only fixture simulates receipts without saving submissions or sending mail. Stop with Ctrl+C. Start with the `closed` or `unavailable` argument to inspect either alternative entrance. Add `--alternate-ports` to run a second preview without replacing the first (3015 by default or 3016 for `upcoming`). The helper is not a launch or deployment command.
 
 With the open preview running, `npx playwright test -c playwright.starting-line.config.ts` runs the synthetic Starting Line checks in desktop Chromium and a mobile WebKit profile. This suite intercepts submission requests. The separate SQL-backed registration rehearsal remains the deployment gate; a simulated receipt does not verify a database save.
 
@@ -28,6 +28,14 @@ For local photo review only, add `--archive-art` to the preview command. The hel
 4. On Friday, November 27, confirm launch checks and manually select **Open intake**. Check both the manual switch and the effective public state in Season Settings. The API rejects new submissions before the configured Eastern date or while closed. Verify both family paths from a mobile browser on the canonical site before starting ads. **Close intake** stops new submissions without removing saved records; a form already left open in a browser cannot create a new submission after closure.
 
 Ads can use `/registration?src=facebook` or `/registration?src=instagram`. The season totals count visits (not unique visitors), new applications, check-ins and enrollment by the three fixed channels, including Direct / other. Unknown tags become Direct. No ad pixel, tracking cookies or family data are sent to ad platforms.
+
+### Public season wording for 2027
+
+The 2027 page shows these general details before opening and **Season Settings** prefills them for a new 2027 season. After the season opens, the saved settings take precedence. Keep the exact first practice date in the staff-only field. Set the public reply window separately once the team confirms it.
+
+- **Practice location:** We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.
+- **Practice schedule:** During peak season, practices are usually 6–8 p.m. Days and times may vary.
+- **Fees:** Season fees cover entry fees for all meets that season. Fees vary for high school athletes, who spend part of the season practicing with their school teams.
 
 ## Review and paperwork
 

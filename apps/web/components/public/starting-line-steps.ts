@@ -1,4 +1,4 @@
-import { registrationAgeLabel, registrationMaximumAge, registrationMinimumAge } from "@/lib/registration";
+import { otherSchoolDistrict } from "@/lib/pittsburgh-school-districts";
 
 // Pure presentation/validation helpers. Drafts belong to the mounted form only.
 export const applicationSteps = [
@@ -19,8 +19,16 @@ export const stepFields = [
 ] as const;
 
 export type Field = typeof stepFields[number][number];
-export type Draft = Partial<Record<Exclude<Field, "affiliations"> | "website", string>> & { affiliations?: string[] };
+export type FormField = Field | "schoolDistrictOther";
+export type Draft = Partial<Record<Exclude<FormField, "affiliations"> | "website", string>> & { affiliations?: string[] };
 export type Errors = Record<string, string[]>;
+export const applicationGenders = ["Female", "Male"] as const;
+export function initialDraft(application: boolean): Draft {
+  return application ? { state: "PA" } : {};
+}
+export function schoolDistrictAnswer(draft: Draft) {
+  return (draft.schoolDistrict === otherSchoolDistrict ? draft.schoolDistrictOther : draft.schoolDistrict)?.trim() ?? "";
+}
 export const reviewStep = applicationSteps.length - 1;
 export function stepForField(field: string) {
   return stepFields.findIndex(fields => fields.some(item => item === field));
@@ -38,29 +46,19 @@ export function easternToday() {
   const part = (name: string) => parts.find(item => item.type === name)?.value;
   return [part("year"), part("month"), part("day")].join("-");
 }
-function validDob(value: string, practice: string | null, today: string) {
+function validDob(value: string, today: string) {
   const date = new Date(value + "T00:00:00Z");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000") || isNaN(date.valueOf()) ||
       date.toISOString().slice(0, 10) !== value || value > today)
     return "Enter a valid date of birth that is not in the future.";
-  // Match DateOnly.AddYears: a leap-day birthday falls on Feb 28 in a non-leap year.
-  const birthday = (years: number) => {
-    const anniversary = new Date(date);
-    const month = anniversary.getUTCMonth();
-    anniversary.setUTCFullYear(anniversary.getUTCFullYear() + years);
-    if (anniversary.getUTCMonth() !== month) anniversary.setUTCDate(0);
-    return anniversary.toISOString().slice(0, 10);
-  };
-  if (practice && (birthday(registrationMinimumAge) > practice || birthday(registrationMaximumAge + 1) <= practice))
-    return `Athletes must be ${registrationAgeLabel.toLowerCase()} on the first practice date.`;
 }
 
-export function validateStep(step: number | "returning", draft: Draft, practice: string | null, today: string): Errors {
+export function validateStep(step: number | "returning", draft: Draft, today: string): Errors {
   const errors: Errors = {};
   const required: Partial<Record<Field, string>> = {
     athleteFirstName: "Enter your athlete’s first name.", athleteLastName: "Enter your athlete’s last name.",
     dateOfBirth: "Enter a date of birth.", schoolGrade: "Choose a school grade or Not applicable.",
-    schoolDistrict: "Enter a school district or choose Not sure / not applicable.", guardianName: "Enter a parent or guardian name.",
+    schoolDistrict: "Choose a school district, Other, or Not sure / not applicable.", guardianName: "Enter a parent or guardian name.",
     guardianEmail: "Enter a parent or guardian email.", guardianPhone: "Enter a valid phone number.",
     streetAddress: "Enter a street address.", city: "Enter a city.", state: "Choose a state.", postalCode: "Enter a ZIP code.",
     emergencyContactName: "Enter an emergency contact name.", emergencyContactPhone: "Enter a valid phone number.",
@@ -76,7 +74,13 @@ export function validateStep(step: number | "returning", draft: Draft, practice:
     }
     const value = draft[name]?.trim() ?? "";
     let message = !value ? required[name] : undefined;
-    if (value && name === "dateOfBirth") message = validDob(value, practice, today);
+    if (name === "schoolDistrict" && value === otherSchoolDistrict) {
+      const district = schoolDistrictAnswer(draft);
+      if (!district || district.length > 120) message = "Enter a school district name of up to 120 characters.";
+    }
+    if (name === "gender" && !applicationGenders.some(gender => gender === value))
+      message = "Choose Female or Male.";
+    if (value && name === "dateOfBirth") message = validDob(value, today);
     if (value && ["guardianEmail", "secondaryGuardianEmail"].includes(name) && !/^[^\s@]+@[^\s@]+$/.test(value))
       message = "Enter a valid email address.";
     if (value && ["guardianPhone", "secondaryGuardianPhone", "emergencyContactPhone"].includes(name) &&
@@ -90,14 +94,15 @@ export function validateStep(step: number | "returning", draft: Draft, practice:
   return errors;
 }
 
-export function firstIncompleteStep(draft: Draft, practice: string | null, today: string) {
-  const first = stepFields.findIndex((_, i) => Object.keys(validateStep(i, draft, practice, today)).length > 0);
+export function firstIncompleteStep(draft: Draft, today: string) {
+  const first = stepFields.findIndex((_, i) => Object.keys(validateStep(i, draft, today)).length > 0);
   return first < 0 ? reviewStep : first;
 }
 
 export function applicationFields(draft: Draft) {
   return Object.fromEntries(stepFields.flat().map(name => {
     if (name === "affiliations") return [name, draft.priorClub === "Yes" ? draft.affiliations ?? [] : []];
+    if (name === "schoolDistrict") return [name, schoolDistrictAnswer(draft) || null];
     if ((name === "clubName" || name === "lastMeetMonth") && draft.priorClub !== "Yes") return [name, null];
     return [name, draft[name]?.trim() || null];
   }));

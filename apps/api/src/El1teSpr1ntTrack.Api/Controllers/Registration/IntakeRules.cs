@@ -62,7 +62,7 @@ public static class IntakeRules
         && LocalDate(now) >= season.OpeningDate && LocalDate(now) <= season.EndDate;
 
     public static RegistrationSubmission Normalize(IntakeRequest request, RegistrationSeason season, DateTimeOffset now,
-        string? originalAgeGroup = null, bool enforceCurrentEligibility = true)
+        string? originalAgeGroup = null, bool isReplay = false)
     {
         var errors = new Dictionary<string, string[]>();
         void Error(string field, string message) => errors[field] = [message];
@@ -104,14 +104,14 @@ public static class IntakeRules
                 submission.ApplicationVersion = CurrentApplicationVersion;
                 submission.AthleteLastName = Value(request.AthleteLastName, "athleteLastName", 80, true);
                 if (!DateOnly.TryParseExact(request.DateOfBirth?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                        DateTimeStyles.None, out var birthDate) || (enforceCurrentEligibility && birthDate > LocalDate(now)))
+                        DateTimeStyles.None, out var birthDate) || (!isReplay && birthDate > LocalDate(now)))
                 {
                     Error("dateOfBirth", "Enter a valid date of birth that is not in the future.");
                 }
                 else
                 {
                     submission.DateOfBirth = birthDate;
-                    if (enforceCurrentEligibility && HasValidFirstPracticeDate(season) &&
+                    if (!isReplay && HasValidFirstPracticeDate(season) &&
                         (birthDate.AddYears(MinimumAge) > season.FirstPracticeDate ||
                          birthDate.AddYears(MaximumAge + 1) <= season.FirstPracticeDate))
                         Error("dateOfBirth", $"Athletes must be ages {MinimumAge}–{MaximumAge} on the first practice date.");
@@ -121,8 +121,10 @@ public static class IntakeRules
                     Error("schoolGrade", "Choose a school grade or Not applicable.");
                 submission.SchoolDistrict = Value(request.SchoolDistrict, "schoolDistrict", 120, true);
                 submission.Gender = Value(request.Gender, "gender", 25);
-                if (submission.Gender is not (null or "Male" or "Female" or "Prefer not to answer"))
-                    Error("gender", "Choose one of the available options or leave this blank.");
+                // Preserve previously accepted answers for exact retries; the controller still checks the stored digest.
+                if (submission.Gender is not ("Female" or "Male") &&
+                    (!isReplay || submission.Gender is not (null or "Prefer not to answer")))
+                    Error("gender", "Choose Female or Male.");
                 submission.StreetAddress = Value(request.StreetAddress, "streetAddress", 160, true);
                 submission.AddressLine2 = Value(request.AddressLine2, "addressLine2", 120);
                 submission.City = Value(request.City, "city", 80, true);

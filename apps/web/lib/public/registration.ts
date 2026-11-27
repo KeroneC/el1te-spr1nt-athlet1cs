@@ -17,9 +17,8 @@ function isSeason(value: unknown): value is PublicRegistrationSeason {
   return Number.isSafeInteger(data.year) &&
     typeof data.isOpen === "boolean" &&
     isDate(data.openingDate) &&
-    (data.firstPracticeDate === null || isDate(data.firstPracticeDate)) &&
     copy.every(nullableText) &&
-    (!data.isOpen || (isDate(data.firstPracticeDate) && copy.every(field => typeof data[field] === "string")));
+    (!data.isOpen || copy.every(field => typeof data[field] === "string"));
 }
 
 export async function getRegistrationSeason(): Promise<RegistrationSeasonResult> {
@@ -30,7 +29,11 @@ export async function getRegistrationSeason(): Promise<RegistrationSeasonResult>
     if (response.status === 204) return { state: "no-season", season: null };
     if (response.status === 200) {
       const data: unknown = await response.json();
-      if (isSeason(data)) return { state: "loaded", season: data };
+      if (isSeason(data)) {
+        // Do not pass extra upstream fields (including legacy exact practice dates) into client props.
+        const { year, title, openingDate, practiceLocation, practiceSchedule, fees, replyWindow, isOpen } = data;
+        return { state: "loaded", season: { year, title, openingDate, practiceLocation, practiceSchedule, fees, replyWindow, isOpen } };
+      }
     }
   } catch { /* Fail closed without misrepresenting an unavailable service. */ }
   return { state: "unavailable", season: null };

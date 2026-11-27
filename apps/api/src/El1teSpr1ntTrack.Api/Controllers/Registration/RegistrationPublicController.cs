@@ -54,7 +54,7 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
             practiceSchedule = season.OpenedAtUtc is null ? null : season.PracticeSchedule,
             fees = season.OpenedAtUtc is null ? null : season.Fees,
             replyWindow = season.OpenedAtUtc is null ? null : season.ReplyWindow,
-            firstPracticeDate = season.OpenedAtUtc is null ? null : season.FirstPracticeDate,
+            // The exact date is kept in Admin and used only for server-side age eligibility.
             ageGroups = season.OpenedAtUtc is null ? Array.Empty<string>() : IntakeRules.Ages(season),
             isOpen = IntakeRules.IsOpen(season, clock.UtcNow)
         });
@@ -82,7 +82,7 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         if (existing is not null && (request.Kind != existing.Kind || (request.Kind == IntakeKind.Application &&
             (request.ApplicationVersion ?? 1) != (existing.ApplicationVersion ?? 1))))
             return RetryConflict();
-        var submission = IntakeRules.Normalize(request, season, now, existing?.AgeGroup, enforceCurrentEligibility: existing is null);
+        var submission = IntakeRules.Normalize(request, season, now, existing?.AgeGroup, isReplay: existing is not null);
         submission.RequestDigest = IntakeRules.RequestDigest(submission);
         if (existing is not null)
             return existing.RequestDigest == submission.RequestDigest

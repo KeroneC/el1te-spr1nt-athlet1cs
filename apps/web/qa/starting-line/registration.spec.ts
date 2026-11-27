@@ -29,7 +29,8 @@ async function toReview(page: Page) {
   await field(page, "athleteLastName").fill("Fixture");
   await field(page, "dateOfBirth").fill("2015-07-03");
   await field(page, "schoolGrade").selectOption("Not applicable");
-  await field(page, "schoolDistrict").fill("Synthetic district");
+  await field(page, "schoolDistrict").selectOption("West Allegheny");
+  await field(page, "gender").selectOption("Female");
   await next(page);
   await field(page, "guardianName").fill("Synthetic parent");
   await field(page, "guardianEmail").fill("parent@example.test");
@@ -37,7 +38,7 @@ async function toReview(page: Page) {
   await next(page);
   await field(page, "streetAddress").fill("123 Fixture Lane");
   await field(page, "city").fill("Sample City");
-  await field(page, "state").selectOption("PA");
+  await expect(field(page, "state")).toHaveValue("PA");
   await field(page, "postalCode").fill("15201");
   await next(page);
   await field(page, "emergencyContactName").fill("Fixture contact");
@@ -49,6 +50,39 @@ async function toReview(page: Page) {
   await next(page);
   await expect(page).toHaveURL(/#apply\/review$/);
 }
+
+test("new application supports an unlisted district, requires gender, and lets families change PA", async ({ page }) => {
+  await page.goto(publicPath + "#apply");
+  await field(page, "athleteFirstName").fill("Avery");
+  await field(page, "athleteLastName").fill("Fixture");
+  await field(page, "dateOfBirth").fill("2015-07-03");
+  await field(page, "schoolGrade").selectOption("6");
+  const district = field(page, "schoolDistrict");
+  await expect(district.locator('option[value="Cornell"]')).toHaveCount(1);
+  await district.selectOption({ label: "Other / not listed" });
+  const other = field(page, "schoolDistrictOther");
+  await next(page);
+  await expect(other).toBeFocused();
+  await expect(other).toHaveAccessibleDescription(/enter a school district name/i);
+  await other.fill("Example District");
+  const gender = field(page, "gender");
+  await expect(gender.locator('option:not([value=""])')).toHaveText(["Female", "Male"]);
+  await next(page);
+  await expect(gender).toBeFocused();
+  await expect(gender).toHaveAccessibleDescription("Choose Female or Male.");
+  await gender.selectOption("Male");
+  await next(page);
+  await field(page, "guardianName").fill("Synthetic parent");
+  await field(page, "guardianEmail").fill("parent@example.test");
+  await field(page, "guardianPhone").fill("412-555-0100");
+  await next(page);
+  const state = field(page, "state");
+  await expect(state).toHaveValue("PA");
+  await state.selectOption("OH");
+  await page.goBack();
+  await page.goForward();
+  await expect(state).toHaveValue("OH");
+});
 
 test("all four widths: both choices, one-tap navigation, contrast, no overflow and lean imagery", async ({ page, isMobile }) => {
   test.setTimeout(90_000);
@@ -156,6 +190,20 @@ test("application draft, review edit, server error routing, exact retry and rece
     kind: "Application", applicationVersion: 2 });
   await expect(page.getByText(receipt, { exact: true })).toBeVisible();
   await expect(page.getByText("Edited fixture guardian", { exact: true })).toHaveCount(0);
+});
+
+test("server-side age eligibility returns the family to date of birth without showing the cutoff date", async ({ page }) => {
+  const message = "Athletes must be ages 7–18 on the first practice date.";
+  await page.route(applicationPost, route => route.fulfill({ status: 400, json: {
+    message: "Check your answers.", errors: { dateOfBirth: [message] }
+  } }));
+  await page.goto(publicPath + "#apply");
+  await toReview(page);
+  await page.getByRole("button", { name: "Submit application", exact: true }).click();
+  await expect(field(page, "dateOfBirth")).toBeFocused();
+  await expect(field(page, "dateOfBirth")).toHaveAccessibleDescription(/Athletes must be ages 7–18 on the first practice date/);
+  await expect(page.getByText(/late January or early February/)).toHaveCount(1);
+  expect(await page.content()).not.toContain("firstPracticeDate");
 });
 
 test("fresh direct link cannot skip to Review; returning check-in has one save and closure is actionable", async ({ page }) => {

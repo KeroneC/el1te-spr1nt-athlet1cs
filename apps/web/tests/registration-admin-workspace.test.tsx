@@ -29,6 +29,9 @@ describe("registration staff workspace", () => {
     expect(markup).toMatch(/<input(?=[^>]*\bname="firstPracticeDate")(?=[^>]*\btype="date")[^>]*>/);
     expect(markup).toContain("Required before opening.");
     expect(markup).not.toContain('name="ageGroups"');
+    expect(markup).toContain("West Allegheny High School and Robert Morris University (RMU)");
+    expect(markup).toContain("usually 6–8 p.m.");
+    expect(markup).toContain("Season fees cover entry fees for all meets");
   });
 
   it("omits age filters and expanded fields from the review queue", () => {
