@@ -314,7 +314,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
             <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
             <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date"
-              defaultValue={current?.firstPracticeDate ?? (is2027 ? registration2027FirstPracticeDate : "")}
+              defaultValue={current ? current.firstPracticeDate ?? "" : is2027 ? registration2027FirstPracticeDate : ""}
               error={seasonError("firstPracticeDate")} hint={`${publicDateHint} Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={initialLogistics?.practiceLocation} required error={seasonError("practiceLocation")} />

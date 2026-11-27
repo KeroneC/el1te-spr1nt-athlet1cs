@@ -221,6 +221,8 @@ jobs:
 
       - name: Validate and preview production infrastructure
         shell: bash
+        env:
+          REGISTRATION_ALERT_RECIPIENTS: ${{ secrets.REGISTRATION_ALERT_RECIPIENTS }}
         run: |
           az bicep build --file infra/main.bicep
           az deployment group what-if --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
@@ -231,6 +233,7 @@ jobs:
               webPublicUrl="${{ inputs.configure_public_web_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.configure_api_domain && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
               frontendAllowedOrigin="${{ inputs.configure_public_web_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" homeAllAmericanShowcaseEnabled="${{ inputs.enable_home_all_american_showcase }}" allAmericansArchiveEnabled=false publicIndexingEnabled="${{ inputs.enable_indexing }}" \
               transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
+              registrationAlertRecipients="$REGISTRATION_ALERT_RECIPIENTS" \
               storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
               storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
               squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL" \
@@ -239,6 +242,8 @@ jobs:
       - name: Apply production infrastructure
         id: infrastructure
         shell: bash
+        env:
+          REGISTRATION_ALERT_RECIPIENTS: ${{ secrets.REGISTRATION_ALERT_RECIPIENTS }}
         run: |
           outputs=$(az deployment group create --resource-group "$AZURE_RESOURCE_GROUP" --template-file infra/main.bicep \
             --parameters environmentName=production location="$AZURE_LOCATION" namePrefix="$RESOURCE_NAME_PREFIX" \
@@ -248,6 +253,7 @@ jobs:
               webPublicUrl="${{ inputs.configure_public_web_domains && 'https://www.el1tespr1ntathlet1cs.org' || '' }}" apiPublicUrl="${{ inputs.configure_api_domain && 'https://api.el1tespr1ntathlet1cs.org' || '' }}" \
               frontendAllowedOrigin="${{ inputs.configure_public_web_domains && 'https://el1tespr1ntathlet1cs.org' || '' }}" cspMode="${{ inputs.enforce_csp && 'enforce' || 'report-only' }}" browserAnalyticsEnabled="${{ inputs.enable_browser_analytics }}" homeAllAmericanShowcaseEnabled="${{ inputs.enable_home_all_american_showcase }}" allAmericansArchiveEnabled=false publicIndexingEnabled="${{ inputs.enable_indexing }}" \
               transactionalEmailDomain=updates.el1tespr1ntathlet1cs.org transactionalEmailUseCustomDomain="${{ inputs.use_verified_email_domain }}" transactionalEmailSenderUsername=orders transactionalEmailReplyToAddress=el1tespr1nt.athlet1cs@gmail.com \
+              registrationAlertRecipients="$REGISTRATION_ALERT_RECIPIENTS" \
               storeNavigationMode="${{ inputs.enable_store_preview && 'internal' || 'external' }}" storePublicPreviewEnabled="${{ inputs.enable_store_preview }}" \
               storeEnabled="${{ inputs.enable_checkout }}" storeCheckoutEnabled="${{ inputs.enable_checkout }}" squareEnvironment=Production \
               squareLocationId="$SQUARE_LOCATION_ID" squareWebhookNotificationUrl="$SQUARE_WEBHOOK_NOTIFICATION_URL" squareCheckoutReturnUrl="$EFFECTIVE_SQUARE_CHECKOUT_RETURN_URL" \

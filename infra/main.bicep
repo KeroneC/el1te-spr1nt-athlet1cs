@@ -91,6 +91,10 @@ param transactionalEmailSenderUsername string = 'orders'
 @description('Reply-To address for transactional email.')
 param transactionalEmailReplyToAddress string = ''
 
+@secure()
+@description('Optional production-only semicolon-separated staff alert recipients. Stored in Key Vault.')
+param registrationAlertRecipients string = ''
+
 @description('Keep false until the final store cutover.')
 param storeEnabled bool = false
 
@@ -262,6 +266,9 @@ module api 'modules/api-app.bicep' = {
     transactionalEmailConnectionSecretUri: communicationEmail.outputs.connectionSecretUri
     transactionalEmailSenderAddress: communicationEmail.outputs.senderAddress
     transactionalEmailReplyToAddress: transactionalEmailReplyToAddress
+    registrationAlertRecipientsSecretUri: environmentName == 'production' && !empty(registrationAlertRecipients)
+      ? registrationAlertRecipientSecret!.properties.secretUri
+      : ''
     location: location
     name: apiAppName
     sqlServerFqdn: sqlServer.outputs.fullyQualifiedDomainName
@@ -293,6 +300,15 @@ module web 'modules/web-app.bicep' = {
 
 resource deployedStorage 'Microsoft.Storage/storageAccounts@2023-05-01' existing = { name: storageName }
 resource deployedVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = { name: vaultName }
+
+resource registrationAlertRecipientSecret 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = if (environmentName == 'production' && !empty(registrationAlertRecipients)) {
+  parent: deployedVault
+  name: 'registration-alert-recipients'
+  properties: {
+    value: registrationAlertRecipients
+  }
+  dependsOn: [deploymentSecretsOfficer]
+}
 resource deployedSqlServer 'Microsoft.Sql/servers@2023-08-01-preview' existing = { name: sqlServerName }
 resource deployedSqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' existing = {
   parent: deployedSqlServer

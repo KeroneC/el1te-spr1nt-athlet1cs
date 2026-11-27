@@ -199,6 +199,10 @@ var adminInvitationSettings = builder.Configuration
     .GetSection(AdminInvitationSettings.SectionName)
     .Get<AdminInvitationSettings>() ?? new AdminInvitationSettings();
 builder.Services.AddSingleton(adminInvitationSettings);
+builder.Services.AddSingleton(new RegistrationApplicationAlertSettings(
+    builder.Configuration[RegistrationApplicationAlertSettings.RecipientsKey], adminInvitationSettings.SiteUrl,
+    allowLocalOrigin: builder.Environment.IsDevelopment()));
+builder.Services.AddHostedService<RegistrationApplicationAlertWorker>();
 
 var mediaStorageOptions = builder.Configuration
     .GetSection(MediaStorageOptions.SectionName)

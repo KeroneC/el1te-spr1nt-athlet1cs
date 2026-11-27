@@ -2941,6 +2941,49 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.ToTable("ProductVisualizerLayers");
                 });
 
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationApplicationAlert", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTimeOffset>("AvailableAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<DateTimeOffset?>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<Guid?>("LockId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTimeOffset?>("LockedUntilUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("Recipient")
+                        .IsRequired()
+                        .HasMaxLength(254)
+                        .HasColumnType("nvarchar(254)");
+
+                    b.Property<string>("SafeLastError")
+                        .HasMaxLength(80)
+                        .HasColumnType("nvarchar(80)");
+
+                    b.Property<Guid>("SubmissionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CompletedAtUtc", "AvailableAtUtc");
+
+                    b.HasIndex("SubmissionId", "Recipient")
+                        .IsUnique();
+
+                    b.ToTable("RegistrationApplicationAlerts");
+                });
+
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationCount", b =>
                 {
                     b.Property<int>("SeasonYear")
@@ -4270,6 +4313,15 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                     b.Navigation("ProductModifierValue");
 
                     b.Navigation("ProductOptionValue");
+                });
+
+            modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationApplicationAlert", b =>
+                {
+                    b.HasOne("El1teSpr1ntTrack.Core.Entities.RegistrationSubmission", null)
+                        .WithMany()
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("El1teSpr1ntTrack.Core.Entities.RegistrationCount", b =>

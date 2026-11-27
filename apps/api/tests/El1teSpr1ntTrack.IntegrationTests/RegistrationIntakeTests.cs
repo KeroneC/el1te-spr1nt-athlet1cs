@@ -1,4 +1,5 @@
 using El1teSpr1ntTrack.Api.Authorization;
+using El1teSpr1ntTrack.Api.Configuration;
 using El1teSpr1ntTrack.Api.Controllers.Registration;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
 using El1teSpr1ntTrack.Application.Interfaces;
@@ -46,7 +47,7 @@ public sealed class RegistrationIntakeTests
         db.RegistrationSeasons.Add(season);
         await db.SaveChangesAsync();
 
-        var response = Assert.IsType<OkObjectResult>(await new RegistrationPublicController(db, new FixedClock())
+        var response = Assert.IsType<OkObjectResult>(await new RegistrationPublicController(db, new FixedClock(), new(null, null))
             .Season(CancellationToken.None));
         var fields = JsonSerializer.SerializeToElement(response.Value, JsonSerializerOptions.Web);
         Assert.True(fields.GetProperty("isOpen").GetBoolean());

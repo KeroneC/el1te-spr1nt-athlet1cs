@@ -27,6 +27,7 @@ param squareWebhookSignatureKeySecretUri string = ''
 param transactionalEmailConnectionSecretUri string
 param transactionalEmailSenderAddress string
 param transactionalEmailReplyToAddress string = ''
+param registrationAlertRecipientsSecretUri string = ''
 param tags object = {}
 
 var connectionString = 'Server=tcp:${sqlServerFqdn},1433;Initial Catalog=${databaseName};Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;'
@@ -162,6 +163,10 @@ resource api 'Microsoft.Web/sites@2023-12-01' = {
         {
           name: 'TransactionalEmail__AdminSiteUrl'
           value: jwtAudience
+        }
+        {
+          name: 'RegistrationAlerts__Recipients'
+          value: empty(registrationAlertRecipientsSecretUri) ? '' : '@Microsoft.KeyVault(SecretUri=${registrationAlertRecipientsSecretUri})'
         }
         {
           name: 'Store__Enabled'

@@ -41,6 +41,8 @@ export default defineConfig({
         SeedAdmin__LastName: "Admin",
         AdminInvitations__SiteUrl: webUrl,
         AdminInvitations__ExpiresHours: "72",
+        RegistrationAlerts__Recipients: "registration-alert-club@example.test;registration-alert-reviewer@example.test;registration-alert-ops@example.test",
+        TransactionalEmail__Provider: "DevelopmentFile",
         TransactionalEmail__DevelopmentOutboxPath: "../../../../artifacts/e2e/mail",
         Store__Enabled: "true",
         Store__CheckoutEnabled: "true",

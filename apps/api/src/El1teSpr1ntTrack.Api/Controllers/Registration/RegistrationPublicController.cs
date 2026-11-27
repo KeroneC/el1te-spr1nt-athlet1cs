@@ -1,5 +1,6 @@
 using System.Data;
 using System.Security.Cryptography;
+using El1teSpr1ntTrack.Api.Configuration;
 using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.Entities;
 using El1teSpr1ntTrack.Infrastructure.Data;
@@ -21,7 +22,7 @@ internal static class RegistrationDatabase
 [ApiController]
 [Route("api/public/registration")]
 [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
-public sealed class RegistrationPublicController(El1teDbContext db, IClock clock) : ControllerBase
+public sealed class RegistrationPublicController(El1teDbContext db, IClock clock, RegistrationApplicationAlertSettings alerts) : ControllerBase
 {
     private IActionResult IntakeClosed() => Conflict(new ProblemDetails
     {
@@ -97,6 +98,8 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
         }
         submission.ReceiptReference = "EL-" + Convert.ToHexString(RandomNumberGenerator.GetBytes(8));
         db.RegistrationSubmissions.Add(submission);
+        // Queue staff alerts atomically with new applications, never with validation failures or receipt retries.
+        db.RegistrationApplicationAlerts.AddRange(alerts.ForNewSubmission(submission));
         await db.SaveChangesAsync(token);
         await transaction.CommitAsync(token);
         return StatusCode(201, new { reference = submission.ReceiptReference });

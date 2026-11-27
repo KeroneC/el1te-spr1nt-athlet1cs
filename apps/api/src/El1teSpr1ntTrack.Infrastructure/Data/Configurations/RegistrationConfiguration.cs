@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace El1teSpr1ntTrack.Infrastructure.Data.Configurations;
 
 public sealed class RegistrationConfiguration : IEntityTypeConfiguration<RegistrationSeason>,
-    IEntityTypeConfiguration<RegistrationSubmission>, IEntityTypeConfiguration<RegistrationCount>
+    IEntityTypeConfiguration<RegistrationSubmission>, IEntityTypeConfiguration<RegistrationCount>,
+    IEntityTypeConfiguration<RegistrationApplicationAlert>
 {
     public void Configure(EntityTypeBuilder<RegistrationSeason> builder)
     {
@@ -65,5 +66,14 @@ public sealed class RegistrationConfiguration : IEntityTypeConfiguration<Registr
     {
         builder.HasKey(x => new { x.SeasonYear, x.Channel });
         builder.HasOne<RegistrationSeason>().WithMany().HasForeignKey(x => x.SeasonYear).OnDelete(DeleteBehavior.Restrict);
+    }
+
+    public void Configure(EntityTypeBuilder<RegistrationApplicationAlert> builder)
+    {
+        builder.Property(x => x.Recipient).HasMaxLength(254);
+        builder.Property(x => x.SafeLastError).HasMaxLength(80);
+        builder.HasIndex(x => new { x.SubmissionId, x.Recipient }).IsUnique();
+        builder.HasIndex(x => new { x.CompletedAtUtc, x.AvailableAtUtc });
+        builder.HasOne<RegistrationSubmission>().WithMany().HasForeignKey(x => x.SubmissionId).OnDelete(DeleteBehavior.Cascade);
     }
 }
