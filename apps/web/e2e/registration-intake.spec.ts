@@ -10,6 +10,7 @@ const responsiveWidths = [340, 390, 768, 1440];
 const referencePattern = /^EL-[A-F0-9]{16}$/;
 const guardianEmail = "synthetic-registration@example.test";
 const sqlTag = "@registration-sql";
+const paginationApplications = 21;
 const mailRoot = path.resolve(process.cwd(), "../../artifacts/e2e/mail");
 const alertRecipients = ["registration-alert-club@example.test", "registration-alert-reviewer@example.test", "registration-alert-ops@example.test"];
 const seasonYear = (retry: number) => new Date().getUTCFullYear() + 1 + retry;
@@ -349,6 +350,10 @@ test("families and staff can complete both registration paths through the browse
       await expect(returning.getByText("Copy the reference above manually.", { exact: true })).toBeVisible();
       await publicPage.unroute("**" + submitPath);
 
+      // The original save, exact retry and returning check-in above must produce
+      // one staff alert per mailbox, before any pagination fixtures are submitted.
+      await expect.poll(() => applicationAlerts(existingMail), { timeout: 25_000 }).toHaveLength(alertRecipients.length);
+
       // Direct links should choose the right visible form after hydration.
       await stalePage.goto("/registration#returning");
       await expect(stalePage.locator("#returning form")).toBeVisible();
@@ -356,7 +361,7 @@ test("families and staff can complete both registration paths through the browse
       await fillReturning(stalePage.locator("#returning"), "AfterClosure", "closed-form@example.test");
 
       // Seed just enough synthetic rows for the staff pagination scenario.
-      const records = Array.from({ length: 21 }, (_, i) => ({
+      const records = Array.from({ length: paginationApplications }, (_, i) => ({
         ...payload,
         requestKey: crypto.randomUUID(),
         guardianEmail: "page-test-" + i + "@example.test",
@@ -524,9 +529,11 @@ test("families and staff can complete both registration paths through the browse
       const replay = await publicPage.request.post(submitPath, { data: payload });
       expect(replay.status()).toBe(200);
       expect(await replay.json()).toEqual({ reference: appReference });
-      await expect.poll(() => applicationAlerts(existingMail), { timeout: 25_000 }).toHaveLength(alertRecipients.length);
+      const expectedAlertCount = alertRecipients.length * (1 + paginationApplications);
+      await expect.poll(() => applicationAlerts(existingMail), { timeout: 25_000 }).toHaveLength(expectedAlertCount);
       const notices = await applicationAlerts(existingMail);
-      expect(notices.map(message => /^To: (.+)$/m.exec(message)?.[1]?.trim()).sort()).toEqual([...alertRecipients].sort());
+      expect(notices.map(message => /^To: (.+)$/m.exec(message)?.[1]?.trim()).sort())
+        .toEqual(alertRecipients.flatMap(address => Array<string>(1 + paginationApplications).fill(address)).sort());
       for (const notice of notices) {
         expect(notice).toContain("/admin/registration");
         for (const privateValue of [guardianEmail, appReference, "Jordan", "SyntheticSurname", "Synthetic Test Lane"])
