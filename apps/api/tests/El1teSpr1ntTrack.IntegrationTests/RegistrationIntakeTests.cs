@@ -53,6 +53,7 @@ public sealed class RegistrationIntakeTests
         Assert.True(fields.GetProperty("isOpen").GetBoolean());
         Assert.Equal("Details to follow", fields.GetProperty("practiceSchedule").GetString());
         Assert.False(fields.TryGetProperty("firstPracticeDate", out _));
+        Assert.False(fields.TryGetProperty("endDate", out _));
         Assert.DoesNotContain("2026-12-05", fields.GetRawText());
         Assert.Equal(new DateOnly(2026, 12, 5), season.FirstPracticeDate);
     }
@@ -336,6 +337,62 @@ public sealed class RegistrationIntakeTests
     }
 
     [Fact]
+    public void SeasonCanSaveARealPracticeDateWithoutASeasonEndAndLaterSetItsEnd()
+    {
+        var season = Season();
+        var body = new SeasonRequest(2027, season.Revision, "Test season", new(2026, 11, 27), null, null,
+            "Test track", "Evenings", "Follow-up", "We will contact you.", "test@example.test",
+            "Explain paperwork when contacting families.", "Reviewer", "Records owner", "2027-02-07");
+
+        IntakeRules.UpdateSeason(season, body);
+        Assert.Null(season.EndDate);
+        Assert.Equal(new DateOnly(2027, 2, 7), season.FirstPracticeDate);
+        Assert.True(IntakeRules.HasValidFirstPracticeDate(season));
+        Assert.Equal(new DateOnly(2020, 2, 7), IntakeRules.Normalize(
+            FullRequest() with { DateOfBirth = "2020-02-07" }, season, Now).DateOfBirth);
+        Assert.Throws<CmsRequestValidationException>(() => IntakeRules.Normalize(
+            FullRequest() with { DateOfBirth = "2020-02-08" }, season, Now));
+        Assert.Contains("openingDate", Assert.Throws<CmsRequestValidationException>(() =>
+            IntakeRules.UpdateSeason(season, body with { OpeningDate = default })).Errors.Keys);
+        Assert.Contains("endDate", Assert.Throws<CmsRequestValidationException>(() =>
+            IntakeRules.UpdateSeason(season, body with { EndDate = new(2028, 1, 1) })).Errors.Keys);
+        Assert.Contains("firstPracticeDate", Assert.Throws<CmsRequestValidationException>(() =>
+            IntakeRules.UpdateSeason(season, body with { EndDate = new(2027, 2, 6) })).Errors.Keys);
+
+        var approvedEnd = new DateOnly(2027, 6, 1);
+        IntakeRules.UpdateSeason(season, body with { EndDate = approvedEnd });
+        Assert.Equal(approvedEnd, season.EndDate);
+    }
+
+    [Fact]
+    public void TbdIntakeRemainsManualAndCannotBecomeEligibleForCloseout()
+    {
+        var season = Season();
+        season.EndDate = null;
+        var later = Now.AddYears(2);
+        var today = IntakeRules.LocalDate(later);
+        season.IsOpen = true;
+        Assert.True(IntakeRules.IsOpen(season, later));
+        Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], today).PublicState);
+        season.IsOpen = false;
+        Assert.False(IntakeRules.IsOpen(season, later));
+        Assert.Equal("Closed", RegistrationAdminController.GetAvailability(season, [season], today).PublicState);
+        Assert.False(IntakeRules.IsCloseoutEligible(season, today));
+        season.FirstPracticeDate = null;
+        Assert.NotNull(RegistrationAdminController.GetAvailability(season, [season], today).OpeningBlockedReason);
+
+        var end = new DateOnly(2027, 8, 1);
+        season.EndDate = end;
+        Assert.False(IntakeRules.IsCloseoutEligible(season, end.AddDays(89)));
+        Assert.True(IntakeRules.IsCloseoutEligible(season, end.AddDays(90)));
+        season.IsOpen = true;
+        Assert.False(IntakeRules.IsCloseoutEligible(season, today));
+        season.IsOpen = false;
+        season.PurgedAtUtc = later;
+        Assert.False(IntakeRules.IsCloseoutEligible(season, today));
+    }
+
+    [Fact]
     public void StaffAvailabilityDistinguishesThePublicWindowFromTheManualSwitch()
     {
         var season = Season();
@@ -348,8 +405,9 @@ public sealed class RegistrationIntakeTests
 
         season.IsOpen = true;
         Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], openingDay).PublicState);
-        Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], season.EndDate).PublicState);
-        var ended = RegistrationAdminController.GetAvailability(season, [season], season.EndDate.AddDays(1));
+        var endDate = Assert.IsType<DateOnly>(season.EndDate);
+        Assert.Equal("Open", RegistrationAdminController.GetAvailability(season, [season], endDate).PublicState);
+        var ended = RegistrationAdminController.GetAvailability(season, [season], endDate.AddDays(1));
         Assert.Equal("Ended", ended.PublicState);
         Assert.True(season.IsOpen);
         Assert.Equal("This season has already ended.", ended.OpeningBlockedReason);
@@ -382,6 +440,7 @@ public sealed class RegistrationIntakeTests
             index.Properties.Select(x => x.Name).SequenceEqual(["SeasonYear", "RequestKey"]));
         Assert.DoesNotContain(model.GetIndexes(), index => index.IsUnique && index.Properties.Any(x => x.Name == "GuardianEmail"));
         Assert.Equal(DeleteBehavior.Cascade, Assert.Single(db.Model.FindEntityType(typeof(RegistrationReview))!.GetForeignKeys()).DeleteBehavior);
+        Assert.True(db.Model.FindEntityType(typeof(RegistrationSeason))!.FindProperty(nameof(RegistrationSeason.EndDate))!.IsNullable);
         Assert.Equal(CmsAdminAuthorization.PolicyName,
             Assert.Single(typeof(RegistrationAdminController).GetCustomAttributes(typeof(AuthorizeAttribute), false).Cast<AuthorizeAttribute>()).Policy);
         Assert.Equal(CmsAdminAuthorization.SuperAdminPolicyName,

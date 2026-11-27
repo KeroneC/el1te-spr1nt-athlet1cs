@@ -13,7 +13,7 @@ public sealed class RegistrationSeason
     public int Year { get; set; }
     public string Title { get; set; } = "";
     public DateOnly OpeningDate { get; set; }
-    public DateOnly EndDate { get; set; }
+    public DateOnly? EndDate { get; set; }
     public DateOnly? FirstPracticeDate { get; set; }
     // Retained for reading legacy seasons and verifying receipt replays.
     public string AgeGroups { get; set; } = "";

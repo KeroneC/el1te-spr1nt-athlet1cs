@@ -61,7 +61,7 @@ async function checkA11y(page: Page, target: string) {
 async function loadSeason(request: APIRequestContext, year: number) {
   const response = await request.get(adminPath + "/seasons");
   expect(response.ok()).toBe(true);
-  const overview = await response.json() as { seasons: { year: number; revision: string; isOpen: boolean }[] };
+  const overview = await response.json() as { seasons: { year: number; revision: string; isOpen: boolean; endDate: string | null }[] };
   return overview.seasons.find(season => season.year === year);
 }
 
@@ -111,7 +111,6 @@ test("families and staff can complete both registration paths through the browse
   const futureOpening = String(year) + "-01-01";
   const firstPracticeDate = String(currentYear) + "-12-15";
   const eligibleBirthDate = String(currentYear - 7) + "-12-15";
-  const endDate = String(year) + "-12-31";
   const title = seasonTitle(year);
   const publicPage = await family.newPage();
   const stalePage = await family.newPage();
@@ -145,7 +144,7 @@ test("families and staff can complete both registration paths through the browse
         ["Tuition", "No tuition for this test"],
         ["Expected reply window (shown to families)", "Within one week."],
         ["Designated club paperwork inbox (staff only)", "forms@example.test"],
-        ["In-person handoff instructions (staff only)", "Hand forms to staff at the test track."],
+        ["Post-offer paperwork instructions (staff only)", "Explain paperwork when contacting families after an offer."],
         ["Review owner", "Test reviewer"],
         ["Retention owner", "Test owner"]
       ]) await page.getByLabel(name, { exact: true }).fill(value);
@@ -157,9 +156,11 @@ test("families and staff can complete both registration paths through the browse
       const badEndDate = page.getByLabel("Season end date (Eastern)", { exact: true });
       await expect(badEndDate).toHaveAttribute("aria-invalid", "true");
       await expect(badEndDate).toHaveAccessibleDescription(/season end must follow opening/i);
-      await badEndDate.fill(endDate);
+      await badEndDate.fill("");
       await save.click();
       await expect(page.getByLabel("Season", { exact: true })).toHaveValue(String(year));
+      await expect(page.getByText("TBD", { exact: true })).toBeVisible();
+      expect((await loadSeason(page.request, year))?.endDate).toBeNull();
 
       await publicPage.goto("/registration");
       await expect(publicPage.locator('[data-registration-hub="true"]')).toBeVisible();
@@ -449,7 +450,8 @@ test("families and staff can complete both registration paths through the browse
 
       await applicationStatus.selectOption("Offered");
       await saveReview(page);
-      await expect(page.getByRole("heading", { name: "Paperwork instructions for staff to send" })).toBeVisible();
+      await expect(page.getByRole("heading", { name: "Paperwork follow-up for staff" })).toBeVisible();
+      await expect(page.getByText("Explain paperwork when contacting families after an offer.", { exact: true })).toBeVisible();
       const queueResponse = await page.request.post(adminPath + "/queue", { data: { year, kind: "Application", search: appReference } });
       expect(queueResponse.ok()).toBe(true);
       const queue = await queueResponse.json();
@@ -500,7 +502,7 @@ test("families and staff can complete both registration paths through the browse
       await returningStatus.selectOption("Offered");
       await saveReview(page);
       await expect(returningStatus.getByRole("option", { name: "Paperwork received" })).toHaveCount(0);
-      await expect(page.getByRole("heading", { name: "Paperwork instructions for staff to send" })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Paperwork follow-up for staff" })).toHaveCount(0);
       await returningStatus.selectOption("Enrolled");
       await page.route("**" + adminPath + "/detail", route => route.fulfill({ status: 503, json: { message: "Synthetic follow-up read error" } }));
       await page.getByRole("button", { name: "Save review" }).click();
@@ -510,14 +512,21 @@ test("families and staff can complete both registration paths through the browse
       await page.unroute("**" + adminPath + "/detail");
       await reload.press("Enter");
       await expect(returningStatus).toHaveValue("Enrolled");
-      await expect(page.getByRole("heading", { name: "Paperwork instructions for staff to send" })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Paperwork follow-up for staff" })).toHaveCount(0);
     });
 
     await test.step("closing intake blocks stale forms while saved receipts stay recoverable", async () => {
       await page.getByRole("button", { name: "Season Settings", exact: true }).click();
       await page.getByRole("button", { name: "Close intake", exact: true }).click();
       await expect(page.getByRole("button", { name: "Open intake", exact: true })).toBeVisible();
-      expect((await loadSeason(page.request, year))?.isOpen).toBe(false);
+      const closed = await loadSeason(page.request, year);
+      expect(closed).toMatchObject({ isOpen: false, endDate: null });
+      await expect(page.getByRole("button", { name: "Remove identifiable intake records" })).toHaveCount(0);
+      const closeout = await page.request.post(adminPath + "/closeout", {
+        data: { year, revision: closed!.revision, confirmYear: String(year) }
+      });
+      expect(closeout.status()).toBe(409);
+      expect(await closeout.json()).toMatchObject({ title: expect.stringContaining("recorded season end date") });
       const staleReturning = stalePage.locator("#returning");
       await staleReturning.getByRole("button", { name: "Submit check-in" }).click();
       await expect(staleReturning.getByRole("alert")).toContainText(/applications are not open/i);
@@ -576,4 +585,5 @@ test("blank registration downloads stay available and individually named", async
   await expect(page.getByText(/athletes must be ages 7–18 on the first practice date/i)).toBeVisible();
   await page.goto("/privacy#registration-privacy");
   await expect(page.getByRole("heading", { name: "Athlete applications and check-ins" })).toBeVisible();
+  await expect(page.getByText(/Gender is required; second guardian contact is optional/)).toBeVisible();
 });

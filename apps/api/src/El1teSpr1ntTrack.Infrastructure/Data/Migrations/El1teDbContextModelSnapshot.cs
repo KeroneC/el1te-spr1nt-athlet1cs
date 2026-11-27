@@ -3053,7 +3053,7 @@ namespace El1teSpr1ntTrack.Infrastructure.Data.Migrations
                         .HasMaxLength(400)
                         .HasColumnType("nvarchar(400)");
 
-                    b.Property<DateOnly>("EndDate")
+                    b.Property<DateOnly?>("EndDate")
                         .HasColumnType("date");
 
                     b.Property<string>("Fees")
