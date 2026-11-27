@@ -62,7 +62,13 @@ async function submitAndCapture(page: Page, panel: Locator, device: string, kind
   await expect(panel.getByRole("heading", { name: "What happens next", exact: true })).toBeVisible();
   await expect(panel.locator("form")).toHaveCount(0);
   await expect(panel.getByText(/^EL-[0-9A-F]{16}$/)).toBeVisible();
-  await expect(panel.getByText(/No automatic confirmation email is sent/)).toBeVisible();
+  if (application) {
+    const nextSteps = panel.getByRole("heading", { name: "What happens next", exact: true }).locator("..");
+    await expect(nextSteps.locator("p")).toHaveText(["The club will follow up with a text, phone call or email."]);
+    await expect(panel.getByText("This does not reserve a spot.", { exact: true })).toBeVisible();
+  } else {
+    await expect(panel.getByText(/No automatic confirmation email is sent/)).toBeVisible();
+  }
   const status = panel.getByRole("status");
   await expect(status.filter({ hasText: /received/ })).toBeFocused();
   expect(requests).toEqual([kind]);

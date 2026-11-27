@@ -214,11 +214,14 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
     <p aria-live="polite" className={styles.copyFeedback}>{copied === "copied" ? "Reference copied." : copied === "manual" ? "Copy the reference above manually." : ""}</p>
     <section className={styles.receiptNext}>
       <h2>What happens next</h2>
-      <p>The club will follow up by email.</p>
-      {season.replyWindow && <p>{season.replyWindow}</p>}
-      <p>{application ? "Wait for an offer before sending paperwork." : "Returning athletes don’t need to send paperwork."}</p>
+      {application ? <p>The club will follow up with a text, phone call or email.</p> : <>
+        <p>The club will follow up by email.</p>
+        {season.replyWindow && <p>{season.replyWindow}</p>}
+        <p>Returning athletes don’t need to send paperwork.</p>
+      </>}
     </section>
-    <p className={styles.receiptNotice}>No automatic confirmation email is sent. This does not reserve a spot.</p>
+    <p className={styles.receiptNotice}>{application ? "This does not reserve a spot." :
+      "No automatic confirmation email is sent. This does not reserve a spot."}</p>
     {!intakeClosed && <button type="button" className={styles.back} onClick={startAnother}>
       {application ? "Apply for another athlete" : "Check in another athlete"}</button>}
   </div>;
@@ -253,7 +256,9 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
       {(message || blocked) && <div ref={noticeRef} tabIndex={-1} role="alert" className="form-status error">
         {message || "Applications are not open. No new submission was saved."}<SupportReference referenceId={support} /></div>}
       {(!application || step === reviewStep) &&
-        <p className={styles.submitNote}>This {application ? "application" : "check-in"} doesn’t reserve a spot.</p>}
+        <p className={styles.submitNote}>{application
+          ? "This application doesn’t reserve a spot. Wait for an offer before sending paperwork."
+          : "This check-in doesn’t reserve a spot."}</p>}
       <div className={styles.actions}>
         {application && (step > 0 || isEditing) && (!lockedFields || busy) && <button type="button" className={styles.back} disabled={busy} onClick={() => {
           setMessage(""); setErrors({});

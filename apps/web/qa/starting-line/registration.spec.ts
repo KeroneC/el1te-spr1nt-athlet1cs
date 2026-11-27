@@ -204,6 +204,9 @@ test("application draft, review edit, server error routing, exact retry and rece
   await submit.click();
   await page.getByRole("button", { name: "Retry submission" }).click();
   await expect(page.getByRole("heading", { name: "Application received" })).toBeVisible();
+  const whatNext = page.locator("#apply section").filter({ has: page.getByRole("heading", { name: "What happens next", exact: true }) });
+  await expect(whatNext.locator("p")).toHaveText(["The club will follow up with a text, phone call or email."]);
+  await expect(page.locator("#apply").getByText("This does not reserve a spot.", { exact: true })).toBeVisible();
   expect(requests).toHaveLength(3);
   expect(requests[1]).toBe(requests[2]);
   expect(JSON.parse(requests[2])).toMatchObject({ guardianName: "Edited fixture guardian", emergencyContactPhone: "412-555-0122",
@@ -250,6 +253,7 @@ test("fresh direct link cannot skip to Review; returning check-in has one save a
   });
   await form.getByRole("button", { name: "Submit check-in" }).click();
   await expect(form.getByRole("heading", { name: "Check-in received" })).toBeVisible();
+  await expect(form.getByText("The club will follow up by email.", { exact: true })).toBeVisible();
   await expect(form.getByText(/no automatic confirmation email/i)).toBeVisible();
   await form.getByRole("button", { name: "Check in another athlete" }).click();
   const resetEmail = form.getByLabel("Parent or guardian email");

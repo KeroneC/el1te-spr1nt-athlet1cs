@@ -307,10 +307,11 @@ test("families and staff can complete both registration paths through the browse
       expect(appReference).toMatch(referencePattern);
       expect(publicPage.url()).not.toContain(appReference);
       expect(publicPage.url()).not.toContain(guardianEmail);
-      await expect(application.getByText(/no automatic confirmation email is sent/i)).toBeVisible();
+      const whatNext = application.locator("section").filter({ has: publicPage.getByRole("heading", { name: "What happens next", exact: true }) });
+      await expect(whatNext.locator("p")).toHaveText(["The club will follow up with a text, phone call or email."]);
+      await expect(application.getByText("This does not reserve a spot.", { exact: true })).toBeVisible();
       await expect(application.getByText("SyntheticSurname", { exact: true })).toHaveCount(0);
       await expect(application.getByText("Synthetic Emergency Contact", { exact: true })).toHaveCount(0);
-      await expect(application.getByText("Wait for an offer before sending paperwork.", { exact: true })).toBeVisible();
       await application.getByRole("button", { name: "Copy reference" }).click();
       await expect(application.getByText("Reference copied.", { exact: true })).toBeVisible();
       await checkLayout(publicPage, application.getByRole("heading", { name: "Application received" }));
