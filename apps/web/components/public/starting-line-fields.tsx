@@ -1,11 +1,10 @@
 import type { InputHTMLAttributes, ReactNode } from "react";
 import { registrationAgeLabel } from "@/lib/registration";
-import { otherSchoolDistrict, pittsburghSchoolDistricts, unknownSchoolDistrict } from "@/lib/pittsburgh-school-districts";
-import { applicationGenders, schoolDistrictAnswer } from "./starting-line-steps";
-import type { Draft, FormField, Errors } from "./starting-line-steps";
+import { applicationGenders } from "./starting-line-steps";
+import type { Draft, Field, Errors } from "./starting-line-steps";
 import styles from "./starting-line-form.module.css";
 
-type TextField = Exclude<FormField, "affiliations">;
+type TextField = Exclude<Field, "affiliations">;
 type Options = ReadonlyArray<readonly [string, string]>;
 const choices: Options = [["Yes", "Yes"], ["No", "No"], ["Unsure", "Not sure"]];
 const grades: Options = [["Pre-K", "Pre-K"], ["K", "Kindergarten"],
@@ -15,15 +14,14 @@ const genders: Options = applicationGenders.map(value => [value, value]);
 const affiliationOptions = ["AAU", "USATF", "Other", "Unsure"];
 
 type FieldsProps = { prefix: string; step: number | "returning"; draft: Draft;
-  update: (name: FormField, value: string | string[]) => void; errors: Errors; disabled: boolean;
+  update: (name: Field, value: string | string[]) => void; errors: Errors; disabled: boolean;
   schedule: string | null };
 
 export function RegistrationFields({ prefix, step, draft, update, errors, disabled, schedule }: FieldsProps) {
   function props(name: TextField, hasHint = false) {
     const id = prefix + "-" + name;
-    const errorName = name === "schoolDistrictOther" ? "schoolDistrict" : name;
-    const hasError = !!errors[errorName] && (name !== "schoolDistrict" || draft.schoolDistrict !== otherSchoolDistrict);
-    const descriptions = [hasHint && id + "-hint", hasError && prefix + "-" + errorName + "-error"].filter(Boolean);
+    const hasError = !!errors[name];
+    const descriptions = [hasHint && id + "-hint", hasError && id + "-error"].filter(Boolean);
     return { id, name, value: draft[name] ?? "", "aria-invalid": hasError,
       "aria-describedby": descriptions.length ? descriptions.join(" ") : undefined };
   }
@@ -55,21 +53,8 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
       <span aria-hidden="true">Choose a date</span>
     </div>, `${registrationAgeLabel} on the first practice date. Eligibility is checked when you submit.`)}
     {select("schoolGrade", "Current school grade", grades)}
-    {field("schoolDistrict", "School district", <>
-      <select {...props("schoolDistrict")} required onChange={e => update("schoolDistrict", e.target.value)}>
-        <option value="">Choose one</option>
-        <option value={unknownSchoolDistrict}>{unknownSchoolDistrict}</option>
-        <option value={otherSchoolDistrict}>Other / not listed</option>
-        <optgroup label="Greater Pittsburgh school districts">
-          {pittsburghSchoolDistricts.map(name => <option key={name} value={name}>{name}</option>)}
-        </optgroup>
-      </select>
-      {draft.schoolDistrict === otherSchoolDistrict && <>
-        <label htmlFor={prefix + "-schoolDistrictOther"}>School district name</label>
-        <input {...props("schoolDistrictOther")} maxLength={120} required
-          onChange={e => update("schoolDistrictOther", e.target.value)} />
-      </>}
-    </>)}
+    {text("schoolDistrict", "School district", { type: "text", maxLength: 120, required: true },
+      "If you don’t know or it doesn’t apply, enter “Not sure” or “Not applicable.”")}
     {select("gender", "Gender", genders)}
   </> : step === 1 ? <>
     {text("guardianName", "Parent or guardian name", { autoComplete: "section-guardian name", maxLength: 100, required: true }, undefined, true)}
@@ -124,7 +109,7 @@ export function RegistrationReview({ index, draft: d }: { index: number; draft: 
   const rows: [string, string | undefined][] = index === 0 ? [
     ["Legal name", [d.athleteFirstName, d.athleteLastName].filter(Boolean).join(" ")],
     ["Date of birth", dob], ["Grade", grades.find(([k]) => k === d.schoolGrade)?.[1]],
-    ["District", schoolDistrictAnswer(d)], ["Gender", d.gender]
+    ["District", d.schoolDistrict?.trim()], ["Gender", d.gender]
   ] : index === 1 ? [
     ["Guardian", d.guardianName], ["Email", d.guardianEmail], ["Phone", d.guardianPhone],
     ["Second guardian", d.secondaryGuardianName], ["Second email", d.secondaryGuardianEmail], ["Second phone", d.secondaryGuardianPhone]

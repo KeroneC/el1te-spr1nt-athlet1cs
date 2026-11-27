@@ -29,7 +29,7 @@ async function toReview(page: Page, priorClub = false) {
   await field(page, "athleteLastName").fill("Fixture");
   await field(page, "dateOfBirth").fill("2015-07-03");
   await field(page, "schoolGrade").selectOption("Not applicable");
-  await field(page, "schoolDistrict").selectOption("West Allegheny");
+  await field(page, "schoolDistrict").fill("West Allegheny");
   await field(page, "gender").selectOption("Female");
   await next(page);
   await field(page, "guardianName").fill("Synthetic parent");
@@ -71,20 +71,17 @@ test("requires the last meet month after a previous club and carries it to revie
   await expect(page.locator("#apply").getByText("2022-09", { exact: true })).toBeVisible();
 });
 
-test("new application supports an unlisted district, requires gender, and lets families change PA", async ({ page }) => {
+test("new application requires a typed district and gender, and lets families change PA", async ({ page }) => {
   await page.goto(publicPath + "#apply");
   await field(page, "athleteFirstName").fill("Avery");
   await field(page, "athleteLastName").fill("Fixture");
   await field(page, "dateOfBirth").fill("2015-07-03");
   await field(page, "schoolGrade").selectOption("6");
-  const district = field(page, "schoolDistrict");
-  await expect(district.locator('option[value="Cornell"]')).toHaveCount(1);
-  await district.selectOption({ label: "Other / not listed" });
-  const other = field(page, "schoolDistrictOther");
+  const district = page.locator("#apply").getByRole("textbox", { name: "School district", exact: true });
   await next(page);
-  await expect(other).toBeFocused();
-  await expect(other).toHaveAccessibleDescription(/enter a school district name/i);
-  await other.fill("Example District");
+  await expect(district).toBeFocused();
+  await expect(district).toHaveAccessibleDescription(/enter a school district, not sure, or not applicable/i);
+  await district.fill("Example District");
   const gender = field(page, "gender");
   await expect(gender.locator('option:not([value=""])')).toHaveText(["Female", "Male"]);
   await next(page);

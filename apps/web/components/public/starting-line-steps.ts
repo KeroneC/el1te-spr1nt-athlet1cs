@@ -1,5 +1,3 @@
-import { otherSchoolDistrict } from "@/lib/pittsburgh-school-districts";
-
 // Pure presentation/validation helpers. Drafts belong to the mounted form only.
 export const applicationSteps = [
   { slug: "", label: "Athlete", title: "Who’s your athlete?", note: "Have their school information, home address, and an emergency contact handy." },
@@ -19,15 +17,11 @@ export const stepFields = [
 ] as const;
 
 export type Field = typeof stepFields[number][number];
-export type FormField = Field | "schoolDistrictOther";
-export type Draft = Partial<Record<Exclude<FormField, "affiliations"> | "website", string>> & { affiliations?: string[] };
+export type Draft = Partial<Record<Exclude<Field, "affiliations"> | "website", string>> & { affiliations?: string[] };
 export type Errors = Record<string, string[]>;
 export const applicationGenders = ["Female", "Male"] as const;
 export function initialDraft(application: boolean): Draft {
   return application ? { state: "PA" } : {};
-}
-export function schoolDistrictAnswer(draft: Draft) {
-  return (draft.schoolDistrict === otherSchoolDistrict ? draft.schoolDistrictOther : draft.schoolDistrict)?.trim() ?? "";
 }
 export const reviewStep = applicationSteps.length - 1;
 export function stepForField(field: string) {
@@ -58,7 +52,7 @@ export function validateStep(step: number | "returning", draft: Draft, today: st
   const required: Partial<Record<Field, string>> = {
     athleteFirstName: "Enter your athlete’s first name.", athleteLastName: "Enter your athlete’s last name.",
     dateOfBirth: "Enter a date of birth.", schoolGrade: "Choose a school grade or Not applicable.",
-    schoolDistrict: "Choose a school district, Other, or Not sure / not applicable.", guardianName: "Enter a parent or guardian name.",
+    schoolDistrict: "Enter a school district, Not sure, or Not applicable.", guardianName: "Enter a parent or guardian name.",
     guardianEmail: "Enter a parent or guardian email.", guardianPhone: "Enter a valid phone number.",
     streetAddress: "Enter a street address.", city: "Enter a city.", state: "Choose a state.", postalCode: "Enter a ZIP code.",
     emergencyContactName: "Enter an emergency contact name.", emergencyContactPhone: "Enter a valid phone number.",
@@ -76,10 +70,7 @@ export function validateStep(step: number | "returning", draft: Draft, today: st
     }
     const value = draft[name]?.trim() ?? "";
     let message = !value ? required[name] : undefined;
-    if (name === "schoolDistrict" && value === otherSchoolDistrict) {
-      const district = schoolDistrictAnswer(draft);
-      if (!district || district.length > 120) message = "Enter a school district name of up to 120 characters.";
-    }
+    if (name === "schoolDistrict" && value.length > 120) message = "Enter a school district name of up to 120 characters.";
     if (name === "gender" && !applicationGenders.some(gender => gender === value))
       message = "Choose Female or Male.";
     if (value && name === "dateOfBirth") message = validDob(value, today);
@@ -104,7 +95,6 @@ export function firstIncompleteStep(draft: Draft, today: string) {
 export function applicationFields(draft: Draft) {
   return Object.fromEntries(stepFields.flat().map(name => {
     if (name === "affiliations") return [name, draft.priorClub === "Yes" ? draft.affiliations ?? [] : []];
-    if (name === "schoolDistrict") return [name, schoolDistrictAnswer(draft) || null];
     if ((name === "clubName" || name === "lastMeetMonth") && draft.priorClub !== "Yes") return [name, null];
     return [name, draft[name]?.trim() || null];
   }));
