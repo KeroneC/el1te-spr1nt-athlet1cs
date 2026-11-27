@@ -7,7 +7,6 @@ namespace El1teSpr1ntTrack.Api.Background;
 
 public sealed class RegistrationApplicationAlertWorker(
     IServiceScopeFactory scopes,
-    IClock clock,
     RegistrationApplicationAlertSettings settings,
     ILogger<RegistrationApplicationAlertWorker> logger) : BackgroundService
 {
@@ -46,6 +45,7 @@ public sealed class RegistrationApplicationAlertWorker(
 
         await using var scope = scopes.CreateAsyncScope();
         var db = scope.ServiceProvider.GetRequiredService<El1teDbContext>();
+        var clock = scope.ServiceProvider.GetRequiredService<IClock>();
         var now = clock.UtcNow;
         var ready = db.RegistrationApplicationAlerts.Where(x => x.CompletedAtUtc == null && x.AvailableAtUtc <= now &&
             (x.LockedUntilUtc == null || x.LockedUntilUtc <= now));
