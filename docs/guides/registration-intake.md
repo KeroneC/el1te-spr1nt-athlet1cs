@@ -31,7 +31,7 @@ Ads can use `/registration?src=facebook` or `/registration?src=instagram`. The s
 
 ### Public season wording for 2027
 
-Use these three entries in **Season Settings**. Keep the exact first practice date in the staff-only field. Set the public reply window separately once the team confirms it.
+The 2027 page shows these general details before opening and **Season Settings** prefills them for a new 2027 season. After the season opens, the saved settings take precedence. Keep the exact first practice date in the staff-only field. Set the public reply window separately once the team confirms it.
 
 - **Practice location:** We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.
 - **Practice schedule:** During peak season, practices are usually 6–8 p.m. We typically skip practices before or after meets, so the schedule can change.

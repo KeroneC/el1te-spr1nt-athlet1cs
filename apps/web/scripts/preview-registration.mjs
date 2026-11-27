@@ -5,6 +5,7 @@ import { spawn } from "node:child_process";
 import { access, readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { localArchiveArtwork } from "../lib/local-registration-preview.mjs";
+import { registration2027Copy } from "../lib/registration-2027-copy.mjs";
 
 const webDir = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2);
@@ -28,9 +29,7 @@ const artwork = new Map(archive ? await Promise.all(localArchiveArtwork.map(asyn
 const signingKey = randomBytes(32);
 const season = {
   year: 2027, title: "Local design preview · sample season", openingDate: "2026-11-27",
-  practiceLocation: "We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.",
-  practiceSchedule: "During peak season, practices are usually 6–8 p.m. We typically skip practices before or after meets, so the schedule can change.",
-  fees: "Season fees cover entry fees for all meets that season. Fees vary for high school athletes, who spend part of the season practicing with their school teams.",
+  ...registration2027Copy,
   replyWindow: "Local preview only. No registration is saved or email sent.", isOpen: state === "open"
 };
 const fixture = createServer(async (req, res) => {

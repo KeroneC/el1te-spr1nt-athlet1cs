@@ -27,6 +27,7 @@ describe("starting line when applications cannot be submitted", () => {
     expect(html).toContain('href="/registration?src=instagram"');
     expect(html).not.toContain("Planned opening:");
     expect(html).not.toContain("First indoor practice:");
+    expect(html).not.toContain("West Allegheny High School");
   });
   it.each([
     ["2026-11-17T12:00:00Z", "Friday, November 27"],
@@ -39,6 +40,10 @@ describe("starting line when applications cannot be submitted", () => {
     informationalOnly(html);
     expect(html).toContain(text);
     expect(html).toContain("late January or early February");
+    expect(html).toContain("West Allegheny High School and Robert Morris University (RMU)");
+    expect(html).toContain("usually 6–8 p.m.");
+    expect(html).toContain("Season fees cover entry fees for all meets");
+    expect(html).not.toContain("When you’ll hear back");
     if (!text.includes("closed")) {
       expect(html).toContain("<summary>How to prepare</summary>");
       expect(html).not.toMatch(/<img\b|__registration-preview/);
@@ -51,7 +56,9 @@ describe("starting line when applications cannot be submitted", () => {
       year: 2028, title: null, openingDate: "2027-11-26",
       isOpen: false, practiceLocation: null, practiceSchedule: null, fees: null, replyWindow: null
     } });
-    expect(await render()).not.toContain("First indoor practice:");
+    const html = await render();
+    expect(html).not.toContain("First indoor practice:");
+    expect(html).not.toContain("West Allegheny High School");
   });
   it("does not promise another opening after staff close on opening day", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-27T17:00:00Z"));
@@ -76,5 +83,7 @@ it("keeps the practice window visible when applications and check-ins open", asy
   expect(html).toContain("late January or early February");
   expect(html).toContain('href="#apply"');
   expect(html).toContain('href="#returning"');
+  expect(html).toContain("Sample track");
+  expect(html).not.toContain("West Allegheny High School");
   expect(html).not.toMatch(/<dt>First practice<\/dt>/);
 });

@@ -6,6 +6,7 @@ import { AdminApiError } from "@/lib/admin/api-error";
 import { redirectForAdminResponse } from "@/lib/admin/client-response";
 import { validSupportReference } from "@/lib/observability/support-reference";
 import { registrationAgeLabel } from "@/lib/registration";
+import { registration2027Copy } from "@/lib/registration-2027-copy.mjs";
 import { Field, FormNotice, FormSection, SelectField, TextArea, fieldError } from "./form-controls";
 import { applicationReviewName, RegistrationReviewDetails, type RegistrationReviewDetailsRecord } from "./registration-review-details";
 
@@ -106,6 +107,8 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
   const reviewForm = useRef<HTMLFormElement>(null);
   const current = overview.seasons.find(season => season.year === year);
   const currentYear = current?.year;
+  const nextYear = Math.max(2027, (overview.seasons[0]?.year ?? 2026) + 1);
+  const initialLogistics = !current && nextYear === 2027 ? registration2027Copy : current;
   const otherOpenSeason = overview.seasons.find(season => season.isOpen && season.year !== year);
   const settingsLockedReason = current?.isOpen ? "Close the intake switch before editing this season." :
     current?.purgedAtUtc ? "Season details are read-only after closeout." :
@@ -303,15 +306,15 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
           <legend className="sr-only">Season settings</legend>
           {current ? <input type="hidden" name="year" value={current.year} /> : null}
           <FormSection title="Season details">
-            {!current && <Field label="Season year" name="year" type="number" min={2026} max={2100} defaultValue={Math.max(2027, (overview.seasons[0]?.year ?? 2026) + 1)} required error={seasonError("year")} />}
+            {!current && <Field label="Season year" name="year" type="number" min={2026} max={2100} defaultValue={nextYear} required error={seasonError("year")} />}
             <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
             <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
             <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date" defaultValue={current?.firstPracticeDate ?? ""}
               error={seasonError("firstPracticeDate")} hint={`Staff only. Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
-            <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required error={seasonError("practiceLocation")} />
-            <TextArea label="Practice schedule (shown to families)" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />
-            <Field label="Fees" name="fees" maxLength={250} defaultValue={current?.fees} required error={seasonError("fees")} />
+            <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={initialLogistics?.practiceLocation} required error={seasonError("practiceLocation")} />
+            <TextArea label="Practice schedule (shown to families)" name="practiceSchedule" maxLength={500} defaultValue={initialLogistics?.practiceSchedule} required error={seasonError("practiceSchedule")} />
+            <Field label="Fees" name="fees" maxLength={250} defaultValue={initialLogistics?.fees} required error={seasonError("fees")} />
             <Field label="Expected reply window (shown to families)" name="replyWindow" maxLength={250} defaultValue={current?.replyWindow} required error={seasonError("replyWindow")} />
           </FormSection>
           <FormSection title="Staff handoff and ownership" description="These details are for staff, not the public registration page.">

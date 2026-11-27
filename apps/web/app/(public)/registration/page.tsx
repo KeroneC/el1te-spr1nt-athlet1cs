@@ -3,6 +3,7 @@ import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { getRegistrationSeason } from "@/lib/public/registration";
 import { openingPhase, registrationChannel, registrationOpeningDate } from "@/lib/registration";
+import { registration2027Copy } from "@/lib/registration-2027-copy.mjs";
 import { RegistrationPoster } from "@/components/public/registration-poster";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
@@ -23,13 +24,15 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const retryHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
   const openingDate = season?.openingDate ?? registrationOpeningDate;
   const showPracticeWindow = state !== "unavailable" && (!season || season.year === 2027);
+  // These three public logistics can be shown before opening; never use draft season settings.
+  const advanceCopy = showPracticeWindow && season?.title == null && !season?.isOpen ? registration2027Copy : null;
   // The API only releases the title once a season has opened. A reclosure on
   // opening day must not promise a second opening.
   const phase = state === "unavailable" || season?.title != null ? "closed" : openingPhase(openingDate);
   const seasonDetails = [
-    { label: "Practice location", value: season?.practiceLocation },
-    { label: "Practice schedule", value: season?.practiceSchedule },
-    { label: "Fees", value: season?.fees },
+    { label: "Practice location", value: season?.practiceLocation ?? advanceCopy?.practiceLocation },
+    { label: "Practice schedule", value: season?.practiceSchedule ?? advanceCopy?.practiceSchedule },
+    { label: "Fees", value: season?.fees ?? advanceCopy?.fees },
     { label: "When you’ll hear back", value: season?.replyWindow }
   ].filter(({ value }) => value);
   return <div data-registration-hub="true" className={styles.page}>
