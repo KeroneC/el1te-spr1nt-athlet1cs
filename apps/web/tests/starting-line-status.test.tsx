@@ -41,7 +41,8 @@ describe("starting line when applications cannot be submitted", () => {
     expect(html).toContain(text);
     expect(html).toContain("late January or early February");
     expect(html).toContain("West Allegheny High School and Robert Morris University (RMU)");
-    expect(html).toContain("usually 6–8 p.m.");
+    expect(html).toContain("During peak season, practices are usually 6–8 p.m. Days and times may vary.");
+    expect(html).not.toMatch(/skip practices|before or after meets/i);
     expect(html).toContain("Season fees cover entry fees for all meets");
     expect(html).not.toContain("When you’ll hear back");
     if (!text.includes("closed")) {
