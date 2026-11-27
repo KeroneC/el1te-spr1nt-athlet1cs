@@ -35,7 +35,7 @@ export default function FormsPage() {
         <div>
           <p className="eyebrow light">Need help?</p>
           <h2>Ask before submitting sensitive paperwork.</h2>
-          <p>Use the Registration page to apply or check in. Only new athletes offered a spot submit completed paperwork, by the designated club email or in person. Follow the instructions staff provide. Do not upload paperwork to the website.</p>
+          <p>Use the Registration page to apply or check in. Only new athletes offered a spot submit completed paperwork. The club will explain how to hand it in when we contact you. Do not upload paperwork to the website.</p>
         </div>
         <Link className="button button-light" href="/contact">Contact the club<Mail size={17} aria-hidden="true" /></Link>
       </div>

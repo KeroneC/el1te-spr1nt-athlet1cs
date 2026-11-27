@@ -558,6 +558,7 @@ test("families and staff can complete both registration paths through the browse
 
 test("blank registration downloads stay available and individually named", async ({ page }) => {
   await page.goto("/forms");
+  await expect(page.getByText(/the club will explain how to hand it in when we contact you/i)).toBeVisible();
   const directLinks = page.getByRole("link", { name: /download .*(athlete registration|waiver|photo consent)/i });
   await expect(directLinks).toHaveCount(3);
   const hrefs = await directLinks.evaluateAll(items => items.map(item => (item as HTMLAnchorElement).href));
