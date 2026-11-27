@@ -526,7 +526,7 @@ test("families and staff can complete both registration paths through the browse
         data: { year, revision: closed!.revision, confirmYear: String(year) }
       });
       expect(closeout.status()).toBe(409);
-      expect(await closeout.json()).toMatchObject({ title: expect.stringContaining("recorded season end date") });
+      expect(await closeout.json()).toMatchObject({ message: expect.stringContaining("recorded season end date") });
       const staleReturning = stalePage.locator("#returning");
       await staleReturning.getByRole("button", { name: "Submit check-in" }).click();
       await expect(staleReturning.getByRole("alert")).toContainText(/applications are not open/i);
