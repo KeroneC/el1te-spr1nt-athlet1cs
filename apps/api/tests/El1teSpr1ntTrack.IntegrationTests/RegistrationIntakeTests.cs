@@ -30,7 +30,7 @@ public sealed class RegistrationIntakeTests
         DateOfBirth = "2019-12-05", SchoolGrade = "Not applicable", SchoolDistrict = "Not sure / not applicable", Gender = "Female",
         GuardianPhone = "412-555-0100", StreetAddress = "1 Synthetic Lane", City = "Sample City", State = "PA",
         PostalCode = "15201", EmergencyContactName = "Example Contact", EmergencyContactPhone = "412-555-0101",
-        EmergencyContactRelationship = "Family friend", AgeGroup = null
+        EmergencyContactRelationship = "Family friend", AgeGroup = null, Availability = null
     };
 
     [Fact]
@@ -114,7 +114,7 @@ public sealed class RegistrationIntakeTests
     public void PreviouslySavedApplicationsKeepTheirOriginalGenderAnswerAndRetryDigest(string? historicalGender)
     {
         var season = Season();
-        var request = FullRequest() with { Gender = historicalGender };
+        var request = FullRequest() with { ApplicationVersion = 2, Gender = historicalGender, Availability = PracticeAvailability.Yes };
         var saved = IntakeRules.Normalize(request with { Gender = "Female" }, season, Now);
         saved.Gender = historicalGender; // Represent the exact record written before Gender was required.
         var replay = IntakeRules.Normalize(request, season, Now, isReplay: true);
@@ -122,6 +122,56 @@ public sealed class RegistrationIntakeTests
         Assert.Equal(historicalGender, replay.Gender);
         Assert.Equal(IntakeRules.RequestDigest(saved), IntakeRules.RequestDigest(replay));
         Assert.NotEqual(IntakeRules.RequestDigest(saved), IntakeRules.RequestDigest(changed));
+    }
+
+    [Theory]
+    [InlineData(null, "Enter the last meet month and year.")]
+    [InlineData("", "Enter the last meet month and year.")]
+    [InlineData("2026-13", "Enter a valid past or current month and year.")]
+    [InlineData("2026-12", "Enter a valid past or current month and year.")]
+    public void CurrentApplicationRequiresAValidLastMeetMonthWithPriorClub(string? month, string expected)
+    {
+        var error = Assert.Throws<CmsRequestValidationException>(() =>
+            IntakeRules.Normalize(FullRequest() with { LastMeetMonth = month }, Season(), Now));
+        Assert.Equal(expected, Assert.Single(error.Errors["lastMeetMonth"]));
+        Assert.DoesNotContain("availability", error.Errors.Keys);
+    }
+
+    [Theory]
+    [InlineData(PriorClubAnswer.Yes, "2026-11")]
+    [InlineData(PriorClubAnswer.No, null)]
+    [InlineData(PriorClubAnswer.Unsure, null)]
+    public void CurrentApplicationStoresMonthOnlyWhenApplicableAndIgnoresOldAvailability(PriorClubAnswer prior, string? expected)
+    {
+        var item = IntakeRules.Normalize(FullRequest() with {
+            PriorClub = prior, LastMeetMonth = "2026-11", Availability = PracticeAvailability.Yes
+        }, Season(), Now);
+        Assert.Equal(expected, item.LastMeetMonth);
+        Assert.Null(item.Availability);
+    }
+
+    [Fact]
+    public void VersionTwoApplicationsCannotStartANewSubmissionButRetainTheirOptionalMonthAndOriginalDigest()
+    {
+        var request = FullRequest() with { ApplicationVersion = 2, LastMeetMonth = null, Availability = PracticeAvailability.Yes };
+        Assert.False(IntakeRules.IsCurrentApplication(request));
+        var item = IntakeRules.Normalize(request, Season(), Now, isReplay: true);
+        Assert.Equal(2, item.ApplicationVersion);
+        Assert.Null(item.LastMeetMonth);
+        Assert.Equal(PracticeAvailability.Yes, item.Availability);
+        var legacy = new {
+            item.RequestKey, item.Kind, item.GuardianEmail, item.GuardianName, item.GuardianPhone,
+            item.AthleteFirstName, item.AgeGroup, item.Availability, item.Experience, item.PriorClub,
+            item.ClubName, item.Affiliations, item.LastMeetMonth
+        };
+        var historicalJson = JsonSerializer.SerializeToUtf8Bytes(new {
+            legacy, item.ApplicationVersion, item.AthleteLastName, item.DateOfBirth, item.SchoolGrade,
+            item.SchoolDistrict, item.Gender, item.StreetAddress, item.AddressLine2, item.City,
+            item.State, item.PostalCode, item.SecondaryGuardianName, item.SecondaryGuardianEmail,
+            item.SecondaryGuardianPhone, item.EmergencyContactName, item.EmergencyContactPhone,
+            item.EmergencyContactRelationship
+        });
+        Assert.Equal(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(historicalJson)), IntakeRules.RequestDigest(item));
     }
 
     [Theory]

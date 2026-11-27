@@ -92,7 +92,6 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
     {text("emergencyContactRelationship", "Relationship to athlete", { maxLength: 80, required: true })}
   </> : <>
     {schedule && <p className={styles.schedule}><strong>Practice schedule</strong> {schedule}</p>}
-    {select("availability", "Can your athlete attend practices?", choices, true, undefined, true)}
     {text("experience", "Track experience (optional)", { maxLength: 250 }, "A short answer is enough. Please do not enter medical or other sensitive information.", true)}
     {select("priorClub", "Previously trained or competed with another track club?", choices, true, undefined, true)}
     {draft.priorClub === "Yes" && <>
@@ -109,7 +108,7 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
           }} />{value === "Unsure" ? "Not sure" : value}</label>)}</div>
         {errors.affiliations && <p id={prefix + "-affiliations-error"} className={styles.error}>{errors.affiliations[0]}</p>}
       </fieldset>
-      {text("lastMeetMonth", "Last meet month and year (optional)", { type: "month", placeholder: "YYYY-MM" }, "If a date picker isn’t available, enter YYYY-MM.")}
+      {text("lastMeetMonth", "Last meet month and year", { type: "month", placeholder: "YYYY-MM", required: true }, "If a date picker isn’t available, enter YYYY-MM.")}
     </>}
   </>;
   return <fieldset disabled={disabled} className={styles.grid}>
@@ -131,7 +130,7 @@ export function RegistrationReview({ index, draft: d }: { index: number; draft: 
     ["Second guardian", d.secondaryGuardianName], ["Second email", d.secondaryGuardianEmail], ["Second phone", d.secondaryGuardianPhone]
   ] : index === 2 ? [["Address", [d.streetAddress, d.addressLine2, d.city, [d.state, d.postalCode].filter(Boolean).join(" ")].filter(Boolean).join(", ")]]
   : index === 3 ? [["Name", d.emergencyContactName], ["Relationship", d.emergencyContactRelationship], ["Phone", d.emergencyContactPhone]]
-  : [["Practice", yn(d.availability)], ["Experience", d.experience], ["Prior club", yn(d.priorClub)],
+  : [["Experience", d.experience], ["Prior club", yn(d.priorClub)],
     ["Club", d.priorClub === "Yes" ? d.clubName : ""], ["Affiliations", d.priorClub === "Yes" ? d.affiliations?.map(yn).join(", ") : ""],
     ["Last meet", d.priorClub === "Yes" ? d.lastMeetMonth : ""]];
   return <dl>{rows.filter(([, value]) => value).map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;

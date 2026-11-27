@@ -8,6 +8,7 @@ export type PublicRegistrationSeason = {
 };
 
 export const registrationOpeningDate = "2026-11-27";
+export const registrationApplicationVersion = 3;
 export const registrationMinimumAge = 7;
 export const registrationMaximumAge = 18;
 export const registrationAgeLabel = `Ages ${registrationMinimumAge}–${registrationMaximumAge}`;
@@ -22,7 +23,8 @@ export function openingPhase(value: string, now = new Date()): "upcoming" | "tod
   return value > today ? "upcoming" : value === today ? "today" : "closed";
 }
 
-export function registrationDate(value: string) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "UTC" })
+export function registrationDate(value: string, includeYear = false) {
+  return new Intl.DateTimeFormat("en-US", { weekday: "long", month: "long", day: "numeric",
+    year: includeYear ? "numeric" : undefined, timeZone: "UTC" })
     .format(new Date(`${value}T00:00:00Z`));
 }

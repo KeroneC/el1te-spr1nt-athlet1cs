@@ -62,7 +62,13 @@ async function submitAndCapture(page: Page, panel: Locator, device: string, kind
   await expect(panel.getByRole("heading", { name: "What happens next", exact: true })).toBeVisible();
   await expect(panel.locator("form")).toHaveCount(0);
   await expect(panel.getByText(/^EL-[0-9A-F]{16}$/)).toBeVisible();
-  await expect(panel.getByText(/No automatic confirmation email is sent/)).toBeVisible();
+  if (application) {
+    const nextSteps = panel.getByRole("heading", { name: "What happens next", exact: true }).locator("..");
+    await expect(nextSteps.locator("p")).toHaveText(["The club will follow up with a text, phone call or email."]);
+    await expect(panel.getByText("This does not reserve a spot.", { exact: true })).toBeVisible();
+  } else {
+    await expect(panel.getByText(/No automatic confirmation email is sent/)).toBeVisible();
+  }
   const status = panel.getByRole("status");
   await expect(status.filter({ hasText: /received/ })).toBeFocused();
   expect(requests).toEqual([kind]);
@@ -120,12 +126,14 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
   await capture(page, device, "04-emergency-contact", panel);
   await next();
 
-  await input("availability").selectOption("Yes");
+  await expect(input("availability")).toHaveCount(0);
   await input("experience").fill("One season of recreational track.");
   await input("priorClub").selectOption("Yes");
   await input("clubName").fill("Example Track Club");
   await panel.getByRole("checkbox", { name: "AAU", exact: true }).check();
   await panel.getByRole("checkbox", { name: "USATF", exact: true }).check();
+  await input("lastMeetMonth").fill("2022-09");
+  await panel.getByRole("heading", { name: "Track background", exact: true }).click();
   await capture(page, device, "05-track-background", panel);
   await next();
 

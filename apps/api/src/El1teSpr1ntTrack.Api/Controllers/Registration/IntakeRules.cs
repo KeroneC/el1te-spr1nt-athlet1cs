@@ -40,7 +40,8 @@ public sealed record ReviewRequest(Guid Id, Guid Revision, IntakeStatus Status, 
 
 public static class IntakeRules
 {
-    public const int CurrentApplicationVersion = 2;
+    private const int FirstFullApplicationVersion = 2;
+    public const int CurrentApplicationVersion = 3;
     private const int MinimumAge = 7;
     private const int MaximumAge = 18;
     private static readonly TimeZoneInfo Eastern = TimeZoneInfo.FindSystemTimeZoneById("America/New_York");
@@ -60,6 +61,9 @@ public static class IntakeRules
     public static bool IsOpen(RegistrationSeason season, DateTimeOffset now) =>
         season.IsOpen && season.PurgedAtUtc is null && HasValidFirstPracticeDate(season)
         && LocalDate(now) >= season.OpeningDate && LocalDate(now) <= season.EndDate;
+
+    private static bool HasFullApplicationFields(int? version) =>
+        version is FirstFullApplicationVersion or CurrentApplicationVersion;
 
     public static RegistrationSubmission Normalize(IntakeRequest request, RegistrationSeason season, DateTimeOffset now,
         string? originalAgeGroup = null, bool isReplay = false)
@@ -96,12 +100,13 @@ public static class IntakeRules
         };
         if (request.Kind == IntakeKind.Application)
         {
-            var fullApplication = request.ApplicationVersion == CurrentApplicationVersion;
+            var fullApplication = HasFullApplicationFields(request.ApplicationVersion);
+            var currentApplication = request.ApplicationVersion == CurrentApplicationVersion;
             submission.GuardianName = Value(request.GuardianName, "guardianName", 100, true);
             submission.GuardianPhone = Phone(request.GuardianPhone, "guardianPhone", fullApplication);
             if (fullApplication)
             {
-                submission.ApplicationVersion = CurrentApplicationVersion;
+                submission.ApplicationVersion = request.ApplicationVersion;
                 submission.AthleteLastName = Value(request.AthleteLastName, "athleteLastName", 80, true);
                 if (!DateOnly.TryParseExact(request.DateOfBirth?.Trim(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
                         DateTimeStyles.None, out var birthDate) || (!isReplay && birthDate > LocalDate(now)))
@@ -145,9 +150,13 @@ public static class IntakeRules
                 if (submission.AgeGroup != originalAgeGroup && !Ages(season).Contains(submission.AgeGroup, StringComparer.Ordinal))
                     Error("ageGroup", "Choose an eligible age group.");
             }
-            if (request.Availability is null || !Enum.IsDefined(request.Availability.Value))
-                Error("availability", "Choose a practice availability answer.");
-            submission.Availability = request.Availability;
+            // Only legacy forms collected availability; keep that value in their retry digest.
+            if (!currentApplication)
+            {
+                if (request.Availability is null || !Enum.IsDefined(request.Availability.Value))
+                    Error("availability", "Choose a practice availability answer.");
+                submission.Availability = request.Availability;
+            }
             submission.Experience = Value(request.Experience, "experience", 250);
             if (request.PriorClub is null || !Enum.IsDefined(request.PriorClub.Value))
                 Error("priorClub", "Choose Yes, No, or Not sure.");
@@ -163,7 +172,9 @@ public static class IntakeRules
                     Error("affiliations", "Choose the governing bodies or select Not sure on its own.");
                 submission.Affiliations = string.Join(",", affiliations.Distinct().Order(StringComparer.Ordinal));
                 submission.LastMeetMonth = Value(request.LastMeetMonth, "lastMeetMonth", 7);
-                if (submission.LastMeetMonth is { } month &&
+                if (currentApplication && submission.LastMeetMonth is null)
+                    Error("lastMeetMonth", "Enter the last meet month and year.");
+                else if (submission.LastMeetMonth is { } month &&
                     (!DateOnly.TryParseExact(month + "-01", "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out var date) ||
                         date > LocalDate(now) || date.Year < 2000))
                     Error("lastMeetMonth", "Enter a valid past or current month and year.");
@@ -182,7 +193,7 @@ public static class IntakeRules
             submission.GuardianPhone, submission.AthleteFirstName, submission.AgeGroup, submission.Availability,
             submission.Experience, submission.PriorClub, submission.ClubName, submission.Affiliations, submission.LastMeetMonth
         };
-        var payload = submission.ApplicationVersion == CurrentApplicationVersion
+        var payload = HasFullApplicationFields(submission.ApplicationVersion)
             ? JsonSerializer.SerializeToUtf8Bytes(new
             {
                 legacy, submission.ApplicationVersion, submission.AthleteLastName, submission.DateOfBirth, submission.SchoolGrade,

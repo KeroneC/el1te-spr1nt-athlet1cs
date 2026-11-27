@@ -39,11 +39,14 @@ describe("starting line when applications cannot be submitted", () => {
     const html = await render();
     informationalOnly(html);
     expect(html).toContain(text);
-    expect(html).toContain("late January or early February");
+    expect(html).toContain('<time dateTime="2027-02-07">Sunday, February 7, 2027</time>');
+    expect(html).not.toContain("late January or early February");
     expect(html).toContain("West Allegheny High School and Robert Morris University (RMU)");
     expect(html).toContain("During peak season, practices are usually 6–8 p.m. Days and times may vary.");
     expect(html).not.toMatch(/skip practices|before or after meets/i);
-    expect(html).toContain("We’ll share fee information after you apply or check in.");
+    expect(html).toContain("<dt>Tuition</dt>");
+    expect(html).toContain("We’ll share tuition details when we follow up with your family.");
+    expect(html).not.toContain("<dt>Fees</dt>");
     expect(html).not.toMatch(/entry fees for all meets|fees vary for high school athletes/i);
     expect(html).not.toContain("When you’ll hear back");
     if (!text.includes("closed")) {
@@ -52,7 +55,7 @@ describe("starting line when applications cannot be submitted", () => {
       expect(html.includes("Check registration status")).toBe(text.includes("today"));
     }
   });
-  it("does not reuse this practice window for a different registration cycle", async () => {
+  it("does not reuse the 2027 practice date for a different registration cycle", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2027-11-15T12:00:00Z"));
     vi.mocked(getRegistrationSeason).mockResolvedValue({ state: "loaded", season: {
       year: 2028, title: null, openingDate: "2027-11-26",
@@ -60,6 +63,7 @@ describe("starting line when applications cannot be submitted", () => {
     } });
     const html = await render();
     expect(html).not.toContain("First indoor practice:");
+    expect(html).not.toContain("February 7, 2027");
     expect(html).not.toContain("West Allegheny High School");
   });
   it("does not promise another opening after staff close on opening day", async () => {
@@ -75,14 +79,14 @@ describe("starting line when applications cannot be submitted", () => {
   });
 });
 
-it("keeps the practice window visible when applications and check-ins open", async () => {
+it("keeps the approved date visible when applications and check-ins open", async () => {
   vi.mocked(getRegistrationSeason).mockResolvedValue({ state: "loaded", season: {
     year: 2027, title: "Indoor season", openingDate: "2026-11-28", isOpen: true,
     practiceLocation: "Sample track", practiceSchedule: "Details to follow", fees: "See club",
     replyWindow: "One week"
   } });
   const html = await render();
-  expect(html).toContain("late January or early February");
+  expect(html).toContain("Sunday, February 7, 2027");
   expect(html).toContain('href="#apply"');
   expect(html).toContain('href="#returning"');
   expect(html).toContain("Sample track");

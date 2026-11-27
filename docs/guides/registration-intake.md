@@ -1,6 +1,6 @@
 # Seasonal registration and returning check-in
 
-The Registration page has two parent/guardian paths and shows only the selected form. New applications collect athlete eligibility and school details, guardian and household information, an emergency contact, and track background. Returning check-ins still ask only for guardian email and athlete first name, with no paperwork. Intake is separate from Contact, athlete accounts, the roster and Square. After SQL saves either submission, the page shows a reference the family can copy. No confirmation or decision email is sent by the application. Staff send follow-up, waitlists and offers separately from the club inbox.
+The Registration page has two parent/guardian paths and shows only the selected form. New applications collect athlete eligibility and school details, guardian and household information, an emergency contact, and track background. A previous track club marked Yes requires the last meet month and year; the form does not ask about practice attendance. Returning check-ins still ask only for guardian email and athlete first name, with no paperwork. Intake is separate from Contact, athlete accounts, the roster and Square. After SQL saves either submission, the page shows a reference the family can copy. The new-application receipt says that the club will follow up by text, phone, or email; the returning receipt specifies email. The site does not send an automatic confirmation or decision.
 
 ## Family walkthrough
 
@@ -10,7 +10,7 @@ The Registration page has two parent/guardian paths and shows only the selected 
 
 On `/registration`, the starting line offers **Apply for a spot** (`#apply`) and **Check in** (`#returning`) only when intake is open. A new guardian completes Athlete, Guardian, Household, Emergency contact and Track background, then reviews the answers before submitting. **Back** and **Edit** do not submit. Returning families have one screen and no paperwork. Drafts live only in page memory: navigating between steps retains answers, but reloading or leaving the page discards them. Do not enter real family information in a design rehearsal.
 
-The **Season details** disclosure beneath the choices shows available practice information, fees, and reply timing on demand. Forms, FAQs, and club contact are linked from the same strip, including when intake is closed.
+The **Season details** disclosure beneath the choices shows available practice information, tuition, and reply timing on demand. Forms, FAQs, and club contact are linked from the same strip, including when intake is closed.
 
 To review without opening demo or connecting to a database, run `node scripts/preview-registration.mjs` from `apps/web` after installing its dependencies. Open `http://127.0.0.1:3013/registration`; use fictional details and an address such as `family@example.test`. The preview shows the planned public wording below, not a confirmed calendar or a live season record. Its loopback-only fixture simulates receipts without saving submissions or sending mail. Stop with Ctrl+C. Start with the `closed` or `unavailable` argument to inspect either alternative entrance. Add `--alternate-ports` to run a second preview without replacing the first (3015 by default or 3016 for `upcoming`). The helper is not a launch or deployment command.
 
@@ -23,7 +23,7 @@ For local photo review only, add `--archive-art` to the preview command. The hel
 ## Before opening
 
 1. Deploy the reviewed immutable artifact and additive migration through the standard release workflow. Keep intake closed. Verify the canonical `/registration` route, noindex in demo, and the active Admin review workspace.
-2. In **Admin → Registration → Season Settings**, enter the approved season title, November 27 opening date (Eastern), first practice date, end date, practice site/schedule, fees, reply window, paperwork inbox, in-person handoff instructions, and review and retention owners. The first practice date must be within the season and is required to open intake. New athletes must be ages 7–18 on that date: they can turn 7 that day, but cannot turn 19 on or before it. Returning check-ins still do not collect DOB. Saving a draft does not expose those details publicly. After editing a closed season, staff must approve it again by opening.
+2. In **Admin → Registration → Season Settings**, enter the approved season title, November 27 opening date (Eastern), first practice date, end date, practice site/schedule, tuition wording, reply window, paperwork inbox, in-person handoff instructions, and review and retention owners. The first practice date must be within the season and is required to open intake. New athletes must be ages 7–18 on that date: they can turn 7 that day, but cannot turn 19 on or before it. Returning check-ins still do not collect DOB. Saving a draft does not expose those details publicly. After editing a closed season, staff must approve it again by opening.
 3. Before collecting real data, have the club approve the registration privacy notice at `/privacy#registration-privacy`, blank forms, and updated post-offer paperwork instructions. Confirm that DOB, school, household, and emergency contact details appear in private application detail only, never in queue search, telemetry, or content promotion. Confirm that no proof of age, insurance, medical information, athlete email, signatures, or attachments are collected by the online form. Do not use real families in demo. No seed seasons are shipped.
 4. On Friday, November 27, confirm launch checks and manually select **Open intake**. Check both the manual switch and the effective public state in Season Settings. The API rejects new submissions before the configured Eastern date or while closed. Verify both family paths from a mobile browser on the canonical site before starting ads. **Close intake** stops new submissions without removing saved records; a form already left open in a browser cannot create a new submission after closure.
 
@@ -31,11 +31,12 @@ Ads can use `/registration?src=facebook` or `/registration?src=instagram`. The s
 
 ### Public season wording for 2027
 
-The 2027 page shows these general details before opening and **Season Settings** prefills them for a new 2027 season. After the season opens, the saved settings take precedence. Keep the exact first practice date in the staff-only field. Set the public reply window separately once the team confirms it.
+The 2027 page shows these details before opening and **Season Settings** prefills them for a new 2027 season. After opening, saved settings take precedence for location, schedule, and tuition. The public first practice date is the club-approved date below; keep the saved eligibility date in sync. Other dates entered by staff are not automatically made public. Set the public reply window separately once the team confirms it.
 
+- **First indoor practice:** Sunday, February 7, 2027.
 - **Practice location:** We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.
 - **Practice schedule:** During peak season, practices are usually 6–8 p.m. Days and times may vary.
-- **Fees:** We’ll share fee information after you apply or check in.
+- **Tuition:** We’ll share tuition details when we follow up with your family.
 
 ## Review and paperwork
 

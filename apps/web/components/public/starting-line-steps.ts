@@ -6,7 +6,7 @@ export const applicationSteps = [
   { slug: "guardian", label: "Guardian", title: "How can we reach you?", note: "Tell us which parent or guardian we should contact about this application." },
   { slug: "household", label: "Household", title: "Where does your athlete live?", note: "Use the athlete’s current household address." },
   { slug: "emergency", label: "Emergency contact", title: "Who should we call in an emergency?", note: "Ask this person’s permission before sharing their details." },
-  { slug: "track", label: "Track background", title: "Track background", note: "Tell us about practice availability and any previous club." },
+  { slug: "track", label: "Track background", title: "Track background", note: "Tell us about your athlete’s track experience and any previous club." },
   { slug: "review", label: "Review", title: "Ready to send?", note: "Check the details below. Nothing has been submitted yet." }
 ] as const;
 
@@ -15,7 +15,7 @@ export const stepFields = [
   ["guardianName", "guardianEmail", "guardianPhone", "secondaryGuardianName", "secondaryGuardianEmail", "secondaryGuardianPhone"],
   ["streetAddress", "addressLine2", "city", "state", "postalCode"],
   ["emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship"],
-  ["availability", "experience", "priorClub", "clubName", "affiliations", "lastMeetMonth"]
+  ["experience", "priorClub", "clubName", "affiliations", "lastMeetMonth"]
 ] as const;
 
 export type Field = typeof stepFields[number][number];
@@ -62,8 +62,10 @@ export function validateStep(step: number | "returning", draft: Draft, today: st
     guardianEmail: "Enter a parent or guardian email.", guardianPhone: "Enter a valid phone number.",
     streetAddress: "Enter a street address.", city: "Enter a city.", state: "Choose a state.", postalCode: "Enter a ZIP code.",
     emergencyContactName: "Enter an emergency contact name.", emergencyContactPhone: "Enter a valid phone number.",
-    emergencyContactRelationship: "Enter the relationship to the athlete.", availability: "Choose a practice availability answer.",
-    priorClub: "Choose Yes, No, or Not sure.", ...(draft.priorClub === "Yes" ? { clubName: "Enter the current or most recent club." } : {})
+    emergencyContactRelationship: "Enter the relationship to the athlete.", priorClub: "Choose Yes, No, or Not sure.",
+    ...(draft.priorClub === "Yes" ? {
+      clubName: "Enter the current or most recent club.", lastMeetMonth: "Enter the last meet month and year."
+    } : {})
   };
   const fields: readonly Field[] = step === "returning" ? ["guardianEmail", "athleteFirstName"] : (stepFields[step] ?? []);
   for (const name of fields) {
