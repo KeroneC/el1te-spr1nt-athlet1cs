@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { getRegistrationSeason } from "@/lib/public/registration";
-import { openingPhase, registrationChannel, registrationDate, registrationOpeningDate } from "@/lib/registration";
+import { openingPhase, registrationChannel, registrationOpeningDate } from "@/lib/registration";
 import { RegistrationPoster } from "@/components/public/registration-poster";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
@@ -22,12 +22,11 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const channel = registrationChannel(query.src);
   const retryHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
   const openingDate = season?.openingDate ?? registrationOpeningDate;
-  const showPracticeWindow = state !== "unavailable" && openingDate === registrationOpeningDate && !season?.firstPracticeDate;
+  const showPracticeWindow = state !== "unavailable" && (!season || season.year === 2027);
   // The API only releases the title once a season has opened. A reclosure on
   // opening day must not promise a second opening.
   const phase = state === "unavailable" || season?.title != null ? "closed" : openingPhase(openingDate);
   const seasonDetails = [
-    { label: "First practice", value: season?.firstPracticeDate ? registrationDate(season.firstPracticeDate) : null },
     { label: "Practice location", value: season?.practiceLocation },
     { label: "Practice schedule", value: season?.practiceSchedule },
     { label: "Fees", value: season?.fees },
@@ -53,7 +52,7 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
       </section>}
     <aside aria-label="Registration resources" className={styles.resources}>
       {showPracticeWindow && <div className="site-container">
-        <p className={styles.practiceNotice}><strong>First indoor practice:</strong> We expect to start in late January or early February. We’ll share the exact date once it’s confirmed.</p>
+        <p className={styles.practiceNotice}><strong>First indoor practice:</strong> We expect to start in late January or early February. We’ll share the exact date closer to the start of the season.</p>
       </div>}
       <div className={`site-container ${styles.resourceLayout}`}>
         {seasonDetails.length > 0 && <details className={styles.season}>

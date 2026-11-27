@@ -307,10 +307,10 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             <Field label="Season title" name="title" maxLength={120} defaultValue={current?.title} required error={seasonError("title")} />
             <Field label="Opening date (Eastern)" name="openingDate" type="date" defaultValue={current?.openingDate ?? "2026-11-27"} required error={seasonError("openingDate")} />
             <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date" defaultValue={current?.firstPracticeDate ?? ""}
-              error={seasonError("firstPracticeDate")} hint={`Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
+              error={seasonError("firstPracticeDate")} hint={`Staff only. Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={current?.practiceLocation} required error={seasonError("practiceLocation")} />
-            <TextArea label="Practice schedule" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />
+            <TextArea label="Practice schedule (shown to families)" name="practiceSchedule" maxLength={500} defaultValue={current?.practiceSchedule} required error={seasonError("practiceSchedule")} />
             <Field label="Fees" name="fees" maxLength={250} defaultValue={current?.fees} required error={seasonError("fees")} />
             <Field label="Expected reply window (shown to families)" name="replyWindow" maxLength={250} defaultValue={current?.replyWindow} required error={seasonError("replyWindow")} />
           </FormSection>

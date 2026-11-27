@@ -125,7 +125,7 @@ test("families and staff can complete both registration paths through the browse
         ["Opening date (Eastern)", futureOpening],
         ["Season end date (Eastern)", futureOpening],
         ["Practice location", "Test track"],
-        ["Practice schedule", "Saturday mornings"],
+        ["Practice schedule (shown to families)", "Saturday mornings"],
         ["Fees", "No fees for this test"],
         ["Expected reply window (shown to families)", "Within one week."],
         ["Designated club paperwork inbox (staff only)", "forms@example.test"],
@@ -190,6 +190,7 @@ test("families and staff can complete both registration paths through the browse
       await expect(publicPage.locator('[data-registration-hub="true"]')).toBeVisible();
       await expect(publicPage.getByRole("heading", { name: "Find your starting lane" })).toBeVisible();
       await expect(publicPage.getByRole("heading", { name: "Applications are open" })).toBeVisible();
+      expect(await publicPage.content()).not.toContain(firstPracticeDate);
       await expect(publicPage.getByText("Ages 7–18", { exact: true }).first()).toBeVisible();
       await expect(publicPage.locator("#apply")).toBeHidden();
       await expect(publicPage.locator("#returning")).toBeHidden();
@@ -213,7 +214,7 @@ test("families and staff can complete both registration paths through the browse
       await form.getByLabel("Current school grade").selectOption("Not applicable");
       await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
       const dob = form.getByLabel("Date of birth", { exact: true });
-      await dob.fill(String(currentYear - 7) + "-12-16");
+      await dob.fill("2099-01-01");
       await next.click();
       await expect(dob).toHaveAttribute("aria-invalid", "true");
       await expect(dob).toBeFocused();

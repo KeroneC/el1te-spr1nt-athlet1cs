@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react"
 import type { FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil } from "lucide-react";
 import { SupportReference } from "@/components/shared/support-reference";
-import { registrationDate, type PublicRegistrationSeason, type RegistrationChannel } from "@/lib/registration";
+import type { PublicRegistrationSeason, RegistrationChannel } from "@/lib/registration";
 import { applicationFields, applicationSteps, easternToday, firstIncompleteStep, reviewStep, stepForField, stepFromHash, stepHash, validateStep } from "./starting-line-steps";
 import type { Draft, Errors, Field } from "./starting-line-steps";
 import { RegistrationFields, RegistrationReview } from "./starting-line-fields";
@@ -74,7 +74,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
   const lockedFields = busy || uncertain || blocked || conflict || outdated;
   const requested = stepFromHash(hash);
   const step = requested < 0 ? 0 : reference || busy || uncertain || closed || conflict || outdated ? reviewStep :
-    Math.min(requested, firstIncompleteStep(draft, season.firstPracticeDate, today));
+    Math.min(requested, firstIncompleteStep(draft, today));
   const info = applicationSteps[step];
   const isEditing = edit?.step === step;
   const waitingForFocus = useRef<string | null>(null);
@@ -153,7 +153,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
     event.preventDefault();
     if (locked.current || blocked || conflict || outdated) return;
     if (!uncertain) {
-      const local = validateStep(application ? step : "returning", draft, season.firstPracticeDate, today);
+      const local = validateStep(application ? step : "returning", draft, today);
       // Respect the browser's parsing, e.g. incomplete native dates and bad autofill.
       for (const el of event.currentTarget.elements) {
         if ((el instanceof HTMLInputElement || el instanceof HTMLSelectElement) && !el.validity.valid && !local[el.name])
@@ -241,7 +241,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
         </section>)}
       </div> : <RegistrationFields key={application ? step : "returning"} prefix={prefix} step={application ? step : "returning"}
         draft={draft} update={update} errors={errors} disabled={lockedFields}
-        practiceDate={season.firstPracticeDate ? registrationDate(season.firstPracticeDate) : null} schedule={season.practiceSchedule} />}
+        schedule={season.practiceSchedule} />}
       <div className="sr-only" aria-hidden="true"><label htmlFor={prefix + "-website"}>Leave blank</label>
         <input id={prefix + "-website"} name="website" tabIndex={-1} autoComplete="off" value={draft.website ?? ""}
           onChange={e => update("website", e.target.value)} /></div>

@@ -26,7 +26,7 @@ const artwork = new Map(archive ? await Promise.all(localArchiveArtwork.map(asyn
 const signingKey = randomBytes(32);
 const season = {
   year: 2027, title: "Local design preview · sample season", openingDate: "2026-11-27",
-  firstPracticeDate: "2027-01-15", practiceLocation: "Sample practice location",
+  practiceLocation: "Sample practice location",
   practiceSchedule: "Sample practice schedule", fees: "Sample fee information",
   replyWindow: "Local preview only. No registration is saved or email sent.", isOpen: state === "open"
 };
@@ -43,7 +43,7 @@ const fixture = createServer(async (req, res) => {
   }
   if (req.method === "GET" && req.url === "/api/public/registration")
     return state === "unavailable" ? send(503, {}) : state === "upcoming" ? send(200, {
-      ...season, title: null, firstPracticeDate: null, fees: null, practiceLocation: null,
+      ...season, title: null, fees: null, practiceLocation: null,
       practiceSchedule: null, replyWindow: null,
       openingDate: [season.openingDate, new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10)].sort().at(-1)
     }) : send(200, season);

@@ -39,7 +39,6 @@ describe("starting line when applications cannot be submitted", () => {
     informationalOnly(html);
     expect(html).toContain(text);
     expect(html).toContain("late January or early February");
-    expect(html).toContain("We’ll share the exact date once it’s confirmed.");
     if (!text.includes("closed")) {
       expect(html).toContain("<summary>How to prepare</summary>");
       expect(html).not.toMatch(/<img\b|__registration-preview/);
@@ -49,7 +48,7 @@ describe("starting line when applications cannot be submitted", () => {
   it("does not reuse this practice window for a different registration cycle", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2027-11-15T12:00:00Z"));
     vi.mocked(getRegistrationSeason).mockResolvedValue({ state: "loaded", season: {
-      year: 2028, title: null, openingDate: "2027-11-26", firstPracticeDate: null,
+      year: 2028, title: null, openingDate: "2027-11-26",
       isOpen: false, practiceLocation: null, practiceSchedule: null, fees: null, replyWindow: null
     } });
     expect(await render()).not.toContain("First indoor practice:");
@@ -57,7 +56,7 @@ describe("starting line when applications cannot be submitted", () => {
   it("does not promise another opening after staff close on opening day", async () => {
     vi.useFakeTimers(); vi.setSystemTime(new Date("2026-11-27T17:00:00Z"));
     vi.mocked(getRegistrationSeason).mockResolvedValue({ state: "loaded", season: {
-      year: 2027, title: "Previously opened", openingDate: "2026-11-27", firstPracticeDate: null,
+      year: 2027, title: "Previously opened", openingDate: "2026-11-27",
       isOpen: false, practiceLocation: null, practiceSchedule: null, fees: null, replyWindow: null
     } });
     const html = await render();
@@ -65,4 +64,17 @@ describe("starting line when applications cannot be submitted", () => {
     expect(html).toContain("Applications are currently closed");
     expect(html).not.toContain("scheduled to open today");
   });
+});
+
+it("keeps the practice window visible when applications and check-ins open", async () => {
+  vi.mocked(getRegistrationSeason).mockResolvedValue({ state: "loaded", season: {
+    year: 2027, title: "Indoor season", openingDate: "2026-11-28", isOpen: true,
+    practiceLocation: "Sample track", practiceSchedule: "Details to follow", fees: "See club",
+    replyWindow: "One week"
+  } });
+  const html = await render();
+  expect(html).toContain("late January or early February");
+  expect(html).toContain('href="#apply"');
+  expect(html).toContain('href="#returning"');
+  expect(html).not.toMatch(/<dt>First practice<\/dt>/);
 });

@@ -54,7 +54,7 @@ public sealed class RegistrationPublicController(El1teDbContext db, IClock clock
             practiceSchedule = season.OpenedAtUtc is null ? null : season.PracticeSchedule,
             fees = season.OpenedAtUtc is null ? null : season.Fees,
             replyWindow = season.OpenedAtUtc is null ? null : season.ReplyWindow,
-            firstPracticeDate = season.OpenedAtUtc is null ? null : season.FirstPracticeDate,
+            // The exact date is kept in Admin and used only for server-side age eligibility.
             ageGroups = season.OpenedAtUtc is null ? Array.Empty<string>() : IntakeRules.Ages(season),
             isOpen = IntakeRules.IsOpen(season, clock.UtcNow)
         });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applicationFields, applicationSteps, firstIncompleteStep, reviewStep, stepFromHash, stepForField, stepHash, validateStep, type Draft } from "@/components/public/starting-line-steps";
 
-const practice = "2027-02-28", today = "2026-11-17";
+const today = "2026-11-17";
 const complete: Draft = {
   athleteFirstName: "Sample", athleteLastName: "Runner", dateOfBirth: "2020-02-28",
   schoolGrade: "K", schoolDistrict: "Not sure / not applicable", guardianName: "Sample Guardian",
@@ -19,31 +19,26 @@ describe("starting-line steps", () => {
   });
 
   it("cannot skip ahead of the first incomplete or invalid section", () => {
-    expect(firstIncompleteStep({}, practice, today)).toBe(0);
-    expect(firstIncompleteStep({ ...complete, guardianPhone: "" }, practice, today)).toBe(1);
-    expect(firstIncompleteStep({ ...complete, postalCode: " " }, practice, today)).toBe(2);
-    expect(firstIncompleteStep({ ...complete, emergencyContactPhone: "call me" }, practice, today)).toBe(3);
-    expect(firstIncompleteStep({ ...complete, priorClub: "Yes" }, practice, today)).toBe(4);
-    expect(firstIncompleteStep(complete, practice, today)).toBe(reviewStep);
+    expect(firstIncompleteStep({}, today)).toBe(0);
+    expect(firstIncompleteStep({ ...complete, guardianPhone: "" }, today)).toBe(1);
+    expect(firstIncompleteStep({ ...complete, postalCode: " " }, today)).toBe(2);
+    expect(firstIncompleteStep({ ...complete, emergencyContactPhone: "call me" }, today)).toBe(3);
+    expect(firstIncompleteStep({ ...complete, priorClub: "Yes" }, today)).toBe(4);
+    expect(firstIncompleteStep(complete, today)).toBe(reviewStep);
   });
 
-  it("uses the actual first practice cutoff, including leap-day birthdays", () => {
-    const birthday = (dob: string, cutoff: string) => validateStep(0, { ...complete, dateOfBirth: dob }, cutoff, today).dateOfBirth;
-    expect(birthday("2020-02-28", practice)).toBeUndefined(); // turns 7 on first practice
-    expect(birthday("2020-03-01", practice)).toBeDefined();
-    expect(birthday("2009-02-28", practice)).toBeUndefined(); // turns 18 on first practice
-    expect(birthday("2008-02-29", "2027-02-27")).toBeUndefined(); // still 18
-    expect(birthday("2008-02-29", practice)).toBeDefined(); // 19th birthday by leap-day convention
-    expect(birthday("2020-02-29", practice)).toBeUndefined();
-    expect(birthday("2020-02-29", "2027-02-27")).toBeDefined();
-    expect(birthday("2021-02-29", practice)).toBeDefined();
-    expect(birthday("2026-11-18", "2035-02-28")).toBeDefined();
+  it("validates birth dates without guessing the staff-only eligibility cutoff", () => {
+    const birthday = (dob: string) => validateStep(0, { ...complete, dateOfBirth: dob }, today).dateOfBirth;
+    expect(birthday("2020-02-29")).toBeUndefined();
+    expect(birthday("2020-03-01")).toBeUndefined(); // Eligibility is enforced by the API.
+    expect(birthday("2021-02-29")).toBeDefined();
+    expect(birthday("2026-11-18")).toBeDefined();
   });
 
   it("keeps returning validation independent of application requirements", () => {
     const checkin = { guardianEmail: "parent@example.test", athleteFirstName: "Sample" };
-    expect(validateStep("returning", checkin, practice, today)).toEqual({});
-    expect(Object.keys(validateStep("returning", {}, practice, today)).sort()).toEqual(["athleteFirstName", "guardianEmail"]);
+    expect(validateStep("returning", checkin, today)).toEqual({});
+    expect(Object.keys(validateStep("returning", {}, today)).sort()).toEqual(["athleteFirstName", "guardianEmail"]);
   });
 
   it("only includes applicable prior-club answers in the final application", () => {

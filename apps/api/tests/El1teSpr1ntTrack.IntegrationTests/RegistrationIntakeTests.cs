@@ -1,17 +1,20 @@
 using El1teSpr1ntTrack.Api.Authorization;
 using El1teSpr1ntTrack.Api.Controllers.Registration;
 using El1teSpr1ntTrack.Application.Common.Exceptions;
+using El1teSpr1ntTrack.Application.Interfaces;
 using El1teSpr1ntTrack.Core.Entities;
 using El1teSpr1ntTrack.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 
 namespace El1teSpr1ntTrack.IntegrationTests;
 
 public sealed class RegistrationIntakeTests
 {
     private static readonly DateTimeOffset Now = new(2026, 11, 27, 12, 0, 0, TimeSpan.Zero);
+    private sealed class FixedClock : IClock { public DateTimeOffset UtcNow => Now; }
     private static RegistrationSeason Season() => new()
     {
         Year = 2027, AgeGroups = "10U\n12U", OpeningDate = new(2026, 11, 27),
@@ -29,6 +32,29 @@ public sealed class RegistrationIntakeTests
         PostalCode = "15201", EmergencyContactName = "Example Contact", EmergencyContactPhone = "412-555-0101",
         EmergencyContactRelationship = "Family friend", AgeGroup = null
     };
+
+    [Fact]
+    public async Task PublicSeasonDoesNotRevealExactFirstPracticeDateWhenOpen()
+    {
+        await using var db = new El1teDbContext(new DbContextOptionsBuilder<El1teDbContext>()
+            .UseInMemoryDatabase($"registration-practice-privacy-{Guid.NewGuid():N}").Options);
+        var season = Season();
+        season.Title = "Indoor season";
+        season.PracticeSchedule = "Details to follow";
+        season.IsOpen = true;
+        season.OpenedAtUtc = Now;
+        db.RegistrationSeasons.Add(season);
+        await db.SaveChangesAsync();
+
+        var response = Assert.IsType<OkObjectResult>(await new RegistrationPublicController(db, new FixedClock())
+            .Season(CancellationToken.None));
+        var fields = JsonSerializer.SerializeToElement(response.Value, JsonSerializerOptions.Web);
+        Assert.True(fields.GetProperty("isOpen").GetBoolean());
+        Assert.Equal("Details to follow", fields.GetProperty("practiceSchedule").GetString());
+        Assert.False(fields.TryGetProperty("firstPracticeDate", out _));
+        Assert.DoesNotContain("2026-12-05", fields.GetRawText());
+        Assert.Equal(new DateOnly(2026, 12, 5), season.FirstPracticeDate);
+    }
 
     [Theory]
     [InlineData("2019-12-06")]

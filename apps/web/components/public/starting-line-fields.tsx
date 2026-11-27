@@ -14,9 +14,9 @@ const affiliationOptions = ["AAU", "USATF", "Other", "Unsure"];
 
 type FieldsProps = { prefix: string; step: number | "returning"; draft: Draft;
   update: (name: Field, value: string | string[]) => void; errors: Errors; disabled: boolean;
-  practiceDate: string | null; schedule: string | null };
+  schedule: string | null };
 
-export function RegistrationFields({ prefix, step, draft, update, errors, disabled, practiceDate, schedule }: FieldsProps) {
+export function RegistrationFields({ prefix, step, draft, update, errors, disabled, schedule }: FieldsProps) {
   function props(name: TextField, hasHint = false) {
     const id = prefix + "-" + name;
     const descriptions = [hasHint && id + "-hint", errors[name] && id + "-error"].filter(Boolean);
@@ -49,7 +49,7 @@ export function RegistrationFields({ prefix, step, draft, update, errors, disabl
       <input {...props("dateOfBirth", true)} type="date" required autoComplete="section-athlete bday"
         onChange={e => update("dateOfBirth", e.target.value)} />
       <span aria-hidden="true">Choose a date</span>
-    </div>, `${registrationAgeLabel} on the first practice date${practiceDate ? ` (${practiceDate})` : ""}.`)}
+    </div>, `${registrationAgeLabel} on the first practice date. Eligibility is checked when you submit.`)}
     {select("schoolGrade", "Current school grade", grades)}
     {field("schoolDistrict", "School district", <>
       <input {...props("schoolDistrict")} maxLength={120} required onChange={e => update("schoolDistrict", e.target.value)} />

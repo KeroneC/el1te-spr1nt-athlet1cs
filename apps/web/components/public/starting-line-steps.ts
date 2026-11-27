@@ -1,5 +1,3 @@
-import { registrationAgeLabel, registrationMaximumAge, registrationMinimumAge } from "@/lib/registration";
-
 // Pure presentation/validation helpers. Drafts belong to the mounted form only.
 export const applicationSteps = [
   { slug: "", label: "Athlete", title: "Who’s your athlete?", note: "Have their school information, home address, and an emergency contact handy." },
@@ -38,24 +36,14 @@ export function easternToday() {
   const part = (name: string) => parts.find(item => item.type === name)?.value;
   return [part("year"), part("month"), part("day")].join("-");
 }
-function validDob(value: string, practice: string | null, today: string) {
+function validDob(value: string, today: string) {
   const date = new Date(value + "T00:00:00Z");
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000") || isNaN(date.valueOf()) ||
       date.toISOString().slice(0, 10) !== value || value > today)
     return "Enter a valid date of birth that is not in the future.";
-  // Match DateOnly.AddYears: a leap-day birthday falls on Feb 28 in a non-leap year.
-  const birthday = (years: number) => {
-    const anniversary = new Date(date);
-    const month = anniversary.getUTCMonth();
-    anniversary.setUTCFullYear(anniversary.getUTCFullYear() + years);
-    if (anniversary.getUTCMonth() !== month) anniversary.setUTCDate(0);
-    return anniversary.toISOString().slice(0, 10);
-  };
-  if (practice && (birthday(registrationMinimumAge) > practice || birthday(registrationMaximumAge + 1) <= practice))
-    return `Athletes must be ${registrationAgeLabel.toLowerCase()} on the first practice date.`;
 }
 
-export function validateStep(step: number | "returning", draft: Draft, practice: string | null, today: string): Errors {
+export function validateStep(step: number | "returning", draft: Draft, today: string): Errors {
   const errors: Errors = {};
   const required: Partial<Record<Field, string>> = {
     athleteFirstName: "Enter your athlete’s first name.", athleteLastName: "Enter your athlete’s last name.",
@@ -76,7 +64,7 @@ export function validateStep(step: number | "returning", draft: Draft, practice:
     }
     const value = draft[name]?.trim() ?? "";
     let message = !value ? required[name] : undefined;
-    if (value && name === "dateOfBirth") message = validDob(value, practice, today);
+    if (value && name === "dateOfBirth") message = validDob(value, today);
     if (value && ["guardianEmail", "secondaryGuardianEmail"].includes(name) && !/^[^\s@]+@[^\s@]+$/.test(value))
       message = "Enter a valid email address.";
     if (value && ["guardianPhone", "secondaryGuardianPhone", "emergencyContactPhone"].includes(name) &&
@@ -90,8 +78,8 @@ export function validateStep(step: number | "returning", draft: Draft, practice:
   return errors;
 }
 
-export function firstIncompleteStep(draft: Draft, practice: string | null, today: string) {
-  const first = stepFields.findIndex((_, i) => Object.keys(validateStep(i, draft, practice, today)).length > 0);
+export function firstIncompleteStep(draft: Draft, today: string) {
+  const first = stepFields.findIndex((_, i) => Object.keys(validateStep(i, draft, today)).length > 0);
   return first < 0 ? reviewStep : first;
 }
 
