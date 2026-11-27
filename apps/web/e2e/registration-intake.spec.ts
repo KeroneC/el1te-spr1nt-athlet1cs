@@ -126,7 +126,7 @@ test("families and staff can complete both registration paths through the browse
         ["Season end date (Eastern)", futureOpening],
         ["Practice location", "Test track"],
         ["Practice schedule (shown to families)", "Saturday mornings"],
-        ["Fees", "No fees for this test"],
+        ["Tuition", "No tuition for this test"],
         ["Expected reply window (shown to families)", "Within one week."],
         ["Designated club paperwork inbox (staff only)", "forms@example.test"],
         ["In-person handoff instructions (staff only)", "Hand forms to staff at the test track."],

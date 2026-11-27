@@ -32,7 +32,7 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const seasonDetails = [
     { label: "Practice location", value: season?.practiceLocation ?? advanceCopy?.practiceLocation },
     { label: "Practice schedule", value: season?.practiceSchedule ?? advanceCopy?.practiceSchedule },
-    { label: "Fees", value: season?.fees ?? advanceCopy?.fees },
+    { label: "Tuition", value: season?.fees ?? advanceCopy?.fees },
     { label: "When you’ll hear back", value: season?.replyWindow }
   ].filter(({ value }) => value);
   return <div data-registration-hub="true" className={styles.page}>

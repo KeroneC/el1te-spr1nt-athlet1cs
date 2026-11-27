@@ -314,7 +314,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={initialLogistics?.practiceLocation} required error={seasonError("practiceLocation")} />
             <TextArea label="Practice schedule (shown to families)" name="practiceSchedule" maxLength={500} defaultValue={initialLogistics?.practiceSchedule} required error={seasonError("practiceSchedule")} />
-            <Field label="Fees" name="fees" maxLength={250} defaultValue={initialLogistics?.fees} required error={seasonError("fees")} />
+            <Field label="Tuition" name="fees" maxLength={250} defaultValue={initialLogistics?.fees} required error={seasonError("fees")} />
             <Field label="Expected reply window (shown to families)" name="replyWindow" maxLength={250} defaultValue={current?.replyWindow} required error={seasonError("replyWindow")} />
           </FormSection>
           <FormSection title="Staff handoff and ownership" description="These details are for staff, not the public registration page.">

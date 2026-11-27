@@ -31,7 +31,8 @@ describe("registration staff workspace", () => {
     expect(markup).not.toContain('name="ageGroups"');
     expect(markup).toContain("West Allegheny High School and Robert Morris University (RMU)");
     expect(markup).toContain("usually 6–8 p.m.");
-    expect(markup).toContain("We’ll share fee information after you apply or check in.");
+    expect(markup).toContain("Tuition");
+    expect(markup).toContain("We’ll share tuition details when we follow up with your family.");
   });
 
   it("omits age filters and expanded fields from the review queue", () => {
