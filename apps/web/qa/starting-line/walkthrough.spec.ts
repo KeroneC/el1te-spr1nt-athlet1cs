@@ -94,7 +94,7 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
   await input("athleteLastName").fill("Example");
   await input("dateOfBirth").fill("2015-07-03");
   await input("schoolGrade").selectOption("6");
-  await input("schoolDistrict").selectOption("West Allegheny");
+  await input("schoolDistrict").fill("West Allegheny");
   await input("gender").selectOption("Female");
   // Exact age eligibility is checked by the real API when a family submits.
   for (const invalid of ["", "2099-01-01"]) {

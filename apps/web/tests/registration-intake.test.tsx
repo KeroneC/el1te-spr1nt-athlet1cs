@@ -42,7 +42,8 @@ describe("registration intake", () => {
     expect(application).not.toContain("Submit application");
     for (const field of ["athleteFirstName", "athleteLastName", "dateOfBirth", "schoolGrade", "schoolDistrict"])
       expect(application).toContain(`name="${field}"`);
-    expect(application).toMatch(/<select[^>]+name="schoolDistrict"/);
+    expect(application).toMatch(/<input(?=[^>]+name="schoolDistrict")(?=[^>]+type="text")(?=[^>]+required="")[^>]*>/);
+    expect(application).not.toMatch(/<select[^>]+name="schoolDistrict"/);
     expect(application).toMatch(/<select[^>]+name="gender"[^>]+required=""[^>]*>/);
     expect(application).not.toContain("Prefer not to answer");
     expect(application).not.toContain('name="ageGroup"');

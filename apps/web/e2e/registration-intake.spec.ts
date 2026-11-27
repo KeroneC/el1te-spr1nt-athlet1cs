@@ -231,8 +231,7 @@ test("families and staff can complete both registration paths through the browse
 
       await form.getByLabel("Athlete’s legal last name").fill("SyntheticSurname");
       await form.getByLabel("Current school grade").selectOption("Not applicable");
-      await form.getByLabel("School district", { exact: true }).selectOption({ label: "Other / not listed" });
-      await form.getByLabel("School district name", { exact: true }).fill("Synthetic School District");
+      await form.getByRole("textbox", { name: "School district", exact: true }).fill("Synthetic School District");
       await form.getByLabel("Gender", { exact: true }).selectOption("Female");
       const dob = form.getByLabel("Date of birth", { exact: true });
       await dob.fill("2099-01-01");
