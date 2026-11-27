@@ -28,7 +28,7 @@ const transitions: Record<Status, readonly Status[]> = {
   PaperworkReceived: ["Enrolled", "Offered", "Closed"], Enrolled: ["PaperworkReceived", "Closed"], Closed: ["FollowUp"]
 };
 type Season = {
-  year: number; revision: string; title: string; openingDate: string; endDate: string; firstPracticeDate: string | null;
+  year: number; revision: string; title: string; openingDate: string; endDate: string | null; firstPracticeDate: string | null;
   practiceLocation: string; practiceSchedule: string; fees: string; replyWindow: string; paperworkEmail: string;
   paperworkHandoff: string; reviewOwner: string; retentionOwner: string; isOpen: boolean; purgedAtUtc: string | null;
   availability: { publicState: "Open" | "Closed" | "Upcoming" | "Ended"; openingBlockedReason: string | null };
@@ -223,7 +223,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     setOverview(previous => ({
       ...previous,
       seasons: [saved, ...previous.seasons.filter(season => season.year !== saved.year)].sort((a, b) => b.year - a.year),
-      closeoutEligibleYears: saved.isOpen ? previous.closeoutEligibleYears.filter(value => value !== saved.year) : previous.closeoutEligibleYears
+      closeoutEligibleYears: saved.isOpen || !saved.endDate
+        || saved.endDate !== previous.seasons.find(season => season.year === saved.year)?.endDate
+        ? previous.closeoutEligibleYears.filter(value => value !== saved.year) : previous.closeoutEligibleYears
     }));
   }
   async function saveSeason(event: FormEvent<HTMLFormElement>) {
@@ -231,7 +233,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
     if (settingsLockedReason) return;
     const body = Object.fromEntries(new FormData(event.currentTarget));
     await action("settings", "settings", async () => {
-      const saved = await call<Season>("season", "PUT", { ...body, year: Number(body.year), revision: current?.revision ?? null });
+      const saved = await call<Season>("season", "PUT", {
+        ...body, year: Number(body.year), endDate: body.endDate || null, revision: current?.revision ?? null
+      });
       updateSeason(saved); setYear(saved.year);
       tell("settings", { message: "Season saved. Intake is still closed.", success: true });
     }, "Couldn’t confirm the season was saved. Reload the season before retrying.");
@@ -281,6 +285,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
         <dl className="grid gap-3 sm:grid-cols-2">
           <div><dt className="text-sm font-bold text-slate-600">Public registration</dt><dd className="font-bold">{publicState}</dd></div>
           <div><dt className="text-sm font-bold text-slate-600">Manual intake switch</dt><dd className="font-bold">{current.isOpen ? "On" : "Off"}</dd></div>
+          <div><dt className="text-sm font-bold text-slate-600">Season end date</dt><dd className="font-bold">{current.endDate ? registrationDate(current.endDate, true) : "TBD"}</dd></div>
         </dl>
         {!current.purgedAtUtc && <form method="post" className="space-y-3" onSubmit={changeOpening} key={current.revision}>
           {openingReason && (!current.isOpen || publicState !== "Open") && <p className="text-sm font-semibold text-slate-700" id="registration-opening-reason">{openingReason}</p>}
@@ -316,7 +321,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
             <Field label="First practice date (Eastern)" name="firstPracticeDate" type="date"
               defaultValue={current ? current.firstPracticeDate ?? "" : is2027 ? registration2027FirstPracticeDate : ""}
               error={seasonError("firstPracticeDate")} hint={`${publicDateHint} Required before opening. New athletes must be ${registrationAgeLabel.toLowerCase()} on this date.`} />
-            <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate} required error={seasonError("endDate")} />
+            <Field label="Season end date (Eastern)" name="endDate" type="date" defaultValue={current?.endDate ?? ""}
+              hint="Leave blank if TBD. Staff must close intake manually, and records cannot be removed through season closeout until an end date is recorded."
+              error={seasonError("endDate")} />
             <Field label="Practice location" name="practiceLocation" maxLength={250} defaultValue={initialLogistics?.practiceLocation} required error={seasonError("practiceLocation")} />
             <TextArea label="Practice schedule (shown to families)" name="practiceSchedule" maxLength={500} defaultValue={initialLogistics?.practiceSchedule} required error={seasonError("practiceSchedule")} />
             <Field label="Tuition" name="fees" maxLength={250} defaultValue={initialLogistics?.fees} required error={seasonError("fees")} />
@@ -324,7 +331,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
           </FormSection>
           <FormSection title="Staff handoff and ownership" description="These details are for staff, not the public registration page.">
             <Field label="Designated club paperwork inbox (staff only)" name="paperworkEmail" type="email" maxLength={254} defaultValue={current?.paperworkEmail} required error={seasonError("paperworkEmail")} />
-            <TextArea label="In-person handoff instructions (staff only)" name="paperworkHandoff" maxLength={500} defaultValue={current?.paperworkHandoff} required error={seasonError("paperworkHandoff")} />
+            <TextArea label="Post-offer paperwork instructions (staff only)" name="paperworkHandoff" maxLength={500} defaultValue={current?.paperworkHandoff} required error={seasonError("paperworkHandoff")} />
             <Field label="Review owner" name="reviewOwner" maxLength={120} defaultValue={current?.reviewOwner} required error={seasonError("reviewOwner")} />
             <Field label="Retention owner" name="retentionOwner" maxLength={120} defaultValue={current?.retentionOwner} required error={seasonError("retentionOwner")} />
           </FormSection>
@@ -343,7 +350,7 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
           {pending === "reload-season" ? "Refreshing…" : "Refresh season status and totals"}
         </button>
       </section>}
-      {current && !current.purgedAtUtc && canCloseout && overview.closeoutEligibleYears.includes(current.year) && <form method="post"
+      {current?.endDate && !current.purgedAtUtc && canCloseout && overview.closeoutEligibleYears.includes(current.year) && <form method="post"
         className={`${panel} border-red-200`} key={`closeout-${current.revision}`} onSubmit={event => {
           event.preventDefault();
           const confirmYear = new FormData(event.currentTarget).get("confirmYear");
@@ -402,8 +409,9 @@ export function RegistrationWorkspace({ initial, canCloseout }: { initial: Regis
         }, "Couldn’t reload the record. Try again.")}>{pending === "reload-record" ? "Reloading record…" : "Reload record"}</button>}
       {detail.kind === "Application" && <p className="text-sm">Verify eligibility outside the app: <a className="underline" href="https://image.aausports.org/dnn/athletics/Club-Release-Form.pdf">AAU club release</a> · <a className="underline" href="https://www.usatf.org/home-normal/top-utility-nav-content/membership/affiliation-update-requests">USATF affiliation updates</a>.</p>}
       {detail.kind === "Application" && current && ["Offered", "PaperworkReceived", "Enrolled"].includes(detail.status) && <aside className="space-y-1 border border-slate-200 bg-slate-50 p-3 text-sm">
-        <h3 className="font-bold">Paperwork instructions for staff to send</h3>
-        <p className="break-words">Email PDFs or clear photos to {current.paperworkEmail} with {detail.receiptReference} in the subject, or hand them in person: {current.paperworkHandoff}</p>
+        <h3 className="font-bold">Paperwork follow-up for staff</h3>
+        <p className="break-words">{current.paperworkHandoff}</p>
+        <p className="break-words">Staff contact: {current.paperworkEmail} · Reference: {detail.receiptReference}</p>
         <p>Photo consent is optional and does not affect enrollment.</p>
       </aside>}
       <div><h3 className="font-bold">Review history</h3>{detail.history.length ? <ol className="space-y-2">{detail.history.map((entry, index) =>

@@ -26,7 +26,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         if (season.PurgedAtUtc is not null) return new("Closed", "This season has been closed out.");
         if (seasons.Any(other => other.Year > season.Year && other.PurgedAtUtc is null))
             return new("Closed", "Only the latest season can be opened.");
-        if (today > season.EndDate) return new("Ended", "This season has already ended.");
+        if (IntakeRules.HasEnded(season, today)) return new("Ended", "This season has already ended.");
         if (today < season.OpeningDate) return new("Upcoming", "Intake can’t open before the opening date (Eastern time).");
         if (!IntakeRules.HasValidFirstPracticeDate(season))
             return new("Closed", "Set a first practice date within the season before opening intake.");
@@ -63,8 +63,7 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         return Ok(new
         {
             seasons = seasons.Select(season => SeasonView(season, seasons, today)), counts,
-            closeoutEligibleYears = seasons.Where(x => !x.IsOpen && x.PurgedAtUtc is null &&
-                today.DayNumber - x.EndDate.DayNumber >= 90).Select(x => x.Year)
+            closeoutEligibleYears = seasons.Where(x => IntakeRules.IsCloseoutEligible(x, today)).Select(x => x.Year)
         });
     }
 
@@ -215,9 +214,8 @@ public sealed class RegistrationAdminController(El1teDbContext db, IClock clock)
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, token);
         var season = await RegistrationDatabase.LockSeason(db, request.Year, token);
         if (season is null) return NotFound();
-        if (season.Revision != request.Revision || season.IsOpen || season.PurgedAtUtc is not null ||
-            IntakeRules.LocalDate(clock.UtcNow).DayNumber - season.EndDate.DayNumber < 90)
-            return ConflictMessage("Closeout requires a closed season that ended at least 90 days ago.");
+        if (season.Revision != request.Revision || !IntakeRules.IsCloseoutEligible(season, IntakeRules.LocalDate(clock.UtcNow)))
+            return ConflictMessage("Closeout requires closed intake and a recorded season end date at least 90 days ago.");
         foreach (var count in await db.RegistrationCounts.Where(x => x.SeasonYear == season.Year).ToListAsync(token))
         {
             var submissions = db.RegistrationSubmissions.Where(x => x.SeasonYear == season.Year && x.Channel == count.Channel);

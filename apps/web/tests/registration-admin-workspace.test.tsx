@@ -37,6 +37,14 @@ describe("registration staff workspace", () => {
     expect(markup).toContain("We’ll share tuition details when we follow up with your family.");
   });
 
+  it("allows staff to leave the season end date blank", () => {
+    const markup = renderToStaticMarkup(<RegistrationWorkspace initial={overview} canCloseout={true} />);
+    const endInput = markup.match(/<input(?=[^>]*\bname="endDate")[^>]*>/)?.[0];
+    expect(endInput).toContain('type="date"');
+    expect(endInput).not.toContain("required");
+    expect(markup).toContain("Staff must close intake manually");
+  });
+
   it("omits age filters and expanded fields from the review queue", () => {
     const markup = renderToStaticMarkup(<RegistrationWorkspace initial={{ ...overview, seasons: [currentSeason] }} canCloseout={false} />);
     expect(markup).toContain("New Applications");

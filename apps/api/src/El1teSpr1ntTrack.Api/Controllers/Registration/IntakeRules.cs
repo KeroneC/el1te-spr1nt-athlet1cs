@@ -31,7 +31,7 @@ public sealed record IntakeRequest(int SeasonYear, Guid RequestKey, IntakeKind K
     public string? EmergencyContactRelationship { get; init; }
 }
 
-public sealed record SeasonRequest(int Year, Guid? Revision, string? Title, DateOnly OpeningDate, DateOnly EndDate,
+public sealed record SeasonRequest(int Year, Guid? Revision, string? Title, DateOnly OpeningDate, DateOnly? EndDate,
     string[]? AgeGroups, string? PracticeLocation, string? PracticeSchedule, string? Fees, string? ReplyWindow,
     string? PaperworkEmail, string? PaperworkHandoff, string? ReviewOwner, string? RetentionOwner, string? FirstPracticeDate = null);
 
@@ -56,11 +56,22 @@ public static class IntakeRules
     };
 
     public static bool HasValidFirstPracticeDate(RegistrationSeason season) =>
-        season.FirstPracticeDate is { } date && date >= season.OpeningDate && date <= season.EndDate;
+        season.FirstPracticeDate is { } date && date >= season.OpeningDate
+        && (season.EndDate is not { } end || date <= end);
 
-    public static bool IsOpen(RegistrationSeason season, DateTimeOffset now) =>
-        season.IsOpen && season.PurgedAtUtc is null && HasValidFirstPracticeDate(season)
-        && LocalDate(now) >= season.OpeningDate && LocalDate(now) <= season.EndDate;
+    public static bool HasEnded(RegistrationSeason season, DateOnly today) =>
+        season.EndDate is { } end && today > end;
+
+    public static bool IsOpen(RegistrationSeason season, DateTimeOffset now)
+    {
+        var today = LocalDate(now);
+        return season.IsOpen && season.PurgedAtUtc is null && HasValidFirstPracticeDate(season)
+            && today >= season.OpeningDate && !HasEnded(season, today);
+    }
+
+    public static bool IsCloseoutEligible(RegistrationSeason season, DateOnly today) =>
+        !season.IsOpen && season.PurgedAtUtc is null && season.EndDate is { } end
+        && today.DayNumber - end.DayNumber >= 90;
 
     private static bool HasFullApplicationFields(int? version) =>
         version is FirstFullApplicationVersion or CurrentApplicationVersion;
@@ -220,15 +231,18 @@ public static class IntakeRules
             return value;
         }
         if (request.Year is < 2026 or > 2100) errors["year"] = ["Choose a valid season year."];
-        if (request.OpeningDate == default || request.EndDate <= request.OpeningDate || request.EndDate.Year != request.Year)
+        if (request.OpeningDate == default)
+            errors["openingDate"] = ["Choose a valid opening date."];
+        if (request.EndDate is { } endDate && (endDate <= request.OpeningDate || endDate.Year != request.Year))
             errors["endDate"] = ["The season end must follow opening and fall within the season year."];
         // A draft may be saved without a date, but public intake cannot open until a valid date is set.
         DateOnly? firstPracticeDate = null;
         if (!string.IsNullOrWhiteSpace(request.FirstPracticeDate))
         {
             if (!DateOnly.TryParseExact(request.FirstPracticeDate, "yyyy-MM-dd", CultureInfo.InvariantCulture,
-                    DateTimeStyles.None, out var practiceDate) || practiceDate < request.OpeningDate || practiceDate > request.EndDate)
-                errors["firstPracticeDate"] = ["Choose a first practice date between registration opening and season end."];
+                    DateTimeStyles.None, out var practiceDate) || practiceDate < request.OpeningDate
+                    || (request.EndDate is { } end && practiceDate > end))
+                errors["firstPracticeDate"] = ["Choose a first practice date on or after registration opening and no later than the season end, if set."];
             else
                 firstPracticeDate = practiceDate;
         }
