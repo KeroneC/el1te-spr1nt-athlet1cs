@@ -88,7 +88,8 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
   await input("athleteLastName").fill("Example");
   await input("dateOfBirth").fill("2015-07-03");
   await input("schoolGrade").selectOption("6");
-  await input("schoolDistrict").fill("Example School District");
+  await input("schoolDistrict").selectOption("West Allegheny");
+  await input("gender").selectOption("Female");
   // Exact age eligibility is checked by the real API when a family submits.
   for (const invalid of ["", "2099-01-01"]) {
     await input("dateOfBirth").fill(invalid);
@@ -108,7 +109,7 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
 
   await input("streetAddress").fill("100 Example Lane");
   await input("city").fill("Sample City");
-  await input("state").selectOption("PA");
+  await expect(input("state")).toHaveValue("PA");
   await input("postalCode").fill("15201");
   await capture(page, device, "03-household", panel);
   await next();

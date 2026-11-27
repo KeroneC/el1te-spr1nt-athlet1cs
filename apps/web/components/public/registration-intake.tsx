@@ -5,8 +5,8 @@ import type { FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Check, Pencil } from "lucide-react";
 import { SupportReference } from "@/components/shared/support-reference";
 import type { PublicRegistrationSeason, RegistrationChannel } from "@/lib/registration";
-import { applicationFields, applicationSteps, easternToday, firstIncompleteStep, reviewStep, stepForField, stepFromHash, stepHash, validateStep } from "./starting-line-steps";
-import type { Draft, Errors, Field } from "./starting-line-steps";
+import { applicationFields, applicationSteps, easternToday, firstIncompleteStep, initialDraft, reviewStep, stepForField, stepFromHash, stepHash, validateStep } from "./starting-line-steps";
+import type { Draft, Errors, FormField } from "./starting-line-steps";
 import { RegistrationFields, RegistrationReview } from "./starting-line-fields";
 import styles from "./starting-line-form.module.css";
 
@@ -50,7 +50,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
   const prefix = useId();
   const application = kind === "Application";
   const hash = useSyncExternalStore(subscribeHash, readHash, serverHash);
-  const [draft, setDraft] = useState<Draft>({});
+  const [draft, setDraft] = useState<Draft>(() => initialDraft(application));
   const [edit, setEdit] = useState<{ step: number; original: Draft } | null>(null);
   const [errors, setErrors] = useState<Errors>({});
   const [message, setMessage] = useState("");
@@ -93,7 +93,9 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
   }, []);
 
   function focusField(name: string) {
-    const control = formRef.current?.querySelector<HTMLElement>(`[name="${name}"]`);
+    const form = formRef.current;
+    const otherDistrict = name === "schoolDistrict" ? form?.querySelector<HTMLElement>('[name="schoolDistrictOther"]') : null;
+    const control = otherDistrict ?? form?.querySelector<HTMLElement>(`[name="${name}"]`);
     if (!control) return;
     const details = control.closest("details");
     if (details) details.open = true;
@@ -111,12 +113,13 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
     previousStep.current = step;
   }, [application, requested, step, reference]);
 
-  function update(name: Field | "website", value: string | string[]) {
+  function update(name: FormField | "website", value: string | string[]) {
     if (lockedFields) return;
     setDraft(old => ({ ...old, [name]: value }));
+    const errorName = name === "schoolDistrictOther" ? "schoolDistrict" : name;
     setErrors(old => {
-      if (!old[name]) return old;
-      const next = { ...old }; delete next[name]; return next;
+      if (!old[errorName]) return old;
+      const next = { ...old }; delete next[errorName]; return next;
     });
   }
   function showErrors(next: Errors, all = false) {
@@ -145,7 +148,7 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
     }
   }
   function startAnother() {
-    setDraft({}); setEdit(null); setReference(""); setCopied(null); setMessage(""); setErrors({}); setSupport(null);
+    setDraft(initialDraft(application)); setEdit(null); setReference(""); setCopied(null); setMessage(""); setErrors({}); setSupport(null);
     if (application) { waitingForFocus.current = "athleteFirstName"; go(0, true); }
     window.requestAnimationFrame(() => focusField(application ? "athleteFirstName" : "guardianEmail"));
   }
@@ -156,8 +159,10 @@ export function RegistrationIntake({ season, channel, kind, intakeClosed = false
       const local = validateStep(application ? step : "returning", draft, today);
       // Respect the browser's parsing, e.g. incomplete native dates and bad autofill.
       for (const el of event.currentTarget.elements) {
-        if ((el instanceof HTMLInputElement || el instanceof HTMLSelectElement) && !el.validity.valid && !local[el.name])
-          local[el.name] = [el.validationMessage];
+        if ((el instanceof HTMLInputElement || el instanceof HTMLSelectElement) && !el.validity.valid) {
+          const errorName = el.name === "schoolDistrictOther" ? "schoolDistrict" : el.name;
+          if (!local[errorName]) local[errorName] = [el.validationMessage];
+        }
       }
       if (Object.keys(local).length) { showErrors(local); return; }
       if (application && step !== reviewStep) {

@@ -212,7 +212,9 @@ test("families and staff can complete both registration paths through the browse
 
       await form.getByLabel("Athlete’s legal last name").fill("SyntheticSurname");
       await form.getByLabel("Current school grade").selectOption("Not applicable");
-      await form.getByLabel("School district", { exact: true }).fill("Synthetic School District");
+      await form.getByLabel("School district", { exact: true }).selectOption({ label: "Other / not listed" });
+      await form.getByLabel("School district name", { exact: true }).fill("Synthetic School District");
+      await form.getByLabel("Gender", { exact: true }).selectOption("Female");
       const dob = form.getByLabel("Date of birth", { exact: true });
       await dob.fill("2099-01-01");
       await next.click();
@@ -232,7 +234,7 @@ test("families and staff can complete both registration paths through the browse
       await next.click();
       await form.getByLabel("Street address", { exact: true }).fill("123 Synthetic Test Lane");
       await form.getByLabel("City", { exact: true }).fill("Synthetic City");
-      await form.getByLabel("State", { exact: true }).selectOption("PA");
+      await expect(form.getByLabel("State", { exact: true })).toHaveValue("PA");
       await form.getByLabel("ZIP code", { exact: true }).fill("15201");
       await next.click();
       await form.getByLabel("Emergency contact name", { exact: true }).fill("Synthetic Emergency Contact");
@@ -288,7 +290,9 @@ test("families and staff can complete both registration paths through the browse
       expect(submissionRequests).toHaveLength(2);
       expect(submissionRequests[0]).toEqual(submissionRequests[1]);
       payload = submissionRequests[0] as Record<string, unknown>;
-      expect(payload).toMatchObject({ applicationVersion: 2, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate });
+      expect(payload).toMatchObject({ applicationVersion: 2, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate,
+        schoolDistrict: "Synthetic School District", gender: "Female", state: "PA" });
+      expect(payload).not.toHaveProperty("schoolDistrictOther");
       expect(payload).not.toHaveProperty("ageGroup");
       appReference = await application.getByText(referencePattern).innerText();
       expect(appReference).toMatch(referencePattern);
