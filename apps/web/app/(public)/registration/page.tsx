@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { getRegistrationSeason } from "@/lib/public/registration";
-import { openingPhase, registrationChannel, registrationOpeningDate } from "@/lib/registration";
-import { registration2027Copy } from "@/lib/registration-2027-copy.mjs";
+import { openingPhase, registrationChannel, registrationDate, registrationOpeningDate } from "@/lib/registration";
+import { registration2027Copy, registration2027FirstPracticeDate } from "@/lib/registration-2027-copy.mjs";
 import { RegistrationPoster } from "@/components/public/registration-poster";
 import { RegistrationVisit } from "@/components/public/registration-intake";
 import { RegistrationPaths } from "@/components/public/registration-paths";
@@ -23,9 +23,9 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
   const channel = registrationChannel(query.src);
   const retryHref = channel === "direct" ? "/registration" : `/registration?src=${channel}`;
   const openingDate = season?.openingDate ?? registrationOpeningDate;
-  const showPracticeWindow = state !== "unavailable" && (!season || season.year === 2027);
+  const show2027Details = state !== "unavailable" && (!season || season.year === 2027);
   // These three public logistics can be shown before opening; never use draft season settings.
-  const advanceCopy = showPracticeWindow && season?.title == null && !season?.isOpen ? registration2027Copy : null;
+  const advanceCopy = show2027Details && season?.title == null && !season?.isOpen ? registration2027Copy : null;
   // The API only releases the title once a season has opened. A reclosure on
   // opening day must not promise a second opening.
   const phase = state === "unavailable" || season?.title != null ? "closed" : openingPhase(openingDate);
@@ -54,8 +54,10 @@ export default async function RegistrationPage({ searchParams }: { searchParams:
         </div>
       </section>}
     <aside aria-label="Registration resources" className={styles.resources}>
-      {showPracticeWindow && <div className="site-container">
-        <p className={styles.practiceNotice}><strong>First indoor practice:</strong> We expect to start in late January or early February. We’ll share the exact date closer to the start of the season.</p>
+      {show2027Details && <div className="site-container">
+        <p className={styles.practiceNotice}><strong>First indoor practice:</strong>{" "}
+          <time dateTime={registration2027FirstPracticeDate}>{registrationDate(registration2027FirstPracticeDate, true)}</time>
+        </p>
       </div>}
       <div className={`site-container ${styles.resourceLayout}`}>
         {seasonDetails.length > 0 && <details className={styles.season}>

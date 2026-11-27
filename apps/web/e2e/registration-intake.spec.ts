@@ -123,6 +123,7 @@ test("families and staff can complete both registration paths through the browse
         ["Season year", String(year)],
         ["Season title", title],
         ["Opening date (Eastern)", futureOpening],
+        ["First practice date (Eastern)", ""],
         ["Season end date (Eastern)", futureOpening],
         ["Practice location", "Test track"],
         ["Practice schedule (shown to families)", "Saturday mornings"],

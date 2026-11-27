@@ -27,6 +27,8 @@ describe("registration staff workspace", () => {
     expect(markup).toContain("First practice date (Eastern)");
     expect(markup).toContain('aria-describedby="firstPracticeDate-hint"');
     expect(markup).toMatch(/<input(?=[^>]*\bname="firstPracticeDate")(?=[^>]*\btype="date")[^>]*>/);
+    expect(markup).toMatch(/<input(?=[^>]*\bname="firstPracticeDate")(?=[^>]*\bvalue="2027-02-07")[^>]*>/);
+    expect(markup).toContain("Published date for 2027: Sunday, February 7, 2027.");
     expect(markup).toContain("Required before opening.");
     expect(markup).not.toContain('name="ageGroups"');
     expect(markup).toContain("West Allegheny High School and Robert Morris University (RMU)");

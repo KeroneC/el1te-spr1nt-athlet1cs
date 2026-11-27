@@ -216,7 +216,7 @@ test("application draft, review edit, server error routing, exact retry and rece
   await expect(page.getByText("Edited fixture guardian", { exact: true })).toHaveCount(0);
 });
 
-test("server-side age eligibility returns the family to date of birth without showing the cutoff date", async ({ page }) => {
+test("server-side age eligibility returns the family to date of birth and only the approved date is public", async ({ page }) => {
   const message = "Athletes must be ages 7–18 on the first practice date.";
   await page.route(applicationPost, route => route.fulfill({ status: 400, json: {
     message: "Check your answers.", errors: { dateOfBirth: [message] }
@@ -226,7 +226,7 @@ test("server-side age eligibility returns the family to date of birth without sh
   await page.getByRole("button", { name: "Submit application", exact: true }).click();
   await expect(field(page, "dateOfBirth")).toBeFocused();
   await expect(field(page, "dateOfBirth")).toHaveAccessibleDescription(/Athletes must be ages 7–18 on the first practice date/);
-  await expect(page.getByText(/late January or early February/)).toHaveCount(1);
+  await expect(page.locator("time[datetime='2027-02-07']")).toHaveText("Sunday, February 7, 2027");
   expect(await page.content()).not.toContain("firstPracticeDate");
 });
 

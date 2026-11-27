@@ -31,8 +31,9 @@ Ads can use `/registration?src=facebook` or `/registration?src=instagram`. The s
 
 ### Public season wording for 2027
 
-The 2027 page shows these general details before opening and **Season Settings** prefills them for a new 2027 season. After the season opens, the saved settings take precedence. Keep the exact first practice date in the staff-only field. Set the public reply window separately once the team confirms it.
+The 2027 page shows these details before opening and **Season Settings** prefills them for a new 2027 season. After opening, saved settings take precedence for location, schedule, and tuition. The public first practice date is the club-approved date below; keep the saved eligibility date in sync. Other dates entered by staff are not automatically made public. Set the public reply window separately once the team confirms it.
 
+- **First indoor practice:** Sunday, February 7, 2027.
 - **Practice location:** We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.
 - **Practice schedule:** During peak season, practices are usually 6–8 p.m. Days and times may vary.
 - **Tuition:** We’ll share tuition details when we follow up with your family.
