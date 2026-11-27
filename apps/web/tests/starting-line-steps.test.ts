@@ -9,7 +9,7 @@ const complete: Draft = {
   guardianEmail: "family@example.test", guardianPhone: "(202) 555-0110",
   streetAddress: "100 Sample St", city: "Sample City", state: "PA", postalCode: "00000",
   emergencyContactName: "Test Relative", emergencyContactPhone: "202-555-0111",
-  emergencyContactRelationship: "Relative", availability: "Yes", priorClub: "No"
+  emergencyContactRelationship: "Relative", priorClub: "No"
 };
 
 describe("starting-line steps", () => {
@@ -80,7 +80,19 @@ describe("starting-line steps", () => {
     });
     for (const priorClub of ["No", "Unsure"])
       expect(applicationFields({ ...detail, priorClub })).toMatchObject({ clubName: null, affiliations: [], lastMeetMonth: null });
+    expect(applicationFields(complete)).not.toHaveProperty("availability");
     expect(stepForField("secondaryGuardianEmail")).toBe(1);
     expect(stepForField("affiliations")).toBe(4);
+  });
+
+  it("requires a valid past or current meet month only when the previous club answer is Yes", () => {
+    const prior = { ...complete, priorClub: "Yes", clubName: "Example track", affiliations: ["AAU"] };
+    expect(validateStep(4, prior, today).lastMeetMonth).toEqual(["Enter the last meet month and year."]);
+    for (const lastMeetMonth of ["2026-12", "2026-13", "November 2026"])
+      expect(validateStep(4, { ...prior, lastMeetMonth }, today).lastMeetMonth).toBeDefined();
+    for (const lastMeetMonth of ["2026-11", "2026-03"])
+      expect(validateStep(4, { ...prior, lastMeetMonth }, today)).toEqual({});
+    for (const priorClub of ["No", "Unsure"])
+      expect(validateStep(4, { ...prior, priorClub }, today)).toEqual({});
   });
 });

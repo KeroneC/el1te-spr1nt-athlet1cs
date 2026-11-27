@@ -24,7 +24,7 @@ async function checkAxe(page: Page) {
   expect(result.violations.map(v => ({ id: v.id, targets: v.nodes.map(n => n.target) }))).toEqual([]);
 }
 
-async function toReview(page: Page) {
+async function toReview(page: Page, priorClub = false) {
   await field(page, "athleteFirstName").fill("Avery");
   await field(page, "athleteLastName").fill("Fixture");
   await field(page, "dateOfBirth").fill("2015-07-03");
@@ -45,11 +45,31 @@ async function toReview(page: Page) {
   await field(page, "emergencyContactPhone").fill("412-555-0199");
   await field(page, "emergencyContactRelationship").fill("Family friend");
   await next(page);
-  await field(page, "availability").selectOption("Yes");
-  await field(page, "priorClub").selectOption("No");
+  await expect(field(page, "availability")).toHaveCount(0);
+  await expect(field(page, "lastMeetMonth")).toHaveCount(0);
+  await field(page, "priorClub").selectOption(priorClub ? "Yes" : "No");
+  if (priorClub) {
+    await field(page, "clubName").fill("Synthetic Track Club");
+    await page.locator("#apply").getByRole("checkbox", { name: "AAU", exact: true }).check();
+    const month = page.locator("#apply").getByLabel("Last meet month and year", { exact: true });
+    await expect(month).toHaveAttribute("required", "");
+    await next(page);
+    await expect(month).toBeFocused();
+    await expect(month).toHaveAccessibleDescription(/enter the last meet month and year/i);
+    await month.fill("2022-09");
+    await page.locator("#apply").getByRole("heading", { name: "Track background", exact: true }).click();
+  } else {
+    await expect(field(page, "lastMeetMonth")).toHaveCount(0);
+  }
   await next(page);
   await expect(page).toHaveURL(/#apply\/review$/);
 }
+
+test("requires the last meet month after a previous club and carries it to review", async ({ page }) => {
+  await page.goto(publicPath + "#apply");
+  await toReview(page, true);
+  await expect(page.locator("#apply").getByText("2022-09", { exact: true })).toBeVisible();
+});
 
 test("new application supports an unlisted district, requires gender, and lets families change PA", async ({ page }) => {
   await page.goto(publicPath + "#apply");
@@ -187,7 +207,8 @@ test("application draft, review edit, server error routing, exact retry and rece
   expect(requests).toHaveLength(3);
   expect(requests[1]).toBe(requests[2]);
   expect(JSON.parse(requests[2])).toMatchObject({ guardianName: "Edited fixture guardian", emergencyContactPhone: "412-555-0122",
-    kind: "Application", applicationVersion: 2 });
+    kind: "Application", applicationVersion: 3 });
+  expect(JSON.parse(requests[2])).not.toHaveProperty("availability");
   await expect(page.getByText(receipt, { exact: true })).toBeVisible();
   await expect(page.getByText("Edited fixture guardian", { exact: true })).toHaveCount(0);
 });
@@ -231,7 +252,9 @@ test("fresh direct link cannot skip to Review; returning check-in has one save a
   await expect(form.getByRole("heading", { name: "Check-in received" })).toBeVisible();
   await expect(form.getByText(/no automatic confirmation email/i)).toBeVisible();
   await form.getByRole("button", { name: "Check in another athlete" }).click();
-  await form.getByLabel("Parent or guardian email").fill("synthetic@example.test");
+  const resetEmail = form.getByLabel("Parent or guardian email");
+  await expect(resetEmail).toBeFocused();
+  await resetEmail.fill("synthetic@example.test");
   await form.getByLabel("Athlete’s first name").fill("Sibling");
   await form.getByRole("button", { name: "Submit check-in" }).click();
   await expect(form.getByRole("alert")).toContainText("not open");

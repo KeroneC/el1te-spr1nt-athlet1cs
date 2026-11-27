@@ -176,11 +176,13 @@ test("families and staff can complete both registration paths through the browse
       await expect(page.getByRole("button", { name: "Close intake", exact: true })).toBeVisible();
       await expect(save).toBeDisabled();
       expect((await loadSeason(page.request, year))?.isOpen).toBe(true);
-      const obsolete = await publicPage.request.post(submitPath, { data: {
-        seasonYear: year, requestKey: crypto.randomUUID(), kind: "Application", channel: "direct"
-      } });
-      expect(obsolete.status()).toBe(409);
-      expect(await obsolete.json()).toMatchObject({ code: "form_outdated" });
+      for (const applicationVersion of [undefined, 2]) {
+        const obsolete = await publicPage.request.post(submitPath, { data: {
+          seasonYear: year, requestKey: crypto.randomUUID(), kind: "Application", channel: "direct", applicationVersion
+        } });
+        expect(obsolete.status()).toBe(409);
+        expect(await obsolete.json()).toMatchObject({ code: "form_outdated" });
+      }
     });
 
     let payload: Record<string, unknown> | undefined;
@@ -242,7 +244,8 @@ test("families and staff can complete both registration paths through the browse
       await form.getByLabel("Relationship to athlete", { exact: true }).fill("Family friend");
       await next.click();
       await expect(form.getByLabel("Age group", { exact: true })).toHaveCount(0);
-      await form.getByLabel("Can your athlete attend practices?").selectOption("Yes");
+      await expect(form.getByLabel("Can your athlete attend practices?")).toHaveCount(0);
+      await expect(form.getByLabel("Last meet month and year")).toHaveCount(0);
       await form.getByLabel("Previously trained or competed with another track club?").selectOption("Yes");
       await form.getByLabel("Current or most recent club").fill("Synthetic Track");
       const aau = form.getByRole("checkbox", { name: "AAU", exact: true });
@@ -250,6 +253,11 @@ test("families and staff can complete both registration paths through the browse
       const unsure = form.getByRole("checkbox", { name: "Not sure", exact: true });
       await aau.check();
       await usatf.check();
+      const lastMeet = form.getByLabel("Last meet month and year", { exact: true });
+      await next.click();
+      await expect(lastMeet).toBeFocused();
+      await expect(lastMeet).toHaveAccessibleDescription(/enter the last meet month and year/i);
+      await lastMeet.fill("2022-09");
       await unsure.check();
       await expect(aau).not.toBeChecked();
       await expect(usatf).not.toBeChecked();
@@ -290,8 +298,9 @@ test("families and staff can complete both registration paths through the browse
       expect(submissionRequests).toHaveLength(2);
       expect(submissionRequests[0]).toEqual(submissionRequests[1]);
       payload = submissionRequests[0] as Record<string, unknown>;
-      expect(payload).toMatchObject({ applicationVersion: 2, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate,
-        schoolDistrict: "Synthetic School District", gender: "Female", state: "PA" });
+      expect(payload).toMatchObject({ applicationVersion: 3, athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate,
+        schoolDistrict: "Synthetic School District", gender: "Female", state: "PA", lastMeetMonth: "2022-09" });
+      expect(payload).not.toHaveProperty("availability");
       expect(payload).not.toHaveProperty("schoolDistrictOther");
       expect(payload).not.toHaveProperty("ageGroup");
       appReference = await application.getByText(referencePattern).innerText();
@@ -411,6 +420,8 @@ test("families and staff can complete both registration paths through the browse
       await expect(page.getByRole("heading", { name: new RegExp("Jordan.*" + appReference) })).toBeFocused();
       await expect(page.getByText("Synthetic School District", { exact: true })).toBeVisible();
       await expect(page.getByText("Synthetic Emergency Contact", { exact: true })).toBeVisible();
+      await expect(page.getByText("2022-09", { exact: true })).toBeVisible();
+      await expect(page.getByText("Practice availability", { exact: true })).toHaveCount(0);
       await expect(ready).toBeDisabled();
       await checkLayout(page, page.getByRole("button", { name: "Save review" }));
       await checkA11y(page, "main");
@@ -431,7 +442,7 @@ test("families and staff can complete both registration paths through the browse
       expect(otherReviewer).toMatchObject({
         athleteLastName: "SyntheticSurname", dateOfBirth: eligibleBirthDate,
         schoolDistrict: "Synthetic School District", streetAddress: "123 Synthetic Test Lane",
-        emergencyContactName: "Synthetic Emergency Contact"
+        emergencyContactName: "Synthetic Emergency Contact", lastMeetMonth: "2022-09", availability: null
       });
       expect((await page.request.put(adminPath + "/review", { data: {
         id, revision: otherReviewer.revision, status: "Offered", transfer: "NeedsReview", photoConsent: "Granted", competitionReady: false

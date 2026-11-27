@@ -120,12 +120,14 @@ test("capture the complete new-athlete journey", async ({ page, isMobile }) => {
   await capture(page, device, "04-emergency-contact", panel);
   await next();
 
-  await input("availability").selectOption("Yes");
+  await expect(input("availability")).toHaveCount(0);
   await input("experience").fill("One season of recreational track.");
   await input("priorClub").selectOption("Yes");
   await input("clubName").fill("Example Track Club");
   await panel.getByRole("checkbox", { name: "AAU", exact: true }).check();
   await panel.getByRole("checkbox", { name: "USATF", exact: true }).check();
+  await input("lastMeetMonth").fill("2022-09");
+  await panel.getByRole("heading", { name: "Track background", exact: true }).click();
   await capture(page, device, "05-track-background", panel);
   await next();
 

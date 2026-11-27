@@ -1,6 +1,6 @@
 # Seasonal registration and returning check-in
 
-The Registration page has two parent/guardian paths and shows only the selected form. New applications collect athlete eligibility and school details, guardian and household information, an emergency contact, and track background. Returning check-ins still ask only for guardian email and athlete first name, with no paperwork. Intake is separate from Contact, athlete accounts, the roster and Square. After SQL saves either submission, the page shows a reference the family can copy. No confirmation or decision email is sent by the application. Staff send follow-up, waitlists and offers separately from the club inbox.
+The Registration page has two parent/guardian paths and shows only the selected form. New applications collect athlete eligibility and school details, guardian and household information, an emergency contact, and track background. A previous track club marked Yes requires the last meet month and year; the form does not ask about practice attendance. Returning check-ins still ask only for guardian email and athlete first name, with no paperwork. Intake is separate from Contact, athlete accounts, the roster and Square. After SQL saves either submission, the page shows a reference the family can copy. No confirmation or decision email is sent by the application. Staff send follow-up, waitlists and offers separately from the club inbox.
 
 ## Family walkthrough
 
