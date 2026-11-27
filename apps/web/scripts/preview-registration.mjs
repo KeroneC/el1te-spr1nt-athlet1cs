@@ -10,14 +10,16 @@ const webDir = fileURLToPath(new URL("../", import.meta.url));
 const args = process.argv.slice(2);
 const archive = args.includes("--archive-art");
 const built = args.includes("--built");
+const alternatePorts = args.includes("--alternate-ports");
 const stagedServer = fileURLToPath(new URL("../../../artifacts/web/apps/web/server.js", import.meta.url));
 if (built) await access(stagedServer).catch(() => {
   throw new Error("Stage the optimized web artifact with scripts/artifacts/build-web-artifact.sh first.");
 });
-const state = args.find(arg => !["--archive-art", "--built"].includes(arg)) ?? "open";
+const state = args.find(arg => !["--archive-art", "--built", "--alternate-ports"].includes(arg)) ?? "open";
 if (!["open", "upcoming", "closed", "unavailable"].includes(state)) throw new Error("Choose open, upcoming, closed, or unavailable.");
 if (archive && (built || state !== "open")) throw new Error("Archive review is only available in the open development preview.");
-const [webPort, fixturePort] = state === "upcoming" ? [3014, 5131] : [3013, 5130];
+const portOffset = (state === "upcoming" ? 1 : 0) + (alternatePorts ? 2 : 0);
+const [webPort, fixturePort] = [3013 + portOffset, 5130 + portOffset];
 // Never look into the archive or expose originals from a server. Only the six explicitly
 // prepared, metadata-stripped copies under the ignored artifacts directory may be loaded.
 const artwork = new Map(archive ? await Promise.all(localArchiveArtwork.map(async file => [
@@ -26,8 +28,9 @@ const artwork = new Map(archive ? await Promise.all(localArchiveArtwork.map(asyn
 const signingKey = randomBytes(32);
 const season = {
   year: 2027, title: "Local design preview · sample season", openingDate: "2026-11-27",
-  practiceLocation: "Sample practice location",
-  practiceSchedule: "Sample practice schedule", fees: "Sample fee information",
+  practiceLocation: "We usually practice at West Allegheny High School and Robert Morris University (RMU) facilities. Locations may vary, and we may use other sites this season.",
+  practiceSchedule: "During peak season, practices are usually 6–8 p.m. We typically skip practices before or after meets, so the schedule can change.",
+  fees: "Season fees cover entry fees for all meets that season. Fees vary for high school athletes, who spend part of the season practicing with their school teams.",
   replyWindow: "Local preview only. No registration is saved or email sent.", isOpen: state === "open"
 };
 const fixture = createServer(async (req, res) => {
@@ -67,7 +70,7 @@ const fixture = createServer(async (req, res) => {
   }
   return send(404, {});
 });
-fixture.once("error", () => { console.error("Preview API could not start on loopback port 5130."); process.exitCode = 1; });
+fixture.once("error", () => { console.error(`Preview API could not start on loopback port ${fixturePort}.`); process.exitCode = 1; });
 fixture.listen(fixturePort, "127.0.0.1", () => {
   const origin = `http://127.0.0.1:${webPort}`;
   const web = spawn(process.execPath, built ? [stagedServer] :
