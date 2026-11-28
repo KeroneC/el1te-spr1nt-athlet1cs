@@ -5,6 +5,7 @@ const staff = [
   { name: "Nickay Creary", portrait: "nickay-creary" },
   { name: "Michelle Newton", portrait: "michelle-newton" },
   { name: "Denise Gibbs", portrait: "denise-gibbs" },
+  { name: "Valerie Flores", portrait: "valerie-flores" },
 ] as const;
 
 export function SupportStaffSection() {
